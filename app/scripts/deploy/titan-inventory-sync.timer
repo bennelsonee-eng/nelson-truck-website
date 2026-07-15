@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Titan inventory sync every 15 minutes (matches the legacy ERP -> MySQL tte_inv_days cadence)
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

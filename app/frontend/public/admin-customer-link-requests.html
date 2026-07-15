@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Titan · Customer Link Requests</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f9fafb; }
+    h1, h2, h3 { margin: 0; }
+    a { color: #b91c1c; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input, select, textarea { font: inherit; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; }
+    input:focus, button:focus, select:focus, textarea:focus { outline: 2px solid #b91c1c; outline-offset: 1px; }
+    textarea { width: 100%; min-height: 70px; }
+
+    .topbar { background: #111827; color: white; padding: 8px 24px; display: flex; align-items: center; gap: 16px; }
+    .topbar .brand { font-weight: 700; letter-spacing: 1px; color: #fbbf24; }
+    .topbar .who { margin-left: auto; font-size: 13px; opacity: 0.85; }
+    .topbar button.logout { background: transparent; color: white; border: 1px solid #4b5563; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+
+    .hdr { display: flex; align-items: baseline; justify-content: space-between; padding: 20px 24px 0; max-width: 1400px; margin: 0 auto; }
+    .hdr h1 { font-size: 22px; font-weight: 700; }
+    .hdr p { color: #6b7280; font-size: 14px; margin: 4px 0 0; }
+
+    .controls { display: flex; gap: 12px; align-items: center; padding: 12px 24px; max-width: 1400px; margin: 0 auto; }
+    .controls select { padding: 6px 10px; }
+    .controls .counter { margin-left: auto; color: #6b7280; font-size: 13px; }
+
+    .list { padding: 0 24px 40px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+    .req {
+      background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px;
+      display: grid; grid-template-columns: 1fr auto; gap: 12px;
+    }
+    .req .meta { font-size: 13px; line-height: 1.5; }
+    .req .meta .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+    .req .meta .row .label { color: #6b7280; min-width: 130px; }
+    .req .meta .id { font-weight: 700; color: #111827; }
+    .req .meta .email { color: #1f2937; }
+    .req .meta .cust { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #111827; }
+    .req .meta .matched { color: #065f46; }
+    .req .meta .nomatch { color: #b91c1c; }
+    .req .meta .zip-ok { color: #065f46; font-weight: 600; }
+    .req .meta .zip-mismatch { color: #c2410c; font-weight: 600; }
+    .req .meta .note { color: #4b5563; font-style: italic; padding: 4px 8px; background: #f9fafb; border-left: 3px solid #d1d5db; border-radius: 2px; margin-top: 4px; }
+    .req .meta .review { color: #4b5563; margin-top: 4px; font-size: 12px; padding-top: 6px; border-top: 1px dashed #e5e7eb; }
+
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .pill.pending { background: #fef3c7; color: #92400e; }
+    .pill.approved { background: #d1fae5; color: #065f46; }
+    .pill.rejected { background: #fee2e2; color: #b91c1c; }
+
+    .actions { display: flex; flex-direction: column; gap: 8px; min-width: 180px; }
+    .actions button { padding: 8px 12px; border-radius: 6px; border: 1px solid; font-weight: 600; font-size: 13px; }
+    .actions .approve { background: #10b981; color: white; border-color: #059669; }
+    .actions .approve:hover { background: #059669; }
+    .actions .reject { background: white; color: #b91c1c; border-color: #fca5a5; }
+    .actions .reject:hover { background: #fef2f2; }
+
+    .login-card { background: white; padding: 32px; border-radius: 8px; max-width: 380px; margin: 80px auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .login-card h1 { font-size: 22px; margin-bottom: 4px; }
+    .login-card p { color: #6b7280; margin: 0 0 16px; font-size: 13px; }
+    .login-card label { display: block; font-size: 13px; color: #374151; margin-top: 12px; margin-bottom: 4px; }
+    .login-card input { width: 100%; }
+    .login-card button.submit { margin-top: 16px; width: 100%; background: #b91c1c; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; }
+    .login-card .err { color: #b91c1c; font-size: 13px; margin-top: 12px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px;
+      background: #111827; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0; transition: opacity 200ms; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+    .toast.err { background: #b91c1c; }
+
+    .empty { padding: 60px 24px; text-align: center; color: #6b7280; }
+    .denied { padding: 80px; text-align: center; color: #6b7280; max-width: 1400px; margin: 0 auto; }
+
+    .review-dialog {
+      position: fixed; inset: 0; background: rgba(17, 24, 39, 0.6); display: flex; align-items: center; justify-content: center; z-index: 200;
+    }
+    .review-dialog .card { background: white; padding: 24px; border-radius: 8px; max-width: 480px; width: 90%; }
+    .review-dialog h3 { margin-bottom: 8px; }
+    .review-dialog p { color: #6b7280; margin: 0 0 12px; font-size: 13px; }
+    .review-dialog .btnrow { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .review-dialog button.cancel { background: white; border: 1px solid #d1d5db; padding: 8px 14px; border-radius: 6px; }
+    .review-dialog button.confirm { padding: 8px 14px; border-radius: 6px; border: none; color: white; font-weight: 600; }
+    .review-dialog button.confirm.approve { background: #10b981; }
+    .review-dialog button.confirm.reject { background: #b91c1c; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const state = {
+  user: null,
+  requests: [],
+  statusFilter: "pending",
+  loading: false,
+  pendingDecision: null, // { id, mode: 'approve' | 'reject' }
+};
+
+const $app = document.getElementById("app");
+const $toast = document.getElementById("toast");
+
+function toast(msg, err) {
+  $toast.textContent = msg;
+  $toast.classList.toggle("err", !!err);
+  $toast.classList.add("show");
+  setTimeout(() => $toast.classList.remove("show"), 2400);
+}
+
+function detailToString(detail, statusCode) {
+  // FastAPI can return detail as a string OR an array of validation-error
+  // dicts. Stringify safely so the toast never reads "[object Object]".
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail.map((d) => {
+      if (typeof d === "string") return d;
+      if (d && typeof d === "object") {
+        const loc = Array.isArray(d.loc) ? d.loc.join(".") : "";
+        const msg = d.msg || d.message || JSON.stringify(d);
+        return loc ? `${loc}: ${msg}` : msg;
+      }
+      return String(d);
+    });
+    return parts.join("; ");
+  }
+  if (detail && typeof detail === "object") {
+    return detail.message || detail.detail || JSON.stringify(detail);
+  }
+  return "HTTP " + statusCode;
+}
+
+async function api(path, init) {
+  const r = await fetch(path, Object.assign({ credentials: "include" }, init));
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(detailToString(body.detail, r.status));
+  return body;
+}
+
+async function loadMe() {
+  try {
+    state.user = await api("/api/auth/me");
+  } catch (_e) {
+    state.user = null;
+  }
+}
+
+async function loadRequests() {
+  state.loading = true;
+  render();
+  try {
+    const q = state.statusFilter === "all" ? "" : "?status_filter=" + encodeURIComponent(state.statusFilter);
+    state.requests = await api("/api/admin/customer-link-requests" + q);
+  } catch (e) {
+    toast(e.message, true);
+    state.requests = [];
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
+async function decideRequest(id, mode, review_notes) {
+  try {
+    await api("/api/admin/customer-link-requests/" + id + "/" + mode, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ review_notes: review_notes || null }),
+    });
+    toast(mode === "approve" ? "Approved" : "Rejected");
+    await loadRequests();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function login(email, password) {
+  state.user = await api("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  await loadRequests();
+}
+
+async function logout() {
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+  state.user = null;
+  state.requests = [];
+  render();
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
+
+function renderLogin() {
+  $app.innerHTML = `
+    <div class="topbar"><span class="brand">TITAN</span><span>Customer Link Requests</span></div>
+    <div class="login-card">
+      <h1>Sign in</h1>
+      <p>Admin role required to review customer-link requests.</p>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autofocus required />
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit" class="submit">Sign in</button>
+        <div class="err" id="login-err"></div>
+      </form>
+    </div>
+  `;
+  const form = document.getElementById("login-form");
+  const err = document.getElementById("login-err");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    err.textContent = "";
+    try {
+      await login(form.email.value.trim(), form.password.value);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  });
+}
+
+function renderDenied() {
+  $app.innerHTML = `
+    <div class="topbar"><span class="brand">TITAN</span><span>Customer Link Requests</span></div>
+    <div class="denied">
+      Admin role required. You are signed in as
+      <strong>${escapeHtml(state.user.email)}</strong> (${escapeHtml(state.user.role)}).
+    </div>
+  `;
+}
+
+function renderRequest(r) {
+  const zipOk = r.billing_zip && r.matched_customer_billing_zip
+    && r.billing_zip.trim().slice(0, 5).toUpperCase()
+       === String(r.matched_customer_billing_zip).trim().slice(0, 5).toUpperCase();
+  const noMatch = !r.matched_customer_id;
+
+  return `
+    <div class="req" data-id="${r.id}">
+      <div class="meta">
+        <div class="row">
+          <span class="id">#${r.id}</span>
+          <span class="pill ${r.status}">${escapeHtml(r.status)}</span>
+          <span style="color: #6b7280; font-size: 12px;">${fmtDate(r.requested_at)}</span>
+        </div>
+        <div class="row">
+          <span class="label">Requested by:</span>
+          <span class="email">${escapeHtml(r.user_display_name || r.user_email)} &lt;${escapeHtml(r.user_email)}&gt;</span>
+        </div>
+        <div class="row">
+          <span class="label">Customer #:</span>
+          <span class="cust">${escapeHtml(r.requested_customer_number)}</span>
+          ${noMatch
+            ? `<span class="nomatch">⚠ no Customer row in our DB — sync tte_cus190 first</span>`
+            : `<span class="matched">→ ${escapeHtml(r.matched_customer_name || "(unnamed)")}</span>`}
+        </div>
+        ${(r.billing_zip || r.matched_customer_billing_zip) ? `
+        <div class="row">
+          <span class="label">Billing ZIP claim:</span>
+          <span>${escapeHtml(r.billing_zip || "(not provided)")} </span>
+          ${r.matched_customer_billing_zip
+            ? `<span style="color: #6b7280;">/ on-file: ${escapeHtml(r.matched_customer_billing_zip)}</span>
+               ${r.billing_zip ? `<span class="${zipOk ? 'zip-ok' : 'zip-mismatch'}">${zipOk ? "✓ match" : "✗ mismatch"}</span>` : ""}`
+            : `<span style="color: #6b7280;">(no billing addr on file)</span>`}
+        </div>` : ""}
+        ${r.additional_info ? `<div class="note">${escapeHtml(r.additional_info)}</div>` : ""}
+        ${r.email_sent_at ? `<div style="color: #6b7280; font-size: 12px;">Email to sales sent ${fmtDate(r.email_sent_at)}</div>` : ""}
+        ${r.email_error ? `<div style="color: #b91c1c; font-size: 12px;">Email send failed: ${escapeHtml(r.email_error)}</div>` : ""}
+        ${(r.reviewed_at && r.status !== "pending") ? `
+          <div class="review">
+            Reviewed ${fmtDate(r.reviewed_at)} by user_id=${r.reviewed_by_user_id || "?"}
+            ${r.review_notes ? `<br/><em>${escapeHtml(r.review_notes)}</em>` : ""}
+          </div>` : ""}
+      </div>
+      ${r.status === "pending" ? `
+        <div class="actions">
+          <button class="approve" data-action="approve" data-id="${r.id}" ${noMatch ? "disabled title='No matching Customer — sync first'" : ""}>
+            Approve
+          </button>
+          <button class="reject" data-action="reject" data-id="${r.id}">Reject</button>
+        </div>` : `<div></div>`}
+    </div>
+  `;
+}
+
+function renderMain() {
+  const counts = state.requests.length;
+
+  $app.innerHTML = `
+    <div class="topbar">
+      <span class="brand">TITAN</span>
+      <span>Customer Link Requests</span>
+      <span class="who">${escapeHtml(state.user.email)}</span>
+      <button class="logout" id="logout-btn">Sign out</button>
+    </div>
+
+    <div class="hdr">
+      <div>
+        <h1>Customer Link Requests</h1>
+        <p>Confirm a request matches a real Titan customer before approving — once approved, the user gains that customer's pricing tier.</p>
+      </div>
+    </div>
+
+    <div class="controls">
+      <label style="font-size: 13px; color: #6b7280;">Status:</label>
+      <select id="status-filter">
+        <option value="pending"  ${state.statusFilter === "pending" ? "selected" : ""}>Pending</option>
+        <option value="approved" ${state.statusFilter === "approved" ? "selected" : ""}>Approved</option>
+        <option value="rejected" ${state.statusFilter === "rejected" ? "selected" : ""}>Rejected</option>
+        <option value="all"      ${state.statusFilter === "all" ? "selected" : ""}>All</option>
+      </select>
+      <button id="refresh">Refresh</button>
+      <a href="/admin-impersonate.html" style="font-size: 13px;">→ Shop as Customer</a>
+      <span class="counter">${counts} request${counts === 1 ? "" : "s"}</span>
+    </div>
+
+    <div class="list" id="list">
+      ${state.loading ? `<div class="empty">Loading…</div>` : ""}
+      ${(!state.loading && counts === 0) ? `<div class="empty">No ${state.statusFilter === "all" ? "" : state.statusFilter} requests.</div>` : ""}
+      ${state.requests.map(renderRequest).join("")}
+    </div>
+    ${renderReviewDialog()}
+  `;
+
+  document.getElementById("logout-btn").addEventListener("click", logout);
+  document.getElementById("status-filter").addEventListener("change", (e) => {
+    state.statusFilter = e.target.value;
+    loadRequests();
+  });
+  document.getElementById("refresh").addEventListener("click", loadRequests);
+
+  document.querySelectorAll(".req .actions button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = parseInt(btn.getAttribute("data-id"), 10);
+      const mode = btn.getAttribute("data-action");
+      state.pendingDecision = { id, mode };
+      render();
+    });
+  });
+
+  if (state.pendingDecision) {
+    document.getElementById("decision-cancel").addEventListener("click", () => {
+      state.pendingDecision = null;
+      render();
+    });
+    document.getElementById("decision-confirm").addEventListener("click", async () => {
+      const notes = document.getElementById("decision-notes").value.trim();
+      const { id, mode } = state.pendingDecision;
+      state.pendingDecision = null;
+      await decideRequest(id, mode, notes);
+    });
+  }
+}
+
+function renderReviewDialog() {
+  if (!state.pendingDecision) return "";
+  const { mode } = state.pendingDecision;
+  const isApprove = mode === "approve";
+  return `
+    <div class="review-dialog">
+      <div class="card">
+        <h3>${isApprove ? "Approve link request" : "Reject link request"}</h3>
+        <p>${isApprove
+            ? "User will be linked to the matched Customer and gain their pricing tier. They'll get a confirmation email."
+            : "User will be notified that their request was rejected. They can resubmit if it was a mistake."}</p>
+        <label style="font-size: 13px; color: #374151;">Notes (optional, included in the email)</label>
+        <textarea id="decision-notes" placeholder="Verified by phone with Bill at Smith Truck Repair…"></textarea>
+        <div class="btnrow">
+          <button class="cancel" id="decision-cancel">Cancel</button>
+          <button class="confirm ${isApprove ? "approve" : "reject"}" id="decision-confirm">
+            Confirm ${isApprove ? "approval" : "rejection"}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function render() {
+  if (!state.user) return renderLogin();
+  if (state.user.role !== "admin") return renderDenied();
+  return renderMain();
+}
+
+// Boot
+(async () => {
+  await loadMe();
+  if (state.user && state.user.role === "admin") {
+    await loadRequests();
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>

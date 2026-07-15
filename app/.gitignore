@@ -1,0 +1,66 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+.eggs/
+
+# --- Node / Vite ---
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# --- Env & secrets ---
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# --- Editor / IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Logs & runtime ---
+*.log
+logs/
+pids/
+*.pid
+
+# --- Test coverage ---
+.coverage
+htmlcov/
+.pytest_cache/
+
+# --- Database backups (local only) ---
+*.sql.gz
+*.dump
+local_backups/
+
+# --- Typesense data dir (local only) ---
+typesense_data/
+
+# --- Postgres data dir (local only, if mounted as volume) ---
+postgres_data/
+
+# --- Migration artifacts ---
+backend/migrations/versions/__pycache__/
+
+# --- Misc ---
+.cache/
+tmp/
+*.bak
+nul

@@ -1,0 +1,22 @@
+[Unit]
+Description=Titan Truck website prerenderer (headless Chrome for crawlers)
+After=network-online.target nginx.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=titan
+Group=titan
+WorkingDirectory=/home/titan/titan-truck-website/app/prerender
+# Render the locally nginx-served SPA (avoids DNS/TLS; canonicals are hardcoded
+# to titantruck.com in the app, so the render host is irrelevant to output).
+Environment=PRERENDER_ORIGIN=http://localhost:8080
+Environment=PRERENDER_PORT=3001
+ExecStart=/usr/bin/node server.mjs
+Restart=on-failure
+RestartSec=5s
+StandardOutput=append:/var/log/titan-prerender.log
+StandardError=append:/var/log/titan-prerender.log
+
+[Install]
+WantedBy=multi-user.target

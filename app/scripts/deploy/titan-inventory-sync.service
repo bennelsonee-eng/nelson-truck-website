@@ -1,0 +1,11 @@
+[Unit]
+Description=Titan inventory sync — pull tte/nte_inv_days from the MySQL bridge into Postgres, recompute kit stock + reindex changed products
+After=network.target
+
+[Service]
+Type=oneshot
+User=titan
+WorkingDirectory=/home/titan/titan-truck-website/app/backend
+ExecStart=/home/titan/titan-truck-website/app/backend/.venv/bin/python /home/titan/titan-truck-website/app/scripts/sync_inventory.py
+StandardOutput=append:/home/titan/inventory-sync.log
+StandardError=append:/home/titan/inventory-sync.log

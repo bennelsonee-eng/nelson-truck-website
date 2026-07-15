@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+# titan-truck-website server-side git hook: post-merge
+# -----------------------------------------------------
+# Fires automatically after `git pull` / `git merge` (incl. fast-forward) on the
+# titan-prod box. Keeps the RUNNING services in sync with freshly-pulled code.
+#
+# WHY THIS EXISTS (2026-05-30 outage):
+#   titan-backend runs `uvicorn app.main:app` WITHOUT --reload, so a git pull
+#   updates files on disk but the process keeps serving OLD code until restarted.
+#   An Apr-29 attempt to auto-restart was wired to post-checkout, which does NOT
+#   fire on `git pull` fast-forward — so it never ran on a normal deploy. The
+#   May-13 post-merge hook only echoed. Net result: the May-21 PDP commit changed
+#   the frontend (vite HMR took it instantly) AND the product endpoint (stale
+#   uvicorn never reloaded); the halves went live days apart, the frontend asked
+#   for fields the running backend didn't emit, and every product page crashed
+#   to a blank screen. post-merge is the correct hook for `git pull`, so the
+#   restart lives here now.
+#
+#   As of the Sprint-2 SEO cutover (2026-07-13) the PUBLIC site is served by
+#   nginx from the Vite production build at app/frontend/dist/ (Tailscale Serve
+#   :443 -> nginx :8080). nginx only reflects new frontend code after a rebuild,
+#   so this hook now runs `npm run build` whenever frontend files change. The
+#   titan-frontend vite DEV server (:5174) is kept running only as an instant
+#   rollback target (flip Serve :443 back to :5174); it no longer serves traffic.
+#
+# Canonical copy lives in the repo at app/scripts/deploy/post-merge and is
+# installed to .git/hooks/post-merge by app/scripts/deploy/install-hooks.sh.
+
+set -uo pipefail
+
+REPO="/home/titan/titan-truck-website"
+LOG="/home/titan/deploy-post-merge.log"
+ts() { date '+%Y-%m-%d %H:%M:%S'; }
+
+# Files brought in by this merge (ORIG_HEAD..HEAD); fall back for the first pull.
+RANGE="ORIG_HEAD..HEAD"
+git -C "$REPO" rev-parse --verify -q ORIG_HEAD >/dev/null 2>&1 || RANGE="HEAD~1..HEAD"
+CHANGED="$(git -C "$REPO" diff --name-only $RANGE 2>/dev/null)"
+
+{
+  echo "[$(ts)] post-merge fired ($RANGE), changed files:"
+  echo "$CHANGED" | sed 's/^/    /'
+} >> "$LOG"
+
+# 1) Backend python deps changed -> reinstall into the venv before restart.
+if echo "$CHANGED" | grep -q '^app/backend/requirements.txt$'; then
+  echo "[$(ts)] requirements.txt changed -> pip install" >> "$LOG"
+  "$REPO/app/backend/.venv/bin/pip" install -q -r "$REPO/app/backend/requirements.txt" >> "$LOG" 2>&1
+fi
+
+# 2) Frontend changed -> rebuild the production bundle nginx serves from dist/.
+#    If node deps changed, npm install first (and bounce the dev-server fallback
+#    so it stays current). A failed build leaves the previous good dist/ in place
+#    (tsc -b fails before vite build wipes dist/), so the site degrades to stale,
+#    not broken — check $LOG when a deploy doesn't show up.
+if echo "$CHANGED" | grep -qE '^app/frontend/'; then
+  if echo "$CHANGED" | grep -qE '^app/frontend/(package\.json|package-lock\.json)$'; then
+    echo "[$(ts)] frontend deps changed -> npm install + restart titan-frontend fallback" >> "$LOG"
+    ( cd "$REPO/app/frontend" && npm install ) >> "$LOG" 2>&1
+    sudo systemctl restart titan-frontend.service >> "$LOG" 2>&1
+  fi
+  echo "[$(ts)] frontend changed -> npm run build" >> "$LOG"
+  if ( cd "$REPO/app/frontend" && npm run build ) >> "$LOG" 2>&1; then
+    echo "[$(ts)] frontend build OK" >> "$LOG"
+  else
+    echo "[$(ts)] !! frontend build FAILED — nginx still serving previous dist/" >> "$LOG"
+  fi
+fi
+
+# 2b) Prerender service deps changed -> reinstall.
+if echo "$CHANGED" | grep -qE '^app/prerender/(package\.json|package-lock\.json)$'; then
+  echo "[$(ts)] prerender deps changed -> npm install" >> "$LOG"
+  ( cd "$REPO/app/prerender" && npm install ) >> "$LOG" 2>&1
+fi
+
+# 2c) Frontend rebuilt OR prerender code changed -> restart the prerenderer so it
+#     serves fresh renders (clears its in-memory cache) using current code/output.
+if echo "$CHANGED" | grep -qE '^app/(frontend/|prerender/)'; then
+  echo "[$(ts)] restarting titan-prerender (fresh render cache)" >> "$LOG"
+  sudo systemctl restart titan-prerender.service >> "$LOG" 2>&1
+fi
+
+# 2d) nginx site config changed -> sync to /etc + reload (only if it validates).
+if echo "$CHANGED" | grep -q '^app/scripts/deploy/nginx-titan.conf$'; then
+  echo "[$(ts)] nginx-titan.conf changed -> sync + reload" >> "$LOG"
+  sudo cp "$REPO/app/scripts/deploy/nginx-titan.conf" /etc/nginx/sites-available/titan
+  if sudo nginx -t >> "$LOG" 2>&1; then
+    sudo systemctl reload nginx >> "$LOG" 2>&1
+  else
+    echo "[$(ts)] !! nginx config invalid — NOT reloaded" >> "$LOG"
+  fi
+fi
+
+# 2e) prerender systemd unit changed -> reinstall + restart.
+if echo "$CHANGED" | grep -q '^app/scripts/deploy/titan-prerender.service$'; then
+  echo "[$(ts)] titan-prerender.service changed -> reinstall unit" >> "$LOG"
+  sudo cp "$REPO/app/scripts/deploy/titan-prerender.service" /etc/systemd/system/
+  sudo systemctl daemon-reload >> "$LOG" 2>&1
+  sudo systemctl restart titan-prerender.service >> "$LOG" 2>&1
+fi
+
+# 3) Always restart the backend. uvicorn has no --reload, so this is the only
+#    thing that makes pulled backend code actually serve. ~3s, and it guarantees
+#    the running process matches the deployed commit.
+echo "[$(ts)] restarting titan-backend.service" >> "$LOG"
+sudo systemctl restart titan-backend.service >> "$LOG" 2>&1
+sleep 2
+echo "[$(ts)] titan-backend is now: $(systemctl is-active titan-backend.service)" >> "$LOG"
+echo "[$(ts)] deploy complete @ $(git -C "$REPO" log -1 --format='%h %s')" >> "$LOG"

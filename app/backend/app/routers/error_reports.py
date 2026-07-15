@@ -1,0 +1,408 @@
+"""
+Error Report API — in-app issue recorder for the Titan website.
+
+Admin-only. The frontend ErrorReporter panel records a screen video (webm +
+mic audio), a live voice transcript, click events, pages visited, DOM/route
+state, and microphone diagnostics. Reports are saved here and pulled in
+Claude Code for resolution.
+
+Ported/adapted from the Nelson ERP error reporter, using Titan's auth
+(`require_admin`) + cookie session. Table `error_reports` is created out of
+band (idempotent SQL); no ORM model needed — raw SQL keeps it self-contained.
+
+Endpoints:
+  POST   /api/error-reports              — create a report, returns {id}
+  POST   /api/error-reports/{id}/video   — upload the screen recording (.webm)
+  GET    /api/error-reports              — list (newest first; ?status= filter)
+  GET    /api/error-reports/{id}         — full detail
+  PATCH  /api/error-reports/{id}         — update status / resolution_notes
+  DELETE /api/error-reports/{id}         — delete (also removes the video file)
+"""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from pathlib import Path
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import async_session, get_db
+from app.dependencies import ReporterIdentity, require_admin, require_reporter
+from app.models import User
+from app.services import transcription
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/api/error-reports", tags=["Error Reports"])
+
+# Videos live OUTSIDE the public /static mount and are served only through the
+# admin-gated GET endpoint below — a report can record any page (incl. admin
+# views), so the recording must not be reachable by URL guess.
+VIDEO_DIR = Path(__file__).resolve().parent.parent.parent / "error_report_media"
+
+VALID_STATUSES = {"open", "in_progress", "resolved", "closed"}
+
+
+async def _store_transcript(report_id: int, result: dict) -> None:
+    """Persist a server-side transcript onto a report. Fills description/title
+    only when they're empty or auto-generated, so a human-typed title is never
+    clobbered. Always refreshes speech_segments (the browser's were empty) and
+    stamps provenance into mic_diagnostics."""
+    meta = {"transcription": {
+        "engine": "faster-whisper",
+        "model": result.get("model"),
+        "language": result.get("language"),
+        "duration_s": result.get("duration"),
+        "chars": len(result.get("text", "") or ""),
+        "segments": len(result.get("segments", []) or []),
+    }}
+    async with async_session() as db:
+        await db.execute(
+            text("""
+                UPDATE error_reports SET
+                    speech_segments = CAST(:segs AS JSONB),
+                    description = CASE
+                        WHEN COALESCE(NULLIF(TRIM(description), ''), '') = ''
+                        THEN :text ELSE description END,
+                    title = CASE
+                        WHEN title IS NULL OR title = '' OR title = 'Untitled report'
+                             OR title LIKE 'Issue on %'
+                        THEN LEFT(:text, 120) ELSE title END,
+                    mic_diagnostics = COALESCE(mic_diagnostics, '{}'::jsonb) || CAST(:meta AS JSONB),
+                    updated_at = now()
+                WHERE id = :id
+            """),
+            {
+                "segs": json.dumps(result.get("segments", [])),
+                "text": result.get("text", ""),
+                "meta": json.dumps(meta),
+                "id": report_id,
+            },
+        )
+        await db.commit()
+
+
+async def _transcribe_report(report_id: int, path: str) -> None:
+    """Background job: transcribe a report's recording and store the result.
+    Runs the CPU-bound model in a worker thread so the event loop stays free.
+    Swallows all failures — the report already exists with its video."""
+    try:
+        result = await asyncio.to_thread(transcription.transcribe, path)
+        if result and result.get("text"):
+            await _store_transcript(report_id, result)
+            logger.info("transcribed report %s (%d chars)", report_id, len(result["text"]))
+        else:
+            logger.info("report %s: no transcript (silent or disabled)", report_id)
+    except Exception:
+        logger.exception("background transcription failed for report %s", report_id)
+
+
+class ErrorReportCreate(BaseModel):
+    title: str = ""
+    description: str = ""           # spoken summary (joined transcript)
+    route: str = ""                 # page path where the issue was reported
+    severity: str = "normal"        # low | normal | high | critical
+    speech_segments: list = []      # [{text, timestamp_ms, confidence}]
+    click_events: list = []         # [{tag, text, selector, url, timestamp_ms}]
+    pages_visited: list = []        # ["/", "/product/MYP-41660", ...]
+    dom_state: dict = {}            # optional DOM snapshot per route
+    mic_diagnostics: dict = {}      # {secure_context, speech_supported, errors:[...], ...}
+    browser_info: str = ""          # navigator.userAgent
+
+
+class ErrorReportPatch(BaseModel):
+    status: str | None = None
+    resolution_notes: str | None = None
+    severity: str | None = None
+    title: str | None = None
+
+
+@router.post("")
+async def create_error_report(
+    body: ErrorReportCreate,
+    db: AsyncSession = Depends(get_db),
+    reporter: ReporterIdentity = Depends(require_reporter),
+):
+    """Save a new error report from the in-app recorder.
+
+    Filed by an app admin/editor OR a Cloudflare-Access-verified preview tester
+    (the latter with reported_by_user_id=NULL, email in reported_by_username).
+    """
+    title = body.title
+    if not title and body.speech_segments:
+        title = (body.speech_segments[0].get("text", "") or "")[:120]
+    if not title:
+        title = f"Issue on {body.route}" if body.route else "Untitled report"
+
+    description = body.description
+    if not description and body.speech_segments:
+        description = " ".join(s.get("text", "") for s in body.speech_segments)[:4000]
+
+    result = await db.execute(
+        text("""
+            INSERT INTO error_reports (
+                title, description, route, severity, status,
+                reported_by_user_id, reported_by_username,
+                speech_segments, click_events, pages_visited,
+                dom_state, mic_diagnostics, browser_info
+            ) VALUES (
+                :title, :description, :route, :severity, 'open',
+                :user_id, :username,
+                CAST(:speech_segments AS JSONB), CAST(:click_events AS JSONB),
+                CAST(:pages_visited AS JSONB), CAST(:dom_state AS JSONB),
+                CAST(:mic_diagnostics AS JSONB), :browser_info
+            ) RETURNING id
+        """),
+        {
+            "title": title,
+            "description": description,
+            "route": body.route,
+            "severity": body.severity if body.severity in
+                        {"low", "normal", "high", "critical"} else "normal",
+            "user_id": reporter.user_id,
+            "username": reporter.username,
+            "speech_segments": json.dumps(body.speech_segments),
+            "click_events": json.dumps(body.click_events),
+            "pages_visited": json.dumps(body.pages_visited),
+            "dom_state": json.dumps(body.dom_state),
+            "mic_diagnostics": json.dumps(body.mic_diagnostics),
+            "browser_info": body.browser_info,
+        },
+    )
+    await db.commit()
+    new_id = result.fetchone()[0]
+    return {"id": new_id, "title": title, "status": "open"}
+
+
+@router.post("/{report_id}/video")
+async def upload_video(
+    report_id: int,
+    background: BackgroundTasks,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    reporter: ReporterIdentity = Depends(require_reporter),
+):
+    """Attach the screen recording (.webm) to an existing report.
+
+    Admins may attach to any report; a tester only to a report they filed.
+    """
+    row = (await db.execute(
+        text("SELECT reported_by_username FROM error_reports WHERE id = :id"),
+        {"id": report_id},
+    )).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if not reporter.is_admin and row[0] != reporter.username:
+        raise HTTPException(status_code=403, detail="Not your report")
+
+    VIDEO_DIR.mkdir(parents=True, exist_ok=True)
+    dest = VIDEO_DIR / f"{report_id}.webm"
+    size = 0
+    with dest.open("wb") as out:
+        while chunk := await file.read(1024 * 1024):
+            out.write(chunk)
+            size += len(chunk)
+
+    public_path = f"/api/error-reports/{report_id}/video"
+    await db.execute(
+        text("UPDATE error_reports SET video_path = :p, updated_at = now() WHERE id = :id"),
+        {"p": public_path, "id": report_id},
+    )
+    await db.commit()
+
+    # Transcribe the recording's audio in the background (the browser's live
+    # transcript is unreliable). The report is already saved; the transcript
+    # fills in shortly after and is visible on GET /{id}.
+    if transcription.is_enabled() and size > 0:
+        background.add_task(_transcribe_report, report_id, str(dest))
+
+    return {"id": report_id, "video_path": public_path, "bytes": size}
+
+
+@router.get("/{report_id}/video")
+async def get_video(
+    report_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Stream a report's screen recording. Admin-gated — recordings can show
+    admin/internal pages, so they are not exposed via a public static mount."""
+    path = VIDEO_DIR / f"{report_id}.webm"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="No video for this report")
+    return FileResponse(
+        str(path), media_type="video/webm", filename=f"error-report-{report_id}.webm"
+    )
+
+
+@router.post("/{report_id}/transcribe")
+async def transcribe_report(
+    report_id: int,
+    admin: User = Depends(require_admin),
+):
+    """(Re)transcribe a report's recording server-side and store the result.
+
+    Synchronous — returns the transcript text. Used to backfill reports whose
+    browser (Web Speech) transcript came back empty, or to re-run with a better
+    model. Runs the CPU-bound model off the event loop."""
+    if not transcription.is_enabled():
+        raise HTTPException(status_code=503, detail="Transcription is disabled")
+    path = VIDEO_DIR / f"{report_id}.webm"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="No video for this report")
+
+    result = await asyncio.to_thread(transcription.transcribe, str(path))
+    if result is None:
+        raise HTTPException(status_code=500, detail="Transcription failed")
+    if result.get("text"):
+        await _store_transcript(report_id, result)
+
+    return {
+        "id": report_id,
+        "text": result.get("text", ""),
+        "segments": len(result.get("segments", [])),
+        "language": result.get("language"),
+        "duration": result.get("duration"),
+        "model": result.get("model"),
+    }
+
+
+@router.get("")
+async def list_error_reports(
+    status: str | None = None,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """List reports, newest first. Optional ?status= filter."""
+    where, params = "WHERE 1=1", {}
+    if status:
+        where += " AND status = :status"
+        params["status"] = status
+    rows = (await db.execute(text(f"""
+        SELECT id, title, description, route, severity, status,
+               reported_by_username, video_path, created_at, resolved_at,
+               speech_segments, click_events, pages_visited
+        FROM error_reports {where}
+        ORDER BY created_at DESC LIMIT 100
+    """), params)).fetchall()
+
+    out = []
+    for r in rows:
+        speech = r[10] if isinstance(r[10], list) else []
+        clicks = r[11] if isinstance(r[11], list) else []
+        pages = r[12] if isinstance(r[12], list) else []
+        out.append({
+            "id": r[0], "title": r[1], "description": (r[2] or "")[:240],
+            "route": r[3], "severity": r[4], "status": r[5],
+            "reported_by": r[6], "video_path": r[7],
+            "reported_at": str(r[8]), "resolved_at": str(r[9]) if r[9] else None,
+            "speech_segment_count": len(speech),
+            "click_event_count": len(clicks),
+            "pages_visited": pages,
+        })
+    return out
+
+
+@router.get("/stats")
+async def error_report_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Counts by status + an `unresolved` total (open + in_progress) for the
+    admin header alert badge. Declared before /{report_id} so the literal path
+    wins the route match."""
+    rows = (await db.execute(text(
+        "SELECT status, COUNT(*) FROM error_reports GROUP BY status"
+    ))).fetchall()
+    by_status = {r[0]: r[1] for r in rows}
+    return {
+        "open": by_status.get("open", 0),
+        "in_progress": by_status.get("in_progress", 0),
+        "resolved": by_status.get("resolved", 0),
+        "closed": by_status.get("closed", 0),
+        "unresolved": by_status.get("open", 0) + by_status.get("in_progress", 0),
+    }
+
+
+@router.get("/{report_id}")
+async def get_error_report(
+    report_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Full report detail."""
+    result = await db.execute(
+        text("SELECT * FROM error_reports WHERE id = :id"), {"id": report_id}
+    )
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Report not found")
+    data = dict(zip(result.keys(), row))
+    for k in ("created_at", "updated_at", "resolved_at"):
+        if data.get(k) is not None:
+            data[k] = str(data[k])
+    return data
+
+
+@router.patch("/{report_id}")
+async def update_error_report(
+    report_id: int,
+    body: ErrorReportPatch,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Update status / resolution. Sets resolved_at when moving to resolved/closed."""
+    sets, params = [], {"id": report_id}
+    if body.status is not None:
+        if body.status not in VALID_STATUSES:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Use {VALID_STATUSES}")
+        sets.append("status = :status")
+        params["status"] = body.status
+        if body.status in ("resolved", "closed"):
+            sets.append("resolved_at = COALESCE(resolved_at, now())")
+        else:
+            sets.append("resolved_at = NULL")
+    if body.resolution_notes is not None:
+        sets.append("resolution_notes = :rn")
+        params["rn"] = body.resolution_notes
+    if body.severity is not None:
+        sets.append("severity = :sev")
+        params["sev"] = body.severity
+    if body.title is not None:
+        sets.append("title = :title")
+        params["title"] = body.title
+    if not sets:
+        raise HTTPException(status_code=400, detail="No fields to update")
+
+    sets.append("updated_at = now()")
+    result = await db.execute(
+        text(f"UPDATE error_reports SET {', '.join(sets)} WHERE id = :id RETURNING id, status"),
+        params,
+    )
+    await db.commit()
+    row = result.fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return {"id": row[0], "status": row[1]}
+
+
+@router.delete("/{report_id}")
+async def delete_error_report(
+    report_id: int,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Delete a report and its video file."""
+    await db.execute(text("DELETE FROM error_reports WHERE id = :id"), {"id": report_id})
+    await db.commit()
+    vid = VIDEO_DIR / f"{report_id}.webm"
+    try:
+        vid.unlink(missing_ok=True)
+    except OSError:
+        pass
+    return {"status": "deleted"}

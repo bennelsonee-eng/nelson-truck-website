@@ -1,0 +1,18 @@
+[Unit]
+# Rebuild the Typesense `products` collection from Postgres so site search
+# never drifts from the DB. Paired with titan-reindex.timer (nightly).
+# WHY: the Typesense index is NOT auto-maintained — after a bulk product/
+# inventory load, new rows are invisible to search until a reindex. On
+# 2026-05-31 the index had 299,267 docs vs 312,524 in the DB (~13k products
+# silently missing) until a manual reindex. This makes it automatic.
+# Install: copy to /etc/systemd/system/ (see install-reindex-timer.sh).
+Description=Reindex Titan Typesense product collection from Postgres
+After=network.target docker.service
+
+[Service]
+Type=oneshot
+User=titan
+WorkingDirectory=/home/titan/titan-truck-website/app/backend
+ExecStart=/home/titan/titan-truck-website/app/backend/.venv/bin/python /home/titan/titan-truck-website/app/scripts/reindex_typesense.py
+StandardOutput=append:/home/titan/reindex-typesense.log
+StandardError=append:/home/titan/reindex-typesense.log

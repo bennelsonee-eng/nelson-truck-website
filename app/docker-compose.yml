@@ -1,0 +1,55 @@
+# Local development stack: Postgres + Typesense + maildev
+# Run: docker compose up
+#
+# Postgres: localhost:5432 (postgres / titan2026)
+# Typesense: localhost:8108
+# maildev: localhost:1080 (web), localhost:1025 (SMTP)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: titan_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: titan2026
+      POSTGRES_DB: titan_web
+    ports:
+      # Host port 5433 to avoid collision with Nelson ERP's native Postgres on 5432
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  typesense:
+    image: typesense/typesense:0.25.2
+    container_name: titan_typesense
+    restart: unless-stopped
+    command: ["--data-dir", "/data", "--api-key", "titan_search_dev_key", "--enable-cors"]
+    ports:
+      - "8108:8108"
+    volumes:
+      - typesense_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8108/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  maildev:
+    # Catches all dev-emitted email so you can preview transactional emails
+    # without sending real ones. Web UI: http://localhost:1080
+    image: maildev/maildev:2.1.0
+    container_name: titan_maildev
+    restart: unless-stopped
+    ports:
+      - "1080:1080"
+      - "1025:1025"
+
+volumes:
+  postgres_data:
+  typesense_data:

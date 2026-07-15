@@ -1,0 +1,27 @@
+[Unit]
+Description=Titan Truck website backend (FastAPI / uvicorn)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=titan
+Group=titan
+WorkingDirectory=/home/titan/titan-truck-website/app/backend
+ExecStart=/home/titan/titan-truck-website/app/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8001 --env-file /home/titan/titan-truck-website/app/.env
+Restart=on-failure
+RestartSec=5s
+StandardOutput=append:/var/log/titan-backend.log
+StandardError=append:/var/log/titan-backend.log
+
+# Notes:
+# - We pass --env-file to uvicorn (not EnvironmentFile=) so python-dotenv
+#   does the parsing.  systemd's EnvironmentFile= directive doesn't strip
+#   inline `# comments` from values, which breaks our .env where some
+#   integer settings have inline annotations like:
+#       TITAN_PRICING_SYNC_HOUR=1            # 1am PST nightly bulk
+#   Pydantic then fails to parse "1            # 1am PST nightly bulk"
+#   as an int.  python-dotenv handles this correctly.
+
+[Install]
+WantedBy=multi-user.target

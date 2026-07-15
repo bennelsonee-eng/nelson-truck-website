@@ -1,0 +1,13 @@
+{
+  "name": "titan-prerender",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless-Chrome prerenderer — serves fully-rendered HTML to bots so the CSR SPA is crawlable (Sprint-2 SEO, Pillar 2).",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

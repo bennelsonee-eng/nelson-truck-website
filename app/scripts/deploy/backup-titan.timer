@@ -1,0 +1,13 @@
+[Unit]
+Description=Daily run of backup-titan.service at 03:30 UTC
+Requires=backup-titan.service
+
+[Timer]
+# Run nightly at 03:30 UTC (around 8:30-9:30 PM Pacific depending on DST).
+# Random delay smooths the start if the host wakes from sleep / boot.
+OnCalendar=*-*-* 03:30:00 UTC
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target

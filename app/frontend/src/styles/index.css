@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* Nelson brand theme: Barlow type + Nelson red (#B01F27) mapped onto Tailwind's
+   red-700/800 so existing red utilities render on-brand site-wide. */
+@theme {
+  --font-sans: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --color-red-700: #b01f27;
+  --color-red-800: #8e1820;
+  --color-red-600: #c8232d;
+}
+
+/* App-wide base styles. Component styles co-locate with components. */
+:root {
+  font-family: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Condensed display face for headings/hero (Bold Red Garage direction). */
+.font-cond {
+  font-family: "Barlow Condensed", "Barlow", system-ui, sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+}
+
+body {
+  margin: 0;
+  background-color: #ffffff;
+  color: #1f2937;
+}
+
+/* Indeterminate top progress bar — used while catalog browse / facets are
+   loading so a slow page reads as "working", not "stuck". A sliver slides
+   left→right on a faint track; pair with a skeleton grid below it. */
+@keyframes titan-indeterminate {
+  0%   { left: -40%; width: 40%; }
+  50%  { left: 25%;  width: 55%; }
+  100% { left: 100%; width: 40%; }
+}
+.titan-progress-track {
+  position: relative;
+  overflow: hidden;
+}
+.titan-progress-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: #b91c1c; /* red-700 */
+  animation: titan-indeterminate 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Respect reduced-motion: hold a static partial bar instead of sliding. */
+  .titan-progress-bar { animation: none; left: 0; width: 35%; }
+}

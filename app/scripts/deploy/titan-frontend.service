@@ -1,0 +1,28 @@
+[Unit]
+Description=Titan Truck website frontend (Vite dev server)
+After=network-online.target titan-backend.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=titan
+Group=titan
+WorkingDirectory=/home/titan/titan-truck-website/app/frontend
+ExecStart=/usr/bin/npm run dev
+Restart=on-failure
+RestartSec=5s
+StandardOutput=append:/var/log/titan-frontend.log
+StandardError=append:/var/log/titan-frontend.log
+
+# Phase 1.5 will replace this with `npm run build` + nginx static-serve.
+# Right now we run Vite's dev server directly (with --host=true configured
+# in vite.config.ts) because:
+#   - it gives us HMR for fast iteration during management review
+#   - it auto-proxies /api/* + /static/* to the backend on 8001 so a
+#     single Tailscale Serve URL covers the whole site
+#   - Tailscale's tailnet-only access makes the dev-server's lack of
+#     hardening (no minification, no service worker, no Brotli) a
+#     non-issue — it's not exposed to public traffic
+
+[Install]
+WantedBy=multi-user.target

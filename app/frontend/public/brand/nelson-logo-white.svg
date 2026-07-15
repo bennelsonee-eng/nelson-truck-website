@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 130" width="240" height="130">
+  <defs>
+    <clipPath id="hexClip">
+      <polygon points="120,6 160,24 160,66 120,84 80,66 80,24"/>
+    </clipPath>
+  </defs>
+
+  <!-- Hexagon - navy blue fill, white stroke -->
+  <polygon points="120,6 160,24 160,66 120,84 80,66 80,24"
+           fill="#16304d" stroke="white" stroke-width="2"/>
+
+  <!-- Inner hexagon border for depth -->
+  <polygon points="120,10 157,26 157,64 120,80 83,64 83,26"
+           fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+
+  <!-- Truck - white silhouette on blue hex -->
+  <!-- Truck bed -->
+  <rect x="92" y="38" width="30" height="3" rx="0.5" fill="white"/>
+  <rect x="92" y="41" width="30" height="14" rx="0.5" fill="white" opacity="0.9"/>
+  <!-- Bed stake lines -->
+  <line x1="100" y1="41" x2="100" y2="55" stroke="#16304d" stroke-width="0.8"/>
+  <line x1="108" y1="41" x2="108" y2="55" stroke="#16304d" stroke-width="0.8"/>
+  <line x1="116" y1="41" x2="116" y2="55" stroke="#16304d" stroke-width="0.8"/>
+  <!-- Cab -->
+  <path d="M122,41 L122,55 L142,55 L142,46 L134,38 L122,38 Z" fill="white" opacity="0.9"/>
+  <!-- Windshield -->
+  <path d="M124,39 L132,39 L138,46 L124,46 Z" fill="#16304d" opacity="0.5"/>
+  <!-- Hood -->
+  <rect x="142" y="46" width="6" height="9" rx="1" fill="white" opacity="0.9"/>
+  <!-- Bumper -->
+  <rect x="147" y="51" width="4" height="4" rx="0.5" fill="white" opacity="0.9"/>
+  <!-- Running board -->
+  <rect x="92" y="55" width="59" height="2" rx="0.5" fill="white" opacity="0.7"/>
+  <!-- Rear wheel -->
+  <circle cx="102" cy="59" r="6" fill="white"/>
+  <circle cx="102" cy="59" r="3" fill="#16304d"/>
+  <circle cx="102" cy="59" r="1.2" fill="white" opacity="0.6"/>
+  <!-- Front wheel -->
+  <circle cx="137" cy="59" r="6" fill="white"/>
+  <circle cx="137" cy="59" r="3" fill="#16304d"/>
+  <circle cx="137" cy="59" r="1.2" fill="white" opacity="0.6"/>
+  <!-- Wheel arches -->
+  <path d="M96,55 A6,6 0 0,1 108,55" fill="#16304d"/>
+  <path d="M131,55 A6,6 0 0,1 143,55" fill="#16304d"/>
+
+  <!-- Company name - white, serif font -->
+  <text x="120" y="101" text-anchor="middle" fill="white" font-family="'Times New Roman', Georgia, serif" font-size="18" font-weight="bold" letter-spacing="4">NELSON TRUCK</text>
+  <text x="120" y="115" text-anchor="middle" fill="rgba(255,255,255,0.85)" font-family="'Times New Roman', Georgia, serif" font-size="9.5" letter-spacing="2.5">EQUIPMENT CO., INC.</text>
+  <text x="120" y="126" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="'Times New Roman', Georgia, serif" font-size="7.5" letter-spacing="1.5">EST. 1937</text>
+</svg>

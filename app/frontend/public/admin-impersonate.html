@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Titan · Shop as Customer</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f9fafb; }
+    h1, h2, h3 { margin: 0; }
+    a { color: #b91c1c; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input { font: inherit; padding: 10px 14px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%; }
+    input:focus, button:focus { outline: 2px solid #b91c1c; outline-offset: 1px; }
+
+    .topbar { background: #111827; color: white; padding: 8px 24px; display: flex; align-items: center; gap: 16px; }
+    .topbar .brand { font-weight: 700; letter-spacing: 1px; color: #fbbf24; }
+    .topbar .who { margin-left: auto; font-size: 13px; opacity: 0.85; }
+    .topbar button.logout { background: transparent; color: white; border: 1px solid #4b5563; padding: 4px 10px; border-radius: 4px; font-size: 12px; }
+
+    .impersonation-banner {
+      background: #fef3c7; border-bottom: 2px solid #f59e0b; color: #78350f;
+      padding: 14px 24px; display: flex; align-items: center; gap: 16px; font-weight: 600;
+    }
+    .impersonation-banner .pill { background: #f59e0b; color: white; padding: 4px 10px; border-radius: 999px; font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; }
+    .impersonation-banner .info { flex: 1; }
+    .impersonation-banner .info .small { font-weight: 400; font-size: 13px; color: #92400e; }
+    .impersonation-banner button.exit { background: white; border: 1px solid #f59e0b; color: #92400e; padding: 8px 16px; border-radius: 6px; font-weight: 600; }
+    .impersonation-banner button.exit:hover { background: #fef3c7; }
+
+    .hdr { display: flex; align-items: baseline; justify-content: space-between; padding: 20px 24px 0; max-width: 1200px; margin: 0 auto; }
+    .hdr h1 { font-size: 22px; font-weight: 700; }
+    .hdr p { color: #6b7280; font-size: 14px; margin: 4px 0 0; max-width: 700px; }
+
+    .search-row { padding: 16px 24px; max-width: 1200px; margin: 0 auto; }
+    .search-row .row { display: flex; gap: 12px; align-items: center; }
+    .search-row .counter { color: #6b7280; font-size: 13px; white-space: nowrap; }
+
+    .results { padding: 0 24px 40px; max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
+
+    .hit {
+      background: white; border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px 16px;
+      display: grid; grid-template-columns: 130px 1fr auto; gap: 12px; align-items: center;
+    }
+    .hit:hover { border-color: #9ca3af; }
+    .hit .cust-num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; color: #111827; font-size: 14px; }
+    .hit .name { font-weight: 600; color: #111827; font-size: 14px; }
+    .hit .ship { color: #6b7280; font-size: 13px; margin-top: 2px; }
+    .hit .tier { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 600; text-transform: uppercase; background: #e5e7eb; color: #374151; margin-left: 8px; }
+    .hit .tier.jobber { background: #dbeafe; color: #1e40af; }
+    .hit .tier.dealer { background: #ede9fe; color: #5b21b6; }
+    .hit .tier.municipality { background: #d1fae5; color: #065f46; }
+    .hit .tier.retail { background: #fee2e2; color: #991b1b; }
+    .hit button.shop { background: #b91c1c; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 13px; }
+    .hit button.shop:hover { background: #991b1b; }
+
+    .login-card { background: white; padding: 32px; border-radius: 8px; max-width: 380px; margin: 80px auto; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .login-card h1 { font-size: 22px; margin-bottom: 4px; }
+    .login-card p { color: #6b7280; margin: 0 0 16px; font-size: 13px; }
+    .login-card label { display: block; font-size: 13px; color: #374151; margin-top: 12px; margin-bottom: 4px; }
+    .login-card button.submit { margin-top: 16px; width: 100%; background: #b91c1c; color: white; border: none; padding: 10px; border-radius: 6px; font-weight: 600; }
+    .login-card .err { color: #b91c1c; font-size: 13px; margin-top: 12px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 12px 20px; border-radius: 8px;
+      background: #111827; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0; transition: opacity 200ms; pointer-events: none; z-index: 100;
+    }
+    .toast.show { opacity: 1; }
+    .toast.err { background: #b91c1c; }
+
+    .empty { padding: 60px 24px; text-align: center; color: #6b7280; font-size: 14px; }
+    .denied { padding: 80px; text-align: center; color: #6b7280; max-width: 1200px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+const state = {
+  user: null,
+  current: null,        // { impersonating, customer_id, customer_number, customer_name, tier }
+  query: "",
+  results: [],
+  searching: false,
+  searchTimer: null,
+};
+
+const $app = document.getElementById("app");
+const $toast = document.getElementById("toast");
+
+function toast(msg, err) {
+  $toast.textContent = msg;
+  $toast.classList.toggle("err", !!err);
+  $toast.classList.add("show");
+  setTimeout(() => $toast.classList.remove("show"), 2400);
+}
+
+function detailToString(detail, statusCode) {
+  // FastAPI can return detail as a string OR an array of validation-error
+  // dicts. Stringify safely so the toast never reads "[object Object]".
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail.map((d) => {
+      if (typeof d === "string") return d;
+      if (d && typeof d === "object") {
+        const loc = Array.isArray(d.loc) ? d.loc.join(".") : "";
+        const msg = d.msg || d.message || JSON.stringify(d);
+        return loc ? `${loc}: ${msg}` : msg;
+      }
+      return String(d);
+    });
+    return parts.join("; ");
+  }
+  if (detail && typeof detail === "object") {
+    return detail.message || detail.detail || JSON.stringify(detail);
+  }
+  return "HTTP " + statusCode;
+}
+
+async function api(path, init) {
+  const r = await fetch(path, Object.assign({ credentials: "include" }, init));
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(detailToString(body.detail, r.status));
+  return body;
+}
+
+async function loadMe() {
+  try {
+    state.user = await api("/api/auth/me");
+  } catch (_e) {
+    state.user = null;
+  }
+}
+
+async function loadCurrent() {
+  try {
+    state.current = await api("/api/admin/impersonate/current");
+  } catch (e) {
+    state.current = null;
+  }
+}
+
+async function searchCustomers(q) {
+  state.searching = true;
+  render();
+  try {
+    state.results = await api(
+      "/api/admin/customers/search?q=" + encodeURIComponent(q) + "&limit=50"
+    );
+  } catch (e) {
+    toast(e.message, true);
+    state.results = [];
+  } finally {
+    state.searching = false;
+    render();
+  }
+}
+
+async function startImpersonation(customer_id) {
+  try {
+    state.current = await api("/api/admin/impersonate/" + customer_id, { method: "POST" });
+    toast("Shopping as " + (state.current.customer_name || ("#" + state.current.customer_number)));
+    render();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function exitImpersonation() {
+  try {
+    state.current = await api("/api/admin/impersonate/exit", { method: "POST" });
+    toast("Back to your own session");
+    render();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function login(email, password) {
+  state.user = await api("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  await loadCurrent();
+}
+
+async function logout() {
+  await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+  state.user = null;
+  state.current = null;
+  state.results = [];
+  render();
+}
+
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function renderLogin() {
+  $app.innerHTML = `
+    <div class="topbar"><span class="brand">TITAN</span><span>Shop as Customer</span></div>
+    <div class="login-card">
+      <h1>Sign in</h1>
+      <p>Admin role required to impersonate a customer.</p>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autofocus required />
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit" class="submit">Sign in</button>
+        <div class="err" id="login-err"></div>
+      </form>
+    </div>
+  `;
+  const form = document.getElementById("login-form");
+  const err = document.getElementById("login-err");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    err.textContent = "";
+    try {
+      await login(form.email.value.trim(), form.password.value);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  });
+}
+
+function renderDenied() {
+  $app.innerHTML = `
+    <div class="topbar"><span class="brand">TITAN</span><span>Shop as Customer</span></div>
+    <div class="denied">
+      Admin role required. You are signed in as
+      <strong>${escapeHtml(state.user.email)}</strong> (${escapeHtml(state.user.role)}).
+    </div>
+  `;
+}
+
+function renderImpersonationBanner() {
+  if (!state.current || !state.current.impersonating) return "";
+  return `
+    <div class="impersonation-banner">
+      <span class="pill">Shopping As</span>
+      <div class="info">
+        <div>${escapeHtml(state.current.customer_name)} <span style="font-family: ui-monospace, monospace; opacity: 0.7;">(#${escapeHtml(state.current.customer_number)})</span></div>
+        <div class="small">Cart, checkout, and RMA actions on this admin session route to this customer. Order audit records you as the staff actor.</div>
+      </div>
+      <button class="exit" id="exit-impersonation">Exit impersonation</button>
+    </div>
+  `;
+}
+
+function renderResult(hit) {
+  return `
+    <div class="hit">
+      <div class="cust-num">${escapeHtml(hit.customer_number)}</div>
+      <div>
+        <div>
+          <span class="name">${escapeHtml(hit.name)}</span>
+          <span class="tier ${escapeHtml(hit.tier)}">${escapeHtml(hit.tier)}</span>
+        </div>
+        ${hit.default_ship_to ? `<div class="ship">→ ${escapeHtml(hit.default_ship_to)}</div>` : `<div class="ship">(no default ship-to on file)</div>`}
+      </div>
+      <button class="shop" data-id="${hit.id}">Shop as →</button>
+    </div>
+  `;
+}
+
+function renderMain() {
+  const showEmpty = !state.searching && state.results.length === 0 && state.query.trim().length > 0;
+  const showInitial = !state.searching && state.results.length === 0 && state.query.trim().length === 0;
+
+  $app.innerHTML = `
+    <div class="topbar">
+      <span class="brand">TITAN</span>
+      <span>Shop as Customer</span>
+      <span class="who">${escapeHtml(state.user.email)}</span>
+      <button class="logout" id="logout-btn">Sign out</button>
+    </div>
+
+    ${renderImpersonationBanner()}
+
+    <div class="hdr">
+      <div>
+        <h1>Shop as Customer</h1>
+        <p>Search a Titan customer to act on their behalf — useful for placing an order or filing an RMA over the phone. Carts and orders created in this mode are tagged with your user id for audit.</p>
+      </div>
+      <a href="/admin-customer-link-requests.html" style="font-size: 13px;">→ Link Requests</a>
+    </div>
+
+    <div class="search-row">
+      <div class="row">
+        <input id="q" type="search" autofocus placeholder="Search by customer #, name, or city…" value="${escapeHtml(state.query)}" />
+        <span class="counter">${state.results.length || 0} result${state.results.length === 1 ? "" : "s"}</span>
+      </div>
+    </div>
+
+    <div class="results">
+      ${state.searching ? `<div class="empty">Searching…</div>` : ""}
+      ${showInitial ? `<div class="empty">Start typing to find a customer.</div>` : ""}
+      ${showEmpty ? `<div class="empty">No matches for &ldquo;${escapeHtml(state.query)}&rdquo;. If you expect this customer to exist, populate the local table with <code>python -m scripts.sync_customers</code>.</div>` : ""}
+      ${state.results.map(renderResult).join("")}
+    </div>
+  `;
+
+  document.getElementById("logout-btn").addEventListener("click", logout);
+  const exitBtn = document.getElementById("exit-impersonation");
+  if (exitBtn) exitBtn.addEventListener("click", exitImpersonation);
+
+  const q = document.getElementById("q");
+  q.addEventListener("input", (e) => {
+    state.query = e.target.value;
+    if (state.searchTimer) clearTimeout(state.searchTimer);
+    state.searchTimer = setTimeout(() => {
+      searchCustomers(state.query);
+    }, 250);
+  });
+
+  document.querySelectorAll(".hit button.shop").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = parseInt(btn.getAttribute("data-id"), 10);
+      startImpersonation(id);
+    });
+  });
+}
+
+function render() {
+  if (!state.user) return renderLogin();
+  if (state.user.role !== "admin") return renderDenied();
+  return renderMain();
+}
+
+// Boot
+(async () => {
+  await loadMe();
+  if (state.user && state.user.role === "admin") {
+    await loadCurrent();
+    await searchCustomers("");
+  } else {
+    render();
+  }
+})();
+</script>
+</body>
+</html>

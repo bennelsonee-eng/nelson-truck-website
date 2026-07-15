@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Titan · Category Image Curation</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1f2937; background: #f9fafb; }
+    h1, h2, h3 { margin: 0; }
+    a { color: #b91c1c; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    button { font: inherit; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    input[type="text"], input[type="email"], input[type="password"] {
+      font: inherit; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; width: 100%;
+    }
+    input:focus, button:focus { outline: 2px solid #b91c1c; outline-offset: 1px; }
+
+    .topbar { background: #111827; color: white; padding: 8px 24px; display: flex; align-items: center; gap: 16px; }
+    .topbar .brand { font-weight: 700; letter-spacing: 1px; color: #fbbf24; }
+    .topbar .who { margin-left: auto; font-size: 13px; opacity: 0.85; }
+    .topbar button.logout {
+      background: transparent; color: white; border: 1px solid #4b5563; padding: 4px 10px; border-radius: 4px; font-size: 12px;
+    }
+    .topbar button.logout:hover { background: #1f2937; }
+
+    .layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; padding: 24px; max-width: 1600px; margin: 0 auto; }
+
+    .hdr { display: flex; align-items: baseline; justify-content: space-between; padding: 0 24px; max-width: 1600px; margin: 24px auto 0; }
+    .hdr p { margin: 4px 0 0; color: #6b7280; font-size: 14px; }
+    .hdr .counter { color: #6b7280; font-size: 12px; }
+
+    /* LEFT RAIL */
+    aside .filters { position: sticky; top: 0; background: #f9fafb; padding-bottom: 12px; z-index: 5; }
+    aside .filters label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; margin-top: 8px; cursor: pointer; }
+    aside .cat-list { display: flex; flex-direction: column; gap: 4px; max-height: 78vh; overflow: auto; padding-right: 4px; }
+    .cat-item {
+      display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid #e5e7eb;
+      background: white; border-radius: 6px; text-align: left; transition: all 120ms;
+    }
+    .cat-item:hover { border-color: #9ca3af; }
+    .cat-item.selected { border-color: #b91c1c; background: #fef2f2; }
+    .cat-item .thumb {
+      width: 44px; height: 44px; flex: 0 0 44px; background: #f3f4f6; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 9px; color: #9ca3af;
+    }
+    .cat-item .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+    .cat-item .meta { min-width: 0; flex: 1; }
+    .cat-item .meta .name { font-weight: 600; font-size: 13px; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-item .meta .path { font-size: 11px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cat-item .meta .stats { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+    .cat-item .stats .pinned { color: #15803d; font-weight: 700; }
+
+    /* RIGHT PANE */
+    section .curating { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+    section .curating .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
+    section .curating h2 { font-size: 22px; font-weight: 700; }
+    section .curating .path { font-size: 14px; color: #6b7280; }
+    section .curating button.clear {
+      background: white; border: 1px solid #d1d5db; border-radius: 4px;
+      padding: 6px 12px; font-size: 13px; color: #374151;
+    }
+    section .curating button.clear:hover { background: #f3f4f6; }
+
+    .empty {
+      border: 2px dashed #d1d5db; border-radius: 8px; padding: 60px; text-align: center; color: #6b7280;
+    }
+
+    .pinned-banner {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+      padding: 16px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 6px;
+    }
+    .pinned-banner .thumb {
+      width: 96px; height: 96px; flex: 0 0 96px; background: white; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .pinned-banner .thumb img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+    .pinned-banner .info .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #15803d; font-weight: 700; }
+    .pinned-banner .info .url { font-size: 12px; color: #4b5563; word-break: break-all; margin-top: 2px; }
+
+    .gallery {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;
+    }
+    .candidate {
+      display: flex; flex-direction: column; background: white; border-radius: 8px; overflow: hidden;
+      border: 2px solid transparent; box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: all 150ms;
+      padding: 0;
+    }
+    .candidate:hover { border-color: #b91c1c; box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+    .candidate.pinned { border-color: #16a34a; box-shadow: 0 4px 12px rgba(22,163,74,0.18); }
+    .candidate .img-wrap {
+      aspect-ratio: 1 / 1; background: white; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    }
+    .candidate .img-wrap img {
+      width: 82%; height: 82%; object-fit: contain;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.12));
+      transition: transform 150ms;
+    }
+    .candidate:hover .img-wrap img { transform: scale(1.05); }
+    .candidate .info { padding: 8px; border-top: 1px solid #f3f4f6; text-align: left; }
+    .candidate .info .brand { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .candidate .info .sku { font-family: ui-monospace, "SFMono-Regular", monospace; font-size: 10px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .candidate .info .name { font-size: 11px; color: #1f2937; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; margin-top: 2px; }
+    .candidate .info .badge { font-size: 10px; font-weight: 700; color: #15803d; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+    .candidate .info .metrics { display: flex; gap: 6px; align-items: center; margin-top: 4px; font-size: 10px; flex-wrap: wrap; }
+    .candidate .info .metrics .stocked { background: #dcfce7; color: #166534; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+    .candidate .info .metrics .sold { color: #6b7280; }
+
+    /* Login overlay */
+    .login-card { max-width: 380px; margin: 80px auto; background: white; border-radius: 8px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .login-card h1 { font-size: 24px; margin-bottom: 8px; }
+    .login-card p { color: #6b7280; font-size: 14px; margin: 0 0 24px; }
+    .login-card label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 4px; margin-top: 12px; }
+    .login-card button.submit {
+      width: 100%; margin-top: 20px; background: #b91c1c; color: white; border: none;
+      padding: 10px 16px; border-radius: 6px; font-weight: 600; font-size: 14px;
+    }
+    .login-card button.submit:hover { background: #991b1b; }
+    .login-card .err { color: #b91c1c; font-size: 13px; margin-top: 10px; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; background: #111827; color: white;
+      padding: 10px 16px; border-radius: 6px; font-size: 14px; box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+      transform: translateY(20px); opacity: 0; transition: all 200ms; pointer-events: none;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.err { background: #991b1b; }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+// =============================================================================
+// Self-contained admin tool for pinning a representative image to each category.
+// Calls the existing /api/catalog/admin/* endpoints. Auth via the same cookie
+// the React app uses — log in here OR via the SPA login page, either works.
+// =============================================================================
+
+const state = {
+  user: null,
+  cats: [],
+  filter: '',
+  onlyUnpinned: false,
+  selectedId: null,
+  cand: null,
+  loading: false,
+};
+
+const $app = document.getElementById('app');
+const $toast = document.getElementById('toast');
+
+function toast(msg, isErr) {
+  $toast.textContent = msg;
+  $toast.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(() => { $toast.className = 'toast'; }, 2200);
+}
+
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ credentials: 'include' }, opts || {}));
+  if (r.status === 401) {
+    state.user = null;
+    render();
+    throw new Error('Login required');
+  }
+  if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + (await r.text()).slice(0, 200));
+  return r.json();
+}
+
+async function loadMe() {
+  try {
+    const me = await api('/api/auth/me');
+    state.user = me;
+  } catch (e) {
+    state.user = null;
+  }
+}
+
+async function loadCategories() {
+  state.loading = true;
+  render();
+  try {
+    state.cats = await api('/api/catalog/admin/categories');
+  } catch (e) {
+    if (!/Login/.test(e.message)) toast(e.message, true);
+  }
+  state.loading = false;
+  render();
+}
+
+async function loadCandidates(catId) {
+  state.cand = null;
+  render();
+  try {
+    state.cand = await api('/api/catalog/admin/categories/' + catId + '/candidates?limit=200');
+  } catch (e) {
+    toast(e.message, true);
+  }
+  render();
+}
+
+async function pinImage(image_url) {
+  if (state.selectedId === null) return;
+  try {
+    const updated = await api('/api/catalog/admin/categories/' + state.selectedId + '/curated-image', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_url }),
+    });
+    // Patch local state
+    const i = state.cats.findIndex((c) => c.id === state.selectedId);
+    if (i >= 0) state.cats[i].curated_image_url = updated.curated_image_url;
+    if (state.cand) state.cand.curated_image_url = updated.curated_image_url;
+    toast(image_url ? 'Pinned ✓' : 'Cleared');
+    render();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
+async function login(email, password) {
+  const r = await fetch('/api/auth/login', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(body.detail || ('HTTP ' + r.status));
+  }
+  state.user = await r.json();
+  await loadCategories();
+}
+
+async function logout() {
+  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {});
+  state.user = null;
+  state.cats = [];
+  state.cand = null;
+  state.selectedId = null;
+  render();
+}
+
+// =============================================================================
+// RENDER
+// =============================================================================
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function renderLogin() {
+  $app.innerHTML = `
+    <div class="topbar">
+      <span class="brand">TITAN</span>
+      <span>Category Image Curation</span>
+    </div>
+    <div class="login-card">
+      <h1>Sign in</h1>
+      <p>Admin role required to curate category images.</p>
+      <form id="login-form">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autofocus required />
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" required />
+        <button type="submit" class="submit">Sign in</button>
+        <div class="err" id="login-err"></div>
+      </form>
+    </div>
+  `;
+  const form = document.getElementById('login-form');
+  const err = document.getElementById('login-err');
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    err.textContent = '';
+    const email = form.email.value.trim();
+    const password = form.password.value;
+    try {
+      await login(email, password);
+    } catch (ex) {
+      err.textContent = ex.message;
+    }
+  });
+}
+
+function renderMain() {
+  if (state.user && state.user.role !== 'admin') {
+    $app.innerHTML = `
+      <div class="topbar"><span class="brand">TITAN</span><span>Category Image Curation</span></div>
+      <div style="padding: 80px; text-align: center; color: #6b7280;">
+        Admin role required. You are signed in as <strong>${escapeHtml(state.user.email)}</strong> (${escapeHtml(state.user.role)}).
+      </div>
+    `;
+    return;
+  }
+
+  const filtered = state.cats.filter((c) => {
+    if (state.onlyUnpinned && c.curated_image_url) return false;
+    if (state.filter && !c.full_path.toLowerCase().includes(state.filter.toLowerCase())) return false;
+    return true;
+  });
+  const pinnedCount = state.cats.filter((c) => c.curated_image_url).length;
+
+  $app.innerHTML = `
+    <div class="topbar">
+      <span class="brand">TITAN</span>
+      <span>Category Image Curation</span>
+      <span class="who">${escapeHtml(state.user ? state.user.email : '')}</span>
+      <button class="logout" id="logout-btn">Sign out</button>
+    </div>
+
+    <div class="hdr">
+      <div>
+        <h1 style="font-size: 24px; font-weight: 700;">Category Image Curation</h1>
+        <p>Click a category, then click any candidate image to pin it as that category's representative.</p>
+      </div>
+      <div class="counter">${state.cats.length} total · ${pinnedCount} pinned</div>
+    </div>
+
+    <div class="layout">
+      <aside>
+        <div class="filters">
+          <input type="text" id="filter-input" placeholder="Filter categories…" value="${escapeHtml(state.filter)}" />
+          <label><input type="checkbox" id="unpinned-toggle" ${state.onlyUnpinned ? 'checked' : ''} /> Only show unpinned</label>
+        </div>
+        <div class="cat-list">
+          ${state.loading ? '<div style="padding: 20px; color: #6b7280; font-size: 13px;">Loading…</div>' : ''}
+          ${filtered.map((c) => `
+            <button class="cat-item ${state.selectedId === c.id ? 'selected' : ''}" data-id="${c.id}">
+              <div class="thumb">
+                ${c.curated_image_url ? `<img src="${escapeHtml(c.curated_image_url)}" loading="lazy" />` : 'no pick'}
+              </div>
+              <div class="meta">
+                <div class="name">${escapeHtml(c.name)}</div>
+                <div class="path">${escapeHtml(c.full_path)}</div>
+                <div class="stats">
+                  ${c.curated_image_url ? '<span class="pinned">PINNED · </span>' : ''}
+                  ${c.candidate_count.toLocaleString()} candidate${c.candidate_count === 1 ? '' : 's'}
+                </div>
+              </div>
+            </button>
+          `).join('')}
+        </div>
+      </aside>
+
+      <section>
+        ${renderRightPane()}
+      </section>
+    </div>
+  `;
+
+  // Wire events
+  document.getElementById('logout-btn').addEventListener('click', logout);
+  const fi = document.getElementById('filter-input');
+  fi.addEventListener('input', (e) => {
+    state.filter = e.target.value;
+    // Lightweight re-render without losing focus
+    renderLeftRailOnly();
+  });
+  document.getElementById('unpinned-toggle').addEventListener('change', (e) => {
+    state.onlyUnpinned = e.target.checked;
+    renderLeftRailOnly();
+  });
+  document.querySelectorAll('.cat-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      state.selectedId = id;
+      loadCandidates(id);
+    });
+  });
+  document.querySelectorAll('.candidate').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const url = btn.getAttribute('data-url');
+      pinImage(url);
+    });
+  });
+  const clearBtn = document.getElementById('clear-pin');
+  if (clearBtn) clearBtn.addEventListener('click', () => pinImage(null));
+}
+
+function renderLeftRailOnly() {
+  // To avoid losing focus on the filter input, only repaint the list area
+  const list = document.querySelector('.cat-list');
+  if (!list) return render();
+  const filtered = state.cats.filter((c) => {
+    if (state.onlyUnpinned && c.curated_image_url) return false;
+    if (state.filter && !c.full_path.toLowerCase().includes(state.filter.toLowerCase())) return false;
+    return true;
+  });
+  list.innerHTML = filtered.map((c) => `
+    <button class="cat-item ${state.selectedId === c.id ? 'selected' : ''}" data-id="${c.id}">
+      <div class="thumb">
+        ${c.curated_image_url ? `<img src="${escapeHtml(c.curated_image_url)}" loading="lazy" />` : 'no pick'}
+      </div>
+      <div class="meta">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="path">${escapeHtml(c.full_path)}</div>
+        <div class="stats">
+          ${c.curated_image_url ? '<span class="pinned">PINNED · </span>' : ''}
+          ${c.candidate_count.toLocaleString()} candidate${c.candidate_count === 1 ? '' : 's'}
+        </div>
+      </div>
+    </button>
+  `).join('');
+  list.querySelectorAll('.cat-item').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const id = parseInt(btn.getAttribute('data-id'), 10);
+      state.selectedId = id;
+      loadCandidates(id);
+    });
+  });
+}
+
+function renderRightPane() {
+  if (state.selectedId === null) {
+    return '<div class="empty">Pick a category from the left to see its candidate images.</div>';
+  }
+  if (state.cand === null) {
+    return '<div style="color: #6b7280;">Loading candidates…</div>';
+  }
+  const cand = state.cand;
+  const candidateHtml = cand.candidates.length === 0
+    ? '<div class="empty">No primary images on products in this category yet.</div>'
+    : `
+      <div class="gallery">
+        ${cand.candidates.map((p) => {
+          const isPinned = p.image_url === cand.curated_image_url;
+          return `
+            <button class="candidate ${isPinned ? 'pinned' : ''}" data-url="${escapeHtml(p.image_url)}">
+              <div class="img-wrap"><img src="${escapeHtml(p.image_url)}" loading="lazy" /></div>
+              <div class="info">
+                ${p.brand_name ? `<div class="brand">${escapeHtml(p.brand_name)}</div>` : ''}
+                <div class="sku">${escapeHtml(p.sku)}</div>
+                <div class="name">${escapeHtml(p.product_name)}</div>
+                <div class="metrics">
+                  ${(p.on_hand || 0) > 0 ? `<span class="stocked">${p.on_hand} in stock</span>` : ''}
+                  ${(p.sold_12mo || 0) > 0 ? `<span class="sold">${p.sold_12mo} sold 12mo</span>` : ''}
+                </div>
+                ${isPinned ? '<div class="badge">✓ Pinned</div>' : ''}
+              </div>
+            </button>
+          `;
+        }).join('')}
+      </div>
+    `;
+
+  return `
+    <div class="curating">
+      <div>
+        <div class="label">Curating</div>
+        <h2>${escapeHtml(cand.name)}</h2>
+        <div class="path">${escapeHtml(cand.full_path)}</div>
+      </div>
+      ${cand.curated_image_url ? '<button class="clear" id="clear-pin">Clear pinned image</button>' : ''}
+    </div>
+    ${cand.curated_image_url ? `
+      <div class="pinned-banner">
+        <div class="thumb"><img src="${escapeHtml(cand.curated_image_url)}" /></div>
+        <div class="info">
+          <div class="lbl">Currently pinned</div>
+          <div class="url">${escapeHtml(cand.curated_image_url)}</div>
+        </div>
+      </div>
+    ` : ''}
+    ${candidateHtml}
+  `;
+}
+
+function render() {
+  if (!state.user) return renderLogin();
+  renderMain();
+}
+
+// =============================================================================
+// Boot
+// =============================================================================
+(async () => {
+  await loadMe();
+  if (state.user) await loadCategories();
+  render();
+})();
+</script>
+
+</body>
+</html>

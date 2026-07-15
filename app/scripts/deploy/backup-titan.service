@@ -1,0 +1,16 @@
+[Unit]
+Description=Titan website daily backup (Postgres dump + static brand_images tar)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=titan
+Group=titan
+ExecStart=/usr/local/bin/backup-titan.sh
+StandardOutput=append:/var/log/backup-titan.log
+StandardError=append:/var/log/backup-titan.log
+
+# Tight resource limits — backup shouldn't compete with the live services.
+Nice=10
+IOSchedulingClass=idle

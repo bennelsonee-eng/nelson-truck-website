@@ -1,0 +1,11 @@
+[Unit]
+Description=Nightly Titan Typesense reindex (keeps search in sync with DB after bulk loads)
+
+[Timer]
+# 04:30 UTC — after backup-titan.timer (03:30). Persistent catches up if the
+# box was off at the scheduled time.
+OnCalendar=*-*-* 04:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
