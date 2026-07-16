@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,8 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.routers import account, admin, admin_kits, auth, banner, build_ideas, cart, catalog, configurator, content, deals, deweze, error_reports, fitment, health, insights, orders, pace_catalog, rebate, rma, seo, showroom, signals, weather_alerts, ymm
-from app.services import cf_access, content_store, tester_activity
+from app.routers import account, admin, admin_kits, auth, banner, build_ideas, cart, catalog, configurator, content, deals, deweze, error_reports, fitment, health, health_reports, insights, orders, pace_catalog, rebate, rma, seo, showroom, signals, telemetry, weather_alerts, ymm
+from app.services import cf_access, content_store, request_telemetry, tester_activity
 from app.services.admin_audit import audit_admin_request
 from app.services.banner_link_cron import run_daily_loop as run_banner_link_loop
 from app.services.facs_heartbeat import run_heartbeat_loop
@@ -33,6 +34,14 @@ async def lifespan(app: FastAPI):
         logger.info("content_page table ensured")
     except Exception:
         logger.exception("Failed to ensure content_page table")
+
+    # Request telemetry (Phase 2 site-health) — always-on error + bot + JS-error
+    # log for the nightly report. Self-applying DDL, no manual migration.
+    try:
+        await request_telemetry.ensure_table()
+        logger.info("request_log table ensured")
+    except Exception:
+        logger.exception("Failed to ensure request_log table")
 
     # Cloudflare-Access tester activity log — create its table when Access is
     # configured (no-op for local dev / Tailscale-only where cf_access_aud is unset).
@@ -127,6 +136,33 @@ app.add_middleware(
 )
 
 
+# Request telemetry middleware (Phase 2 site-health) — logs HTTP errors (4xx/5xx)
+# and bot crawls to request_log for the nightly report. Static assets are skipped;
+# the insert runs in a fire-and-forget task so it never adds latency. Best-effort.
+@app.middleware("http")
+async def request_telemetry_middleware(request: Request, call_next):
+    start = time.monotonic()
+    response = await call_next(request)
+    try:
+        path = request.url.path
+        if not (path.startswith("/static") or path.startswith("/assets")
+                or path == "/api/telemetry/js-error"):
+            ua = request.headers.get("user-agent", "")
+            bot = request_telemetry.classify_bot(ua)
+            status = response.status_code
+            if status >= 400 or bot is not None:
+                asyncio.create_task(request_telemetry.log(
+                    kind=("error" if status >= 400 else "bot"),
+                    method=request.method, path=path, status=status,
+                    duration_ms=int((time.monotonic() - start) * 1000), bot=bot,
+                    ip=request.headers.get("cf-connecting-ip", "")
+                    or (request.client.host if request.client else ""),
+                    user_agent=ua, referer=request.headers.get("referer", "")))
+    except Exception:
+        logger.exception("request telemetry middleware error")
+    return response
+
+
 # Cloudflare Access middleware — validates the per-request `Cf-Access-Jwt-Assertion`
 # header (no-op unless cf_access_aud is set), stashes the verified tester identity
 # on request.state for downstream dependencies, and logs API activity per identity.
@@ -188,6 +224,8 @@ app.include_router(orders.router)
 app.include_router(rma.router)
 app.include_router(admin.router)
 app.include_router(admin_kits.router)
+app.include_router(health_reports.router)
+app.include_router(telemetry.router)
 app.include_router(ymm.router)
 app.include_router(signals.router)
 app.include_router(insights.router)
@@ -218,7 +256,11 @@ class CachedStaticFiles(StaticFiles):
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 if STATIC_DIR.exists():
-    app.mount("/static", CachedStaticFiles(directory=str(STATIC_DIR)), name="static")
+    # follow_symlink=True: Nelson's static subdirs (product-images, brand_images,
+    # …) are symlinks into Titan's shared image library, which resolve OUTSIDE
+    # STATIC_DIR. Without this, StaticFiles' path-traversal guard 404s every
+    # image. (Titan has the real dirs in place, so it doesn't need this.)
+    app.mount("/static", CachedStaticFiles(directory=str(STATIC_DIR), follow_symlink=True), name="static")
 
 # As Phase 1 modules come online they register here:
 # app.include_router(account.router)

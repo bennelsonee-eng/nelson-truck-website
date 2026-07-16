@@ -12,6 +12,107 @@ Decisions locked: **co-host on titan-prod**, **restructured layout**, **scaffold
 
 ---
 
+## 🌙 OVERNIGHT BUILD (2026-07-15) — homepage + branding + SEO LIVE
+
+Built the v20 design into the live React app on the box (deployed + verified via headless-Chrome
+screenshots and curl). Screenshot loop: `titan-truck-website/app/prerender/shot.mjs <url> <out>`.
+
+**Done & verified:**
+- **Branding foundation:** Barlow + Barlow Condensed fonts (`index.html` gfonts, `.font-cond`
+  utility), Nelson red `#B01F27` mapped onto Tailwind `red-700/800` via `@theme` (index.css),
+  horizontal logo lockup (badge + wordmark) in the header, util bar = "✓ In stock now — pick it up
+  today · Portland 503.548.9300 · Kent 253.395.3825".
+- **Homepage = new `NelsonHome` component** (App.tsx; old `Home` kept as dead ref, route `/` → NelsonHome):
+  rotating red hero banner (5 division slides: snow/tow/aerial/trailers/tonneau, fade, dots),
+  3 value pillars (pickup / **we install everything we sell** / expert), custom-fab band, steel band
+  (advertise-only), "In stock & ready today" product grid wired to real `/api/catalog/browse`, stats,
+  brand marquee. Matches the mockup.
+- **Division mega-nav** (`MEGA_SECTIONS` rewritten): Snow & Ice · Truck Bodies · Tow Trucks ·
+  Aerial & Bucket · Trailers · Liftgates & Cranes · Accessories · Metal & Hardware. Real category
+  paths where data exists; `route:/catalog` placeholders for Tow Trucks/Trailers/Metal (no catalog
+  data yet).
+- **Footer** rebranded (Nelson badge + white wordmark, 1937, Portland/Kent phones, © Nelson).
+- **Sitewide text sweep:** ~99 Titan strings → Nelson (name, domain, 1971→1937, Spokane/Boise→
+  Portland/Kent, phones) across App.tsx, ContentPages.tsx, Seo.tsx.
+- **SEO/AEO (verified):** `nelson-prerender.service` (:3002, reuses Titan prerender code) + nginx
+  `$nelson_is_bot` map + `@handle` bot→prerender routing (Google/Bing/GPTBot/ClaudeBot/Perplexity get
+  rendered HTML). `robots.txt`/`sitemap.xml`/`llms.txt` emit nelsontruck.com; `llms.txt` rebranded with
+  divisions + differentiators. **LocalBusiness (AutoPartsStore) JSON-LD × 2 branches** (Portland
+  503-548-9300 / Kent 253-395-3825, est 1937) + Organization/WebSite schema on home.
+
+## ✅ CATALOG + IMAGES REBUILT (2026-07-15, Session ~330) — LIVE
+
+**DONE.** Nelson's catalog is now **identical to Titan's** (part numbers, images, admin) with Nelson's
+own pricing/customers layered on top — exactly per Ben's directive ("part numbers and images identical
+Titan→Nelson; admin the same; only Nelson's customers differ; we share `ourparts_num`; use AAIA codes
+from `dci_codes` like Titan").
+
+**Key finding that reframed the fix:** Titan's real catalog came from a **PACE/AAM ingest**
+(`pace_part`→`product`, AAIA SKUs via `dci_codes.aaia_code`, 200K images, fitment). Nelson only ever got
+the *pricing/inventory overlay* half (`import_initial_data.py`, 222K internal-SKU rows keyed by
+`ourparts_num`, **zero images**). Nelson was missing the entire PACE-built catalog. The Nelson ERP
+itself is **Kerridge**-sourced, not PACE — so there was no "Nelson PACE" to run; the source IS Titan's
+already-built PACE catalog.
+
+**Approach (chosen: stage-then-cutover; replicate, not re-ingest):**
+1. Cloned `nelson_web` → `nelson_web_staging` (preserves Nelson customers/contracts/branding/config).
+2. Swapped the **catalog cluster** (40 tables: `product`, `product_image`, `product_category`,
+   `category`, `product_attribute`, `product_description`, `pace_part`/`pace_fitment`, `vcdb_*`/`pcdb_*`,
+   `product_package`, `kit*`, `brand`, …) from `titan_web` via `pg_dump --data-only | pg_restore
+   --disable-triggers`. Patched 3 drifted tables (Titan-only cols: `product_image.source_url/thumb_url`,
+   `brand.prod_code`, `pcdb_part_type.category_locked/…`).
+3. Copied Titan's **base `product_price`** (PIES tiers, keyed to the shared product ids), then ran
+   `recompute_resolved_retail` against staging → **sentinel-9** Nelson retail (customer "9", 86 contracts).
+4. Reindexed a staging Typesense collection, exercised the real browse+PDP API, then **cut over**:
+   renamed `nelson_web`→`nelson_web_old_20260715` (rollback, retained), `nelson_web_staging`→`nelson_web`,
+   reindexed live `nelson_products` (326,243 docs), restarted `nelson-backend`.
+
+**Static-serving fix (was blocking all images):** Nelson's `static/product-images` etc. are **symlinks**
+into Titan's shared 8.9GB library (already staged during scaffold), which resolve OUTSIDE `STATIC_DIR`.
+Starlette `StaticFiles` 404s symlinks that escape the mount → added `follow_symlink=True` to the
+`CachedStaticFiles` mount in `app/backend/app/main.py` (Titan doesn't need it — real dirs). Synced to box.
+
+**Live numbers:** 326,243 products (identical AAIA SKUs: `WEST-78386`, `BUY-1704300`, `BCSQ-90840`) ·
+200,555 image rows (files serve HTTP 200 via nginx; ~13% "NO IMAGE" mirrors Titan's own gaps) ·
+185,839 priced via sentinel-9 (7,820 with Nelson-specific markups; PDP `BCSQ-90840` → **Retail $23.37**) ·
+156,799 sellable (img+price) · 460 categories · Nelson's 1,114 customers + 111,159 contracts preserved.
+Verified via headless screenshot of live `/catalog?q=plow` (real plow images render, Nelson branding).
+
+**✅ Inventory / pickup stock WIRED (2026-07-15, same session):** `product_inventory` now populated —
+**5,298 products in stock** (Spokane 14,493 units / 3,741 rows, Kent 6,537 / 1,861, Portland 1,866 / 563;
+22,896 units total, 6,165 rows). Catalog cards show green "N in stock" (5,280 in-stock docs; browse
+`in_stock=true`→5,280), PDP warehouse-stock returns per-branch pickup. **Inventory = identical to Titan**
+(both `tte_inv_days`+`nte_inv_days`, warehouses `{10,1,2}` = Spokane+Portland+Kent) — Ben: onhands are
+the same as Titan's site; only customers differ.
+  - **How:** created `scripts/link_nelson_inventory.py` (copy of Titan's `link_titan_inventory_v2.py`,
+    pointed at `nelson_web`; `TARGET_WAREHOUSES = {10, 1, 2}` same as Titan). It reconstructs each
+    product's AAIA SKU from `*_inv_days.ourparts_num`→`*_parts_master.parts_num` + `brand.aaia_code` and
+    matches `product.sku` — works without needing `tte_ourparts_num`. Run `--seed-warehouses --no-prices`
+    (seeded the missing Kent warehouse code 2; never touches pricing). Reindexes changed products +
+    recomputes kit stock (83 kits in stock).
+  - **Match rate:** TTE 9,336 rows→6,275 matched + NTE 8,450→3,703 matched = 5,868 product-warehouse
+    pairs / 5,198 products. Unmatched = stock items not in the PACE catalog / brand table — same
+    "in-stock-but-not-on-website" gap Titan has; report at
+    `app/data/reports/tte_inventory_missing_from_website.csv` (~3K rows).
+  - **Recurring:** `nelson-inventory-sync.service`+`.timer` on the box (15-min, `OnBootSec=6min`, ordered
+    `After=titan-inventory-sync.service`). Nelson has NO bridge creds — Titan's 15-min timer already keeps
+    the shared symlinked `nte_inv_days.csv` fresh; Nelson's timer just loads it. `EnvironmentFile=app/.env`.
+    Log: `/home/titan/nelson-inventory-sync.log`.
+- **Rollback DB `nelson_web_old_20260715`** (165 MB) retained — drop once satisfied (a few days).
+- **SEO anti-dup:** catalog is now byte-identical to Titan; relying on distinct domain + self-canonical +
+  distinct Organization/LocalBusiness JSON-LD (all done). Content differentiation (rewritten
+  descriptions via Ollama) is a later optional pass if search engines flag duplication.
+
+**⏳ Earlier known follow-ups (still open):**
+- **Git:** committed on box (`2b2c98a`, 458 files, clean). Remote =
+  `git@github.com:bennelsonee-eng/nelson-truck-website.git`. Push blocked — **GitHub repo not yet
+  created** (gh absent); create empty repo → `git push -u origin main`.
+- **Tow Trucks / Trailers / Metal & Hardware** divisions link to `/catalog` — need real landing pages
+  + product data.
+- Logo wordmark slightly blurry (raster) → extract vector from `nelson_logo.svg`.
+- Default OG share image; areaServed done; minor white gap under homepage marquee.
+- Local `nelson truck website/` and the box are in sync for edited files (no git repo yet).
+
 ## SCAFFOLD STATUS (2026-07-14)
 
 ### ✅ Done
@@ -56,11 +157,95 @@ Decisions locked: **co-host on titan-prod**, **restructured layout**, **scaffold
   badge, "NELSON TRUCK EQUIPMENT CO., INC. — EST. 1937". **Brand red = `#B01F27`.**
   (`titan-footer.png` still in the folder — replace with the white variant during restructure.)
 
-### ⏳ Not started (need decisions/assets)
-- **Server provisioning** on titan-prod: `nelson_web` DB, Nelson Typesense collection,
-  `nelson-*` systemd units, nginx site, ports, Tailscale/Cloudflare edge → nelsontruck.com.
-- **Data load + Typesense reindex** (runs server-side from `data/mysql_dumps/` + the bridge;
-  those dumps were NOT copied locally by design).
+### ✅ PROVISIONED on titan-prod (2026-07-14/15) — LIVE, tailnet-only
+Preview URL: **`https://titan-prod.tail0c2fbc.ts.net:8444/`** (tailnet only for now).
+- Code at `/home/titan/nelson-truck-website` (shipped via tarball; `data/mysql_dumps`
+  symlinked to Titan's shared dumps).
+- **DB** `nelson_web` in the shared `titan_postgres` container (:5433). 68 tables (alembic head).
+- **Data loaded:** 222,174 products+prices, 1,114 Nelson customers, **111,159 Nelson contracts**
+  (606,100 Titan rows skipped). Retail sentinel customer **"9"** present w/ 86 contracts.
+- **Typesense:** separate `nelson_products` collection (222,174 docs) in the shared instance —
+  Titan's `products` (326,243 docs) untouched. Collection name made config-driven in `search.py`.
+- **Backend:** `nelson-backend.service` (uvicorn :8002, enabled). `/api/health` → nelson_web OK.
+  Pricing resolves via sentinel 9 (verified: retail $ amounts on real SKUs). Search works
+  (`/api/catalog/browse?q=plow` → 275 hits).
+- **Frontend:** built dist served by **nginx site `nelson`** on :8081 (proxy /api→8002).
+  Nelson logo served. Titan (:8080) verified unaffected.
+- Prod `.env` at `app/.env` (chmod 600, real JWT secret; TYPESENSE_API_KEY=titan_search_dev_key
+  shared instance, TYPESENSE_COLLECTION=nelson_products).
+
+### ✅ PUBLIC preview LIVE (2026-07-15): https://nelsontruckequipment.com
+- Separate Cloudflare Tunnel **`nelson-preview`** (tunnel id `51178083-…`), run as its own
+  `cloudflared-nelson.service` on the box (token in `/etc/cloudflared-nelson.env`, 600) —
+  independent of Titan's `cloudflared.service`. Published routes: apex + `www` → `localhost:8081`.
+  Verified: HTTPS 200, homepage = Nelson, `/api/health` → nelson_web through the tunnel.
+- ✅ **GATED** with Cloudflare Access (email-OTP), app "Nelson Preview". apex + www redirect to
+  `nte-tte-team.cloudflareaccess.com` login. Allowed: ben.nelson.ee@gmail.com. Session: 1 week.
+- ✅ Backend **admin auto-login** wired: `.env` has `CF_ACCESS_TEAM_DOMAIN=nte-tte-team.cloudflareaccess.com`,
+  `CF_ACCESS_AUD=a6354b7d…310d`, `CF_ADMIN_EMAILS=ben.nelson.ee@gmail.com`. Passing the Access gate
+  → auto-provisioned admin on the Nelson site.
+
+### Homepage design direction (chosen 2026-07-15)
+- **"Bold Red Garage" (v6)** — dark shop-floor ground, red `#B01F27` + amber accents, condensed type.
+  Light header bar with the real logo top-left (no chip). No-scroll **mega-menu** (hover dropdowns,
+  depth in panels — never a horizontal scrollbar). **Big hero banner that auto-crossfades through
+  featured products** (admin-editable, mirror Titan banner CMS; seasonal rotation). Products high on
+  the page ("In stock & ready today" grid). Serves BOTH audiences: Work Equipment + Truck/Van Accessories.
+- **PICKUP-FIRST positioning (owner directive, key differentiator):** emphasize *"pick it up today"*
+  over shipping — higher margin + the moat Amazon can't match (on-the-shelf now + great price + a
+  human who talks fitment/alternates at the counter). Build implications: pickup = default fulfillment
+  method; per-branch stock on each product ("N in stock · Portland · ready now"); branch selector;
+  checkout defaults to "Pick up at [branch]", ship is the fallback. Mockup carries it in the util bar,
+  hero badges, a "why Nelson beats Amazon" value band, and product CTAs ("Pick up today →").
+- **v7 refinements (Ben, 2026-07-15):** dropped the dated tan → clean white header + cool neutrals;
+  fonts → **Barlow / Barlow Condensed** (self-host at build); modern outline cart icon + badge.
+- **Branches/phones:** Portland **503.548.9300**, Kent **253.395.3825** (Portland OR + Kent WA).
+- **Market focus = PACIFIC NORTHWEST, not national** (Ben) → local/regional SEO (PNW terms, a Google
+  Business Profile per branch, LocalBusiness schema per branch), pickup + regional delivery over
+  national shipping. Reinforces the pickup-first moat.
+- **Value pillars (v10):** *Pick it up today · **We install everything we sell** · Talk to a real
+  expert* — plus a **"We build custom, too"** invite band with a "Tell us about your project" CTA
+  (opens a project-inquiry form → team). Install + custom fab = the full-service story a catalog can't
+  match. **Do NOT mention Amazon / competitors** anywhere (owner directive — "don't poke the bear").
+- **Divisions in nav (v12):** top-level = Snow & Ice · Bodies · **Towing** (wreckers/rollbacks/rotators/
+  recovery — Jerr-Dan) · **Aerial & Bucket** (bucket trucks/aerial lifts/digger derricks — Dur-A-Lift/
+  Versalift) · Liftgates & Cranes · Accessories · Brands · Deals. Towing & Aerial are full built-to-order
+  equipment divisions, each also a banner slide. **Confirm actual towing/aerial brands with Ben.**
+- **Logo lockup (v11):** horizontal — truck hex badge (`nelson-badge.png`, staged in brand folder) left +
+  "NELSON TRUCK" wordmark right. Wordmark is live Barlow Condensed text in the mockup; use the real brand
+  wordmark font/SVG at build.
+- **Trailers/Landoll division (v13):** Nelson is a **Landoll dealer** — Trailers nav item (Traveling Axle,
+  Detach Gooseneck, Sliding Axle, Trailer Parts, **Landoll Parts**) + banner slide + brand. **Landoll parts**
+  wanted on the site.
+- **Tow Truck Parts (v13):** full line wanted — Nelson is bigger in towing than Titan (Titan may have partial
+  tow-parts data to build on). Emphasized in the Towing dropdown + banner. **Build/data task:** audit which
+  tow-truck-parts + Landoll-parts SKUs already exist in the shared catalog; source the gaps.
+- **Logo (v13):** real wordmark preserved — badge (`nelson-badge.png`) + cropped real lettering
+  (`nelson-wordmark.png`), NOT a substitute font. Both staged in the site brand folder.
+- **Steel/Metal (v16 — Ben's scoping):** PHASE 1 = **advertise only** — "Yes, we sell steel," buy/cut at the
+  counter (Portland & Kent), NO online per-lb purchase and NO shipping cut material (avoids the "1/8-off →
+  refund" problem). CTA → info page, not a cart. Per-lb online sales + cut-request flow are a *later, optional*
+  add. **Versalift removed** (not a Nelson brand; confirm the real aerial brand).
+- **Logo (v19):** horizontal lockup — badge (larger) + "NELSON TRUCK / EQUIPMENT CO., INC." (no "EST. 1937";
+  1937 still in the stats bar). Mockup uses a raster wordmark crop → slightly blurry when scaled.
+  **BUILD FIX:** extract the wordmark as VECTOR from `nelson_logo.svg` for crisp lettering at any size.
+- Nav category "Towing" renamed to **"Tow Trucks"** (v20).
+- Mockups: `scratchpad/nelson_bold_red_v20.html` (LATEST, approved direction). Fonts self-hosted at build. **SEO anti-dup (bots ≠ same company):** self-canonical, distinct
+  Organization/LocalBusiness JSON-LD, differentiated copy/product descriptions (use Ollama), distinct
+  template (done), separate GBP/socials, no cross-linking the two sites.
+
+### ⏳ Remaining follow-ups
+- **`nelsontruck.com` (launch host)** → add as a route on `nelson-preview` tunnel when ready to go live.
+- **(Optional) ERP own tunnel** — `nte-sys.com` currently rides `titan-preview` (already Access-gated,
+  team `nte-tte-team`); could move to its own tunnel for cleanliness. Access follows the hostname.
+- **Product images** — symlink Titan's 8.9GB library + map 200K `product_image` rows to Nelson by SKU.
+- **Visual restructure** — pick a direction (01 Heritage / 02 Fleet Counter / 03 Bold Red Garage).
+- Real creds in `.env` (separate Authorize.net, @nelsontruck.com SMTP); prerender + inventory/reindex timers.
+- **nelson-prerender** service (bot SSR, :3002) + nginx bot branch (Titan has one).
+- **Timers:** `nelson-inventory-sync` + `nelson-reindex` (keep stock/index fresh) — Titan has these.
+- **Backend creds:** fill real Authorize.net (SEPARATE Nelson acct), email-SMTP (@nelsontruck.com),
+  Cloudflare in `.env`. Customer sync needs the bridge to expose `nte_cus190`.
+- **Product images:** `backend/static` (681M) not copied — images render null until wired.
 - **Visual restructure** (chosen): new logo, new palette (`styles/index.css` via the
   `@tailwindcss/vite` plugin — Titan is navy `#1e3a8a`/`#0b1f3a` + red `#b91c1c`), and a
   restructured header/homepage layout (mine `HomepageMockups.tsx` / `MarketplaceVariants.tsx`).

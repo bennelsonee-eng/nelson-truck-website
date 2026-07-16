@@ -5921,6 +5921,7 @@ function AccountPage() {
     { icon: '🖼️', title: 'Banner Manager', desc: 'Homepage rotating banner — audience-scoped & schedulable slides', to: '/admin/banners' },
     { icon: '📝', title: 'Content pages', desc: 'Edit the FAQ and trust pages (About, Returns, Shipping, Privacy)', to: '/admin/content' },
     { icon: '📜', title: 'Audit Log', desc: 'Every admin action, per user — who changed what, and when', to: '/admin/audit-log' },
+    { icon: '🩺', title: 'Site Health', desc: 'Nightly product & site health report (both sites) — download the Word doc', to: '/admin/site-health' },
     { icon: '💡', title: 'Build Ideas', desc: 'Backlog of future website features — admin-only, parked for later', to: '/admin/build-ideas' },
     { icon: '📐', title: 'Special Rules', desc: 'Non-obvious storefront rules — e.g. Dodge/RAM make merge', to: '/admin/special-rules' },
     { icon: '📦', title: 'Kit packages', desc: 'Create & manage package kits (bill of materials, fitment, placement)', to: '/admin/kits' },
@@ -15184,6 +15185,113 @@ function AdminSpecialRulesPage() {
 interface AuditRow { id: number; created_at: string; user_id: number | null; user_email: string | null; action: string; entity_type: string | null; entity_id: string | null; summary: string | null; ip_address: string | null }
 interface AuditActor { user_id: number | null; user_email: string | null; count: number }
 
+type HealthReport = {
+  date: string; filename: string; xlsx_filename: string | null
+  size_kb: number; xlsx_size_kb: number | null; generated_at: string | null
+  high: number | null; med: number | null; low: number | null
+  sellable: number | null; in_stock: number | null; index_drift: number | null
+}
+
+function AdminSiteHealthPage() {
+  const [rows, setRows] = useState<HealthReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/admin/health-reports', { credentials: 'include' })
+      .then((r) => {
+        if (r.status === 401) throw new Error('Login required (admin)')
+        if (r.status === 403) throw new Error('Admin role required')
+        if (!r.ok) throw new Error(`HTTP ${r.status}`)
+        return r.json()
+      })
+      .then((d) => { setRows(d); setError(null) })
+      .catch((e) => setError(String(e.message || e)))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const fmt = (iso: string | null) => { if (!iso) return '—'; try { return new Date(iso).toLocaleString() } catch { return iso } }
+  const n = (v: number | null) => (v != null ? v.toLocaleString() : '—')
+
+  return (
+    <div className="mx-auto max-w-[1150px] px-4 py-6">
+      <div className="mb-2 flex items-center gap-3">
+        <Link to="/account" className="text-sm font-semibold text-red-700 hover:underline">← Account</Link>
+        <h1 className="text-2xl font-bold">Site Health</h1>
+      </div>
+      <p className="mb-4 max-w-3xl text-sm text-gray-500">
+        Nightly product &amp; site health report for this site. Each night produces a <strong>Word document</strong>
+        {' '}(narrative + a recommended action for every issue) and a companion <strong>Excel workbook</strong> with
+        every flagged SKU and its supporting data — Mfr Part #, AAIA code, Product code, brand, description, price and
+        stock — one tab per issue, so any list can be reviewed and worked at the SKU level. Covers missing images,
+        descriptions, pricing, categories, product/AAIA codes, parts-master gaps, search-index / inventory freshness,
+        and live errors (HTTP, cart/checkout/payment, JS, bots). Generated automatically every night at 5:00 AM.
+      </p>
+
+      {error ? (
+        <div className="rounded border border-red-200 bg-red-50 p-4 text-red-800">{error}</div>
+      ) : loading && rows.length === 0 ? (
+        <div className="rounded border border-gray-200 bg-gray-50 p-6 text-center text-gray-400">Loading…</div>
+      ) : rows.length === 0 ? (
+        <div className="rounded border border-gray-200 bg-gray-50 p-6 text-center text-gray-500">
+          No reports yet — the first one is generated tonight at 5:00 AM (or run the generator manually).
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-500">
+              <tr>
+                <th className="px-3 py-2 font-semibold">Report date</th>
+                <th className="px-3 py-2 font-semibold">Generated</th>
+                <th className="px-3 py-2 font-semibold">Urgent</th>
+                <th className="px-3 py-2 font-semibold">Med</th>
+                <th className="px-3 py-2 font-semibold">Low</th>
+                <th className="px-3 py-2 font-semibold">Sellable</th>
+                <th className="px-3 py-2 font-semibold">In stock</th>
+                <th className="px-3 py-2 font-semibold">Downloads</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {rows.map((r) => (
+                <tr key={r.filename} className="align-top hover:bg-gray-50">
+                  <td className="whitespace-nowrap px-3 py-2 font-semibold text-gray-800">{r.date}</td>
+                  <td className="whitespace-nowrap px-3 py-2 text-gray-500">{fmt(r.generated_at)}</td>
+                  <td className="px-3 py-2 font-bold text-red-700">{n(r.high)}</td>
+                  <td className="px-3 py-2 text-gray-700">{n(r.med)}</td>
+                  <td className="px-3 py-2 text-gray-500">{n(r.low)}</td>
+                  <td className="px-3 py-2 text-gray-700">{n(r.sellable)}</td>
+                  <td className="px-3 py-2 text-gray-700">
+                    {n(r.in_stock)}
+                    {r.index_drift ? <span className="ml-1 rounded bg-amber-100 px-1 text-[11px] font-bold text-amber-700">drift {r.index_drift > 0 ? '+' : ''}{r.index_drift}</span> : null}
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <a href={`/api/admin/health-reports/${r.filename}/download`}
+                         className="inline-flex items-center gap-1 rounded-lg bg-red-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-red-800">
+                        ⬇ Report <span className="font-normal opacity-80">.docx</span>
+                      </a>
+                      {r.xlsx_filename ? (
+                        <a href={`/api/admin/health-reports/${r.xlsx_filename}/data`}
+                           className="inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-800">
+                          ⬇ Data <span className="font-normal opacity-80">.xlsx</span>
+                        </a>
+                      ) : null}
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-gray-400">
+                      {r.size_kb} KB{r.xlsx_size_kb != null ? ` · ${r.xlsx_size_kb} KB` : ''}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AdminAuditLogPage() {
   const [rows, setRows] = useState<AuditRow[]>([])
   const [actors, setActors] = useState<AuditActor[]>([])
@@ -16231,6 +16339,7 @@ export default function App() {
           <Route path="/admin/category-curator" element={<AdminCategoryCuratorPage />} />
           <Route path="/admin/banners" element={<AdminBannerManagerPage />} />
           <Route path="/admin/audit-log" element={<AdminAuditLogPage />} />
+          <Route path="/admin/site-health" element={<AdminSiteHealthPage />} />
           <Route path="/admin/build-ideas" element={<AdminBuildIdeasPage />} />
           <Route path="/showroom/receipts" element={<ShowroomReceiptsPage />} />
           <Route path="/showroom/receipt/:id" element={<ShowroomReceiptPage />} />
