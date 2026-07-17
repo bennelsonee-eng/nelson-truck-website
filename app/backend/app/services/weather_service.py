@@ -35,7 +35,7 @@ LOCATIONS: dict[str, dict[str, str]] = {
     },
 }
 
-USER_AGENT = "TitanTruckEquipment/0.1 (sales@titantruck.com)"
+USER_AGENT = "NelsonTruckEquipment/0.1 (sales@nelsontruck.com)"
 CACHE_TTL_SEC = 3600  # 1 hour — NWS asks polite consumers to cache
 
 # In-process cache: { location_key: (timestamp, payload) }

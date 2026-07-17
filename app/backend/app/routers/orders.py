@@ -210,8 +210,8 @@ async def checkout(
         raise HTTPException(
             status_code=400,
             detail=(
-                "Your account is not linked to a Titan customer record. "
-                "Visit /account to link your customer number, or contact sales@titantruck.com."
+                "Your account is not linked to a Nelson customer record. "
+                "Visit /account to link your customer number, or contact sales@nelsontruck.com."
             ),
         )
 
@@ -470,7 +470,7 @@ async def estimate_order(
     """
     effective_customer_id = await resolve_effective_customer_id(db, user, request)
     if effective_customer_id is None:
-        raise HTTPException(status_code=400, detail="Account is not linked to a Titan customer")
+        raise HTTPException(status_code=400, detail="Account is not linked to a Nelson customer")
     customer = (await db.execute(
         select(Customer).where(Customer.id == effective_customer_id)
     )).scalar_one_or_none()
@@ -513,7 +513,7 @@ async def estimate_order(
         tax_rate_x1000=tax_est.rate_x1000,
         grand_total=_f(grand_total),
         freight_status="billed_separately",
-        freight_notes=["Freight is added by Titan as a flat fee on your invoice."],
+        freight_notes=["Freight is added by Nelson as a flat fee on your invoice."],
         tax_notes=tax_est.notes,
     )
 
@@ -580,7 +580,7 @@ async def reorder(
     """
     effective_customer_id = await resolve_effective_customer_id(db, user, request)
     if effective_customer_id is None:
-        raise HTTPException(status_code=400, detail="Account is not linked to a Titan customer")
+        raise HTTPException(status_code=400, detail="Account is not linked to a Nelson customer")
 
     order = (await db.execute(
         select(Order).where(Order.web_order_number == web_order_number)

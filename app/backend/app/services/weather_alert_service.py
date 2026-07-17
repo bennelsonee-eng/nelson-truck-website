@@ -40,7 +40,7 @@ from app.services.weather_service import _classify_snow_risk, _to_period
 
 log = logging.getLogger(__name__)
 
-USER_AGENT = "TitanTruckEquipment/0.1 (sales@titantruck.com)"
+USER_AGENT = "NelsonTruckEquipment/0.1 (sales@nelsontruck.com)"
 
 # Don't send another alert within this many days after the last one for the
 # same subscriber, even if the forecast is still showing snow.  Stops a
@@ -352,22 +352,22 @@ def compose_confirmation_email(sub: WeatherAlertSubscriber, base_url: str) -> Co
     confirm_url = f"{base_url}/snow-alerts/confirm?token={sub.confirmation_token}"
     unsub_url = f"{base_url}/snow-alerts/unsubscribe?token={sub.unsubscribe_token}"
     body_text = (
-        f"You signed up for snow forecast alerts at WinterWatch (Titan Truck Equipment).\n\n"
+        f"You signed up for snow forecast alerts at WinterWatch (Nelson Truck Equipment).\n\n"
         f"Confirm your subscription to start receiving alerts whenever snow\n"
         f"appears in the 10-day forecast for ZIP {sub.zip_code}:\n\n"
         f"  {confirm_url}\n\n"
         f"If you didn't sign up, just ignore this email or click here to remove your\n"
         f"address from our list:  {unsub_url}\n\n"
-        f"-- WinterWatch by Titan Truck Equipment\n"
+        f"-- WinterWatch by Nelson Truck Equipment\n"
     )
     body_html = f"""\
-<p>You signed up for snow forecast alerts at WinterWatch (Titan Truck Equipment).</p>
+<p>You signed up for snow forecast alerts at WinterWatch (Nelson Truck Equipment).</p>
 <p><strong>Confirm your subscription</strong> to start receiving alerts whenever snow
 appears in the 10-day forecast for ZIP {sub.zip_code}:</p>
 <p><a href="{confirm_url}" style="background:#b91c1c;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold">Confirm my email →</a></p>
 <p style="color:#666;font-size:12px">If you didn't sign up, just ignore this email or
 <a href="{unsub_url}">click here to remove your address from our list</a>.</p>
-<p style="color:#666;font-size:12px">— WinterWatch <span style="color:#9ca3af">by Titan Truck Equipment</span></p>
+<p style="color:#666;font-size:12px">— WinterWatch <span style="color:#9ca3af">by Nelson Truck Equipment</span></p>
 """
     return ComposedEmail(
         to_email=sub.email,
@@ -400,7 +400,7 @@ def compose_alert_email(sub: WeatherAlertSubscriber, snow_periods: list[dict], b
         + f"\n\nGet your plow ready: {snow_url}\n\n"
         f"---\n"
         f"You're getting this because you signed up for snow alerts at\n"
-        f"Titan Truck Equipment for ZIP {sub.zip_code}.\n"
+        f"Nelson Truck Equipment for ZIP {sub.zip_code}.\n"
         f"Unsubscribe: {unsub_url}\n"
     )
     rows = "".join(
@@ -418,7 +418,7 @@ def compose_alert_email(sub: WeatherAlertSubscriber, snow_periods: list[dict], b
   <p><a href="{snow_url}" style="background:#b91c1c;color:#fff;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:bold">Shop snow plows + parts →</a></p>
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
   <p style="color:#666;font-size:12px">
-    You're getting this because you signed up for snow alerts at WinterWatch (Titan Truck Equipment) for ZIP {sub.zip_code}.
+    You're getting this because you signed up for snow alerts at WinterWatch (Nelson Truck Equipment) for ZIP {sub.zip_code}.
     <a href="{unsub_url}">Unsubscribe</a>.
   </p>
 </div>
@@ -464,9 +464,9 @@ def compose_welcome_email(sub: WeatherAlertSubscriber, base_url: str) -> Compose
 
 def compose_unsubscribed_email(sub: WeatherAlertSubscriber) -> ComposedEmail:
     body_text = (
-        f"You've been removed from snow alerts at WinterWatch (Titan Truck Equipment).\n"
+        f"You've been removed from snow alerts at WinterWatch (Nelson Truck Equipment).\n"
         f"You won't receive any further emails from us.\n\n"
-        f"If this was a mistake, you can re-subscribe at https://titantruck.com/snow-plows\n"
+        f"If this was a mistake, you can re-subscribe at https://nelsontruck.com/snow-plows\n"
     )
     return ComposedEmail(
         to_email=sub.email,

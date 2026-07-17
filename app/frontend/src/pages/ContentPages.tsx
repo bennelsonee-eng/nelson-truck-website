@@ -30,18 +30,18 @@ export const CONTENT_DEFAULTS: Record<string, ContentDefault> = {
   faq: {
     title: 'Frequently Asked Questions',
     subtitle: 'Ordering, shipping, fitment, returns, and more.',
-    description: 'Answers to common questions about ordering, payment, shipping, fitment, returns, warranty, and service at Titan Truck Equipment.',
+    description: 'Answers to common questions about ordering, payment, shipping, fitment, returns, warranty, and service at Nelson Truck Equipment.',
     sections: [
       { heading: 'Ordering & accounts', items: [
-        { q: 'How do I place an order?', a: 'Browse or search the catalog, add items to your cart, and check out online. Commercial and municipal customers can also order by purchase order — email sales@titantruck.com or call us and we’ll help you get the right parts.' },
+        { q: 'How do I place an order?', a: 'Browse or search the catalog, add items to your cart, and check out online. Commercial and municipal customers can also order by purchase order — email sales@nelsontruck.com or call us and we’ll help you get the right parts.' },
         { q: 'Do I need an account to order?', a: 'No — you can shop and order as a guest. Creating an account lets you track orders, reorder quickly, and (for trade customers) see your wholesale pricing.' },
-        { q: 'How do I set up a wholesale or trade account?', a: 'We offer wholesale pricing to qualified trade, fleet, and municipal accounts. Contact sales@titantruck.com to apply; once approved, your account pricing shows automatically when you’re signed in. [CONFIRM: any application requirements]' },
+        { q: 'How do I set up a wholesale or trade account?', a: 'We offer wholesale pricing to qualified trade, fleet, and municipal accounts. Contact sales@nelsontruck.com to apply; once approved, your account pricing shows automatically when you’re signed in. [CONFIRM: any application requirements]' },
       ]},
       { heading: 'Payment', items: [
         { q: 'What payment methods do you accept?', a: 'We accept major credit cards at checkout. Approved trade, fleet, and government accounts may also order on purchase order with terms. [CONFIRM: accepted cards + PO terms]' },
       ]},
       { heading: 'Shipping', items: [
-        { q: 'Where do you ship?', a: 'We ship throughout the Pacific Northwest and beyond, from our Spokane, WA headquarters and Boise, ID location. [CONFIRM: nationwide vs. regional shipping]' },
+        { q: 'Where do you ship?', a: 'We ship throughout the Pacific Northwest and beyond, from our Portland, OR headquarters and Kent, WA location. [CONFIRM: nationwide vs. regional shipping]' },
         { q: 'How much does shipping cost?', a: 'Shipping is calculated at checkout based on the items, weight, and destination. Oversized items ship by freight. [CONFIRM: free-shipping threshold, if any]' },
         { q: 'How are large items like snow plows shipped?', a: 'Heavy or oversized equipment — snow plows, spreaders, service bodies — ships by freight carrier. We’ll quote freight and coordinate delivery; some large equipment is also available for pickup or installation at our locations.' },
         { q: 'How soon will my order ship?', a: 'In-stock items typically ship within [CONFIRM: e.g. 1–2 business days]. Special-order items ship once they arrive from the manufacturer — lead times are shown on the product page and we’ll keep you updated.' },
@@ -51,35 +51,35 @@ export const CONTENT_DEFAULTS: Record<string, ContentDefault> = {
         { q: 'What if an item is out of stock or special order?', a: 'Many items are available as special orders even when not in stock — the product page shows the status and estimated lead time. When something is unavailable, we’ll often suggest an in-stock alternative, or you can contact us and we’ll source it.' },
       ]},
       { heading: 'Returns, warranty & service', items: [
-        { q: 'What is your return policy?', a: 'Unused items in original, resalable packaging may be returned. Contact sales@titantruck.com to start a return and we’ll walk you through it. Special-order and installed items may not be returnable. [CONFIRM: return window + any restocking fee]' },
+        { q: 'What is your return policy?', a: 'Unused items in original, resalable packaging may be returned. Contact sales@nelsontruck.com to start a return and we’ll walk you through it. Special-order and installed items may not be returnable. [CONFIRM: return window + any restocking fee]' },
         { q: 'How do warranty claims work?', a: 'We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and we handle warranty work in-house. If you have an issue, contact us with your order details and we’ll help you resolve it through the manufacturer’s warranty.' },
-        { q: 'Do you install equipment?', a: 'Yes — we install snow and ice equipment and truck upfits at our Spokane and Boise locations. [CONFIRM: install scheduling / which locations]' },
+        { q: 'Do you install equipment?', a: 'Yes — we install snow and ice equipment and truck upfits at our Portland and Kent locations. [CONFIRM: install scheduling / which locations]' },
       ]},
       { heading: 'Contact & locations', items: [
-        { q: 'Where are you located?', a: 'Titan Truck Equipment is headquartered in Spokane, WA, with a location in Boise, ID, serving the Pacific Northwest. Family-owned since 1971. [CONFIRM: addresses + hours]' },
-        { q: 'How do I contact you?', a: 'Email sales@titantruck.com or call us [CONFIRM: phone number]. We’re happy to help with fitment, quotes, freight, and orders.' },
+        { q: 'Where are you located?', a: 'Nelson Truck Equipment is headquartered in Portland, OR, with a location in Kent, WA, serving the Pacific Northwest. Family-owned since 1937. [CONFIRM: addresses + hours]' },
+        { q: 'How do I contact you?', a: 'Email sales@nelsontruck.com or call us [CONFIRM: phone number]. We’re happy to help with fitment, quotes, freight, and orders.' },
       ]},
     ],
   },
   about: {
-    title: 'About Titan Truck Equipment',
-    subtitle: 'Family-owned and outfitting Pacific Northwest trucks since 1971.',
-    description: 'Titan Truck Equipment — family-owned since 1971, outfitting commercial trucks and vans across the Pacific Northwest from Spokane, WA and Boise, ID.',
-    body: `Titan Truck Equipment has been outfitting commercial trucks and vans across the Pacific Northwest since 1971. Family-owned and operated, we supply and install snow and ice equipment, truck accessories, and work-ready upfits for contractors, fleets, municipalities, and everyday drivers.
+    title: 'About Nelson Truck Equipment',
+    subtitle: 'Family-owned and outfitting Pacific Northwest trucks since 1937.',
+    description: 'Nelson Truck Equipment — family-owned since 1937, outfitting commercial trucks and vans across the Pacific Northwest from Portland, OR and Kent, WA.',
+    body: `Nelson Truck Equipment has been outfitting commercial trucks and vans across the Pacific Northwest since 1937. Family-owned and operated, we supply and install snow and ice equipment, truck accessories, and work-ready upfits for contractors, fleets, municipalities, and everyday drivers.
 
-We’re a direct dealer for the brands the region relies on — including Western, Meyer, SnowDogg, and Buyers/SaltDogg — and we back what we sell with in-house service and warranty work. With locations in **Spokane, WA** (headquarters) and **Boise, ID**, we combine a deep parts catalog with real fitment expertise, so you get the right equipment the first time.
+We’re a direct dealer for the brands the region relies on — including Western, Meyer, SnowDogg, and Buyers/SaltDogg — and we back what we sell with in-house service and warranty work. With locations in **Portland, OR** (headquarters) and **Kent, WA**, we combine a deep parts catalog with real fitment expertise, so you get the right equipment the first time.
 
-Whether you’re plowing snow, building out a service van, or equipping a fleet, our team is here to help. [Get in touch](mailto:sales@titantruck.com) or [browse the catalog](/catalog).
+Whether you’re plowing snow, building out a service van, or equipping a fleet, our team is here to help. [Get in touch](mailto:sales@nelsontruck.com) or [browse the catalog](/catalog).
 
 [CONFIRM: company history details, ownership/team, addresses & hours]`,
   },
   returns: {
     title: 'Returns & Warranty',
     subtitle: 'How returns and warranty claims work.',
-    description: 'Titan Truck Equipment returns and warranty policy — how to return unused items and how manufacturer warranty claims are handled.',
+    description: 'Nelson Truck Equipment returns and warranty policy — how to return unused items and how manufacturer warranty claims are handled.',
     body: `## Returns
 
-Unused items in their original, resalable packaging may be returned. To start a return, email [sales@titantruck.com](mailto:sales@titantruck.com) with your order number and we’ll guide you through the process. Please note that special-order items and items that have been installed may not be eligible for return.
+Unused items in their original, resalable packaging may be returned. To start a return, email [sales@nelsontruck.com](mailto:sales@nelsontruck.com) with your order number and we’ll guide you through the process. Please note that special-order items and items that have been installed may not be eligible for return.
 
 [CONFIRM: return window (e.g. 30 days), restocking fee, who pays return shipping]
 
@@ -87,13 +87,13 @@ Unused items in their original, resalable packaging may be returned. To start a 
 
 We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and we perform warranty work in-house. If you have a warranty issue, contact us with your order details and we’ll help you resolve it under the manufacturer’s warranty.
 
-[CONFIRM: warranty terms / any Titan-specific guarantees]`,
+[CONFIRM: warranty terms / any Nelson-specific guarantees]`,
   },
   shipping: {
     title: 'Shipping Policy',
     subtitle: 'How and where we ship.',
-    description: 'Titan Truck Equipment shipping policy — shipping costs, freight for oversized equipment, lead times, and service area across the Pacific Northwest.',
-    body: `Orders ship from our Spokane, WA and Boise, ID locations. Shipping cost is calculated at checkout based on the items, weight, and destination.
+    description: 'Nelson Truck Equipment shipping policy — shipping costs, freight for oversized equipment, lead times, and service area across the Pacific Northwest.',
+    body: `Orders ship from our Portland, OR and Kent, WA locations. Shipping cost is calculated at checkout based on the items, weight, and destination.
 
 **Oversized equipment** — snow plows, spreaders, and service bodies — ships by freight carrier. We’ll quote freight and coordinate delivery, and many large items are also available for pickup or installation at our locations.
 
@@ -104,7 +104,7 @@ We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and w
   privacy: {
     title: 'Privacy & Terms',
     subtitle: 'How we handle your information, and the terms of using this site.',
-    description: 'Titan Truck Equipment privacy policy and terms of use.',
+    description: 'Nelson Truck Equipment privacy policy and terms of use.',
     noindex: true,
     body: `## Privacy
 
@@ -233,7 +233,7 @@ export function FaqPage() {
         </div>
       ))}
       <p className="mt-6 text-sm">
-        Still have a question? <a href="mailto:sales@titantruck.com" className="text-red-700 hover:underline">Email our sales team</a> and we’ll get right back to you.
+        Still have a question? <a href="mailto:sales@nelsontruck.com" className="text-red-700 hover:underline">Email our sales team</a> and we’ll get right back to you.
       </p>
     </ContentLayout>
   )

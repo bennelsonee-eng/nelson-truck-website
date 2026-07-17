@@ -3,15 +3,9 @@ import type { ReactNode } from 'react'
 import { Routes, Route, Link, useParams, useSearchParams, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import ErrorReporter from './components/ErrorReporter'
-import { HomepageMockupsIndex, MockupMarketplace, MockupGarage, MockupDepartment, MockupConfigurator, RotatingBanner } from './pages/HomepageMockups'
-// Lazy-loaded: design-mockup variants (/mockup/market/*) and the admin-kits
-// pages (/admin/kits/*) — neither is on the public critical path, so they load
-// on demand rather than in the initial bundle.
-const MarketplaceVariantsIndex = lazy(() => import('./pages/MarketplaceVariants').then((m) => ({ default: m.MarketplaceVariantsIndex })))
-const MarketClassic = lazy(() => import('./pages/MarketplaceVariants').then((m) => ({ default: m.MarketClassic })))
-const MarketBigBox = lazy(() => import('./pages/MarketplaceVariants').then((m) => ({ default: m.MarketBigBox })))
-const MarketBoutique = lazy(() => import('./pages/MarketplaceVariants').then((m) => ({ default: m.MarketBoutique })))
-const MarketDeals = lazy(() => import('./pages/MarketplaceVariants').then((m) => ({ default: m.MarketDeals })))
+import { RotatingBanner } from './pages/HomepageMockups'
+// Lazy-loaded: the admin-kits pages (/admin/kits/*) — not on the public critical
+// path, so they load on demand rather than in the initial bundle.
 const AdminKitsListPage = lazy(() => import('./AdminKits').then((m) => ({ default: m.AdminKitsListPage })))
 const AdminKitWizardPage = lazy(() => import('./AdminKits').then((m) => ({ default: m.AdminKitWizardPage })))
 // Static content + trust pages (low-traffic → lazy-loaded off the main bundle).
@@ -2187,7 +2181,7 @@ function ScrollRow({ children, className = '' }: { children: ReactNode; classNam
 
 // --- Nelson Bold Red Garage homepage ---------------------------------------
 const NELSON_SLIDES = [
-  { ey: 'Snow & Ice · Ready before the storm', h1a: "Winter’s coming.", h1b: 'Get plow-ready.', copy: 'Western & Meyer plows and spreaders — in stock, and mounted & wired in our Portland & Kent shops.', cta: 'Shop snow & ice', to: '/snow-plows', bto: false, card: { brand: 'Western', name: 'Impact™ Straight-Blade Snow Plow', price: 'Installed', img: '/static/brand_images/WEST/WEST69500/00_bing_1d7776106e6d.jpg', whiteBg: true } },
+  { ey: 'Snow & Ice · Ready before the storm', h1a: "Winter’s coming.", h1b: 'Get plow-ready.', copy: 'Western, SnowDogg & Meyer plows and spreaders — in stock, and mounted & wired in our Portland & Kent shops.', cta: 'Shop snow & ice', to: '/snow-plows', bto: false, card: { brand: 'Western · SnowDogg · Meyer', name: 'Straight-blade & V-plows', price: 'In stock & installed', imgs: ['/static/brand_images/WEST/WEST69500/00_bing_1d7776106e6d.jpg', '/static/product-images/92/92d1cd8fdb9fd85b_1280.jpg', '/static/product-images/dc/dc36845ac71cf80f_1280.jpg'] } },
   { ey: 'Tow Trucks · Towing & Recovery', h1a: 'Built to', h1b: 'bring it back.', copy: "Wreckers, rollbacks, and rotators from Jerr-Dan and Century — plus the Northwest’s deepest inventory of tow truck parts.", cta: 'Explore tow trucks', to: '/catalog', bto: true, card: { brand: 'Jerr-Dan', name: 'MPL-NGS Steel Rollback Carrier', price: 'Built to order' } },
   { ey: 'Aerial & Bucket Division', h1a: 'Reach', h1b: 'higher.', copy: 'Bucket trucks, aerial lifts, and digger derricks from Dur-A-Lift — sales, upfit, and service.', cta: 'Explore aerial & bucket', to: '/catalog', bto: true, card: { brand: 'Dur-A-Lift', name: 'DPM2-42 Insulated Aerial Bucket', price: 'Built to order' } },
   { ey: 'Trailers · Landoll Dealer', h1a: 'Haul the', h1b: 'heavy stuff.', copy: 'Landoll traveling-axle, detach, and sliding-axle trailers — plus a full line of Landoll parts, sold and serviced here.', cta: 'Explore trailers', to: '/catalog', bto: true, card: { brand: 'Landoll', name: '440 Series Traveling Axle Trailer', price: 'Built to order' } },
@@ -2202,33 +2196,40 @@ function NelsonHeroBanner() {
     return () => clearInterval(t)
   }, [])
   return (
-    <div className="relative overflow-hidden min-h-[440px] md:min-h-[470px] lg:min-h-[510px]" style={{ background: 'radial-gradient(120% 150% at 82% -10%, #c8232d 0, #a01a22 52%, #7c141b 100%)' }}>
+    <div className="relative overflow-hidden min-h-[420px] md:min-h-[440px] lg:min-h-[470px]" style={{ background: 'radial-gradient(120% 150% at 82% -10%, #c8232d 0, #a01a22 52%, #7c141b 100%)' }}>
       {NELSON_SLIDES.map((s, idx) => (
-        <div key={idx} className={`absolute inset-0 grid grid-cols-1 items-center gap-6 px-6 py-10 md:grid-cols-[1fr_1.05fr] lg:grid-cols-[1fr_1.1fr] md:px-10 lg:px-14 transition-opacity duration-700 ${idx === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
-          <div>
+        <div key={idx} className={`absolute inset-0 flex flex-col items-center gap-6 px-6 py-8 md:flex-row md:items-center md:gap-6 md:px-10 lg:gap-8 lg:px-14 transition-opacity duration-700 ${idx === i ? 'opacity-100' : 'pointer-events-none opacity-0'}`}>
+          <div className="w-full md:w-auto md:max-w-lg md:shrink-0">
             <div className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-amber-200">{s.ey}</div>
             <h1 className="font-cond text-4xl leading-[0.95] text-white md:text-6xl">{s.h1a}<br /><span className="text-amber-400">{s.h1b}</span></h1>
             <p className="mt-3 max-w-md text-[15px] text-red-50">{s.copy}</p>
             <Link to={s.to} className="mt-5 inline-block rounded-lg bg-amber-400 px-6 py-3 font-cond text-sm text-amber-950 hover:bg-amber-300">{s.cta} →</Link>
           </div>
-          <div className="hidden justify-center md:flex md:justify-end">
-            <div className="relative w-full max-w-md -rotate-1 rounded-2xl bg-[#fbf8f2] p-5 shadow-2xl lg:max-w-lg xl:max-w-xl">
+          <div className="hidden w-full min-w-0 md:flex md:flex-1 md:justify-start">
+            <div className="relative w-full max-w-2xl -rotate-1 rounded-2xl bg-[#fbf8f2] p-5 shadow-2xl lg:max-w-4xl">
               <span className={`absolute -top-3 left-4 z-10 rounded px-2 py-1 text-[10px] font-bold uppercase text-white ${s.bto ? 'bg-sky-700' : 'bg-emerald-600'}`}>{s.bto ? 'Sales · Upfit · Service' : '✓ In stock — pick up today'}</span>
-              {/* Product image floats inside the card: sits on a soft gradient
-                  stage, smaller than the frame, with a drop-shadow beneath so it
-                  reads as hovering rather than a flat panel. Uses the slide's own
-                  image when set, else the Nelson badge as a placeholder. */}
               {/* White stage so white-background product photos blend in and the
-                  product reads as floating (no photo-tile edge). Lifestyle photos
-                  and the transparent badge keep a drop-shadow for a true silhouette
-                  float; white-bg photos (whiteBg) drop it to stay seamless. */}
-              <div className="relative grid aspect-[16/10] place-items-center overflow-hidden rounded-xl bg-white">
-                <img
-                  src={(s.card as { img?: string }).img || '/brand/nelson-badge.png'}
-                  alt={s.card.name}
-                  className={`max-h-[82%] max-w-[82%] object-contain ${(s.card as { whiteBg?: boolean }).whiteBg ? '' : 'drop-shadow-[0_18px_20px_rgba(15,23,42,0.26)]'}`}
-                />
-              </div>
+                  product reads as floating (no photo-tile edge). A slide can carry
+                  several images (`imgs`) — e.g. a lineup of plows — which stack and
+                  float on the same white field. Single lifestyle photos / the
+                  transparent badge keep a drop-shadow for a true silhouette float. */}
+              {(s.card as { imgs?: string[] }).imgs ? (
+                <div className="flex items-center justify-center gap-1 rounded-xl bg-white px-2 py-4 lg:gap-2">
+                  {(s.card as { imgs: string[] }).imgs.map((src, k) => (
+                    <div key={k} className="flex flex-1 items-center justify-center overflow-hidden">
+                      <img src={src} alt="" className="max-h-36 w-full scale-[1.18] object-contain lg:max-h-52" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative grid h-52 place-items-center overflow-hidden rounded-xl bg-white lg:h-60">
+                  <img
+                    src={(s.card as { img?: string }).img || '/brand/nelson-badge.png'}
+                    alt={s.card.name}
+                    className={`max-h-[88%] max-w-[62%] object-contain ${(s.card as { whiteBg?: boolean }).whiteBg ? '' : 'drop-shadow-[0_18px_20px_rgba(15,23,42,0.26)]'}`}
+                  />
+                </div>
+              )}
               <div className="mt-3 text-[10px] font-bold uppercase tracking-wide text-slate-500">{s.card.brand}</div>
               <div className="text-[15px] font-semibold leading-snug text-slate-900 lg:text-base">{s.card.name}</div>
               <div className="mt-1 font-cond text-xl text-red-700 lg:text-2xl">{s.card.price}</div>
@@ -16306,16 +16307,6 @@ export default function App() {
       <main>
         <Suspense fallback={<div className="p-8 text-gray-500">Loading…</div>}>
         <Routes>
-          <Route path="/mockup" element={<HomepageMockupsIndex />} />
-          <Route path="/mockup/market" element={<MarketplaceVariantsIndex />} />
-          <Route path="/mockup/market/classic" element={<MarketClassic />} />
-          <Route path="/mockup/market/bigbox" element={<MarketBigBox />} />
-          <Route path="/mockup/market/boutique" element={<MarketBoutique />} />
-          <Route path="/mockup/market/deals" element={<MarketDeals />} />
-          <Route path="/mockup/marketplace" element={<MockupMarketplace />} />
-          <Route path="/mockup/garage" element={<MockupGarage />} />
-          <Route path="/mockup/department" element={<MockupDepartment />} />
-          <Route path="/mockup/configurator" element={<MockupConfigurator />} />
           <Route path="/" element={<NelsonHome />} />
           <Route path="/catalog" element={<CatalogBrowse />} />
           <Route path="/brands" element={<BrandsIndexPage />} />

@@ -1,4 +1,4 @@
-"""SQLAlchemy models for the Titan Truck website.
+"""SQLAlchemy models for the Nelson Truck website.
 
 All models are imported here so Alembic's autogenerate sees them.
 """

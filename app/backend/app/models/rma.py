@@ -1,7 +1,7 @@
 """RMA Return Request — email-based Phase 1 per SOW addendum A4.31.
 
 A jobber files an RMA against a past order from My Orders detail. The website
-records the request, attaches photos to an email to sales@titantruck.com, and
+records the request, attaches photos to an email to sales@nelsontruck.com, and
 shows the jobber an "RMA Requested" badge on the order detail. Titan staff
 process the actual return out-of-band in legacy FACS / AR; the website does
 NOT track approved / denied / received / refunded status in Phase 1.

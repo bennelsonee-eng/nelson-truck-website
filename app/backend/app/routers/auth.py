@@ -274,7 +274,7 @@ async def request_customer_link(
     db: AsyncSession = Depends(get_db),
 ):
     """Request a User → Customer link. Creates a CustomerLinkRequest row in
-    PENDING state and emails sales@titantruck.com. Approval happens via the
+    PENDING state and emails sales@nelsontruck.com. Approval happens via the
     admin/CMS path; until then the user has no customer_id and no jobber
     pricing. This replaces the old /link-customer endpoint which auto-linked
     without verification.
@@ -284,7 +284,7 @@ async def request_customer_link(
             status_code=409,
             detail=(
                 f"Account is already linked to customer #{user.customer_id}. "
-                "Contact sales@titantruck.com to change accounts."
+                "Contact sales@nelsontruck.com to change accounts."
             ),
         )
 
@@ -316,7 +316,7 @@ async def link_customer_deprecated():
         detail=(
             "POST /api/auth/link-customer has been retired for security. "
             "Use POST /api/auth/request-link to submit a verification request; "
-            "sales@titantruck.com confirms ownership before the link is made."
+            "sales@nelsontruck.com confirms ownership before the link is made."
         ),
     )
 
@@ -453,7 +453,7 @@ async def set_front_counter_markup(
     the default behavior (just show MAP Retail).
     """
     if user.customer_id is None:
-        raise HTTPException(status_code=400, detail="Account is not linked to a Titan customer")
+        raise HTTPException(status_code=400, detail="Account is not linked to a Nelson customer")
 
     cust = (await db.execute(
         select(Customer).where(Customer.id == user.customer_id)
@@ -481,7 +481,7 @@ _LOGO_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
 async def _require_showroom_customer(user: User, db: AsyncSession) -> Customer:
     """The jobber/dealer Customer behind the current user (showroom is B2B-only)."""
     if user.customer_id is None:
-        raise HTTPException(status_code=400, detail="Account is not linked to a Titan customer")
+        raise HTTPException(status_code=400, detail="Account is not linked to a Nelson customer")
     cust = (await db.execute(
         select(Customer).where(Customer.id == user.customer_id)
     )).scalar_one_or_none()

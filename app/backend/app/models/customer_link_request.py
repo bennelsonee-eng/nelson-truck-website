@@ -2,14 +2,14 @@
 
 Per the user (2026-05-16): "I want to make sure on the back side that a
 customer cannot just choose a customer number and they get that pricing.
-That has to be confirmed by sales@titantruck.com."
+That has to be confirmed by sales@nelsontruck.com."
 
 Flow:
   1. A signed-up User (no customer_id) submits a link request via
      /api/auth/request-link with their FACS customer_number + a billing
      zip (or similar verification hint).
   2. Server creates a CustomerLinkRequest row (status=PENDING) and emails
-     sales@titantruck.com with the request details.
+     sales@nelsontruck.com with the request details.
   3. Sales staff confirms ownership out-of-band (phone, in-person, email).
   4. An admin approves the request via the CMS (sets User.customer_id and
      marks the request APPROVED) or rejects it.
@@ -68,7 +68,7 @@ class CustomerLinkRequest(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    # Outbound email to sales@titantruck.com — kept on the row for retry/audit.
+    # Outbound email to sales@nelsontruck.com — kept on the row for retry/audit.
     email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     email_error: Mapped[str | None] = mapped_column(Text)
 

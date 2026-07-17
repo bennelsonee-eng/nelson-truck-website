@@ -6,7 +6,7 @@ conventional locations. In dev/preview the Vite dev-server proxy forwards
 static front (nginx) will route the same paths to this backend.
 
 Every absolute URL is built from `settings.canonical_base_url` — the single
-source of truth for the canonical host (the launch domain, titantruck.com), NOT
+source of truth for the canonical host (the launch domain, nelsontruck.com), NOT
 the preview host we build on. See app/config.py.
 """
 

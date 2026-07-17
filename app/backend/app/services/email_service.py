@@ -156,7 +156,7 @@ class _OrderForEmail:
 
 def compose_order_confirmation(order: _OrderForEmail) -> ComposedEmail:
     """Pure: build the customer-facing order confirmation email."""
-    subject = f"Titan Truck order {order.web_order_number} confirmed"
+    subject = f"Nelson Truck order {order.web_order_number} confirmed"
 
     lines_text = "\n".join(
         f"  {l.quantity + l.backorder_quantity:>3} x {l.sku:<20} {l.description[:40]:<40} "
@@ -195,7 +195,7 @@ We've forwarded the routing files to our fulfillment team.  You'll get a
 shipment notification once tracking is available.  Reply to this email or call
 509-534-5010 if you have questions.
 
-— Titan Truck Equipment
+— Nelson Truck Equipment
 """
 
     return ComposedEmail(
@@ -238,10 +238,10 @@ def order_for_email(order, lines: Iterable, fulfillments: Iterable, ship_to_str:
 
 
 # =========================================================================
-# RMA email — per SOW A4.31, emails sales@titantruck.com with photo attachments
+# RMA email — per SOW A4.31, emails sales@nelsontruck.com with photo attachments
 # =========================================================================
 
-RMA_INBOX_EMAIL = "sales@titantruck.com"
+RMA_INBOX_EMAIL = "sales@nelsontruck.com"
 
 
 @dataclass(frozen=True)
@@ -284,7 +284,7 @@ def compose_rma_request_email(
     rma: _RmaForEmail,
     attachments: tuple[EmailAttachment, ...] = (),
 ) -> ComposedEmail:
-    """Pure: build the RMA request email destined for sales@titantruck.com.
+    """Pure: build the RMA request email destined for sales@nelsontruck.com.
 
     Reply-To is set to the jobber's email so sales can reply directly.
     """
@@ -305,7 +305,7 @@ def compose_rma_request_email(
     notes_text = f"\n\nJobber notes:\n{rma.notes}\n" if rma.notes else ""
 
     text_body = f"""\
-RMA Request submitted via Titan Truck website
+RMA Request submitted via Nelson Truck website
 
 RMA reference:  #{rma.rma_id}
 Order:          {rma.web_order_number}
@@ -329,12 +329,12 @@ Photos attached
 {notes_text}
 Reply to this email or call 509-534-5010 to coordinate the return.
 
-— Titan Truck website
+— Nelson Truck website
 """
 
     return ComposedEmail(
         to_email=RMA_INBOX_EMAIL,
-        to_name="Titan Sales",
+        to_name="Nelson Sales",
         subject=subject,
         text_body=text_body,
         reply_to=rma.requested_by_email,
@@ -399,11 +399,11 @@ def rma_for_email(
 
 
 # =========================================================================
-# Customer link request — sales@titantruck.com confirms before linkage
+# Customer link request — sales@nelsontruck.com confirms before linkage
 # =========================================================================
 
 
-SALES_INBOX_EMAIL = "sales@titantruck.com"
+SALES_INBOX_EMAIL = "sales@nelsontruck.com"
 
 
 def compose_customer_link_request_email(
@@ -430,7 +430,7 @@ def compose_customer_link_request_email(
     info_text = f"\nAdditional info from requester:\n{additional_info}\n" if additional_info else ""
 
     text_body = f"""\
-A website user has requested to link their account to a Titan customer record.
+A website user has requested to link their account to a Nelson customer record.
 
 Link-request ID:    #{link_request_id}
 Requesting user:    {user_display_name or '(no display name)'} <{user_email}>
@@ -446,12 +446,12 @@ the user's account is linked and they gain jobber/dealer/muni pricing.
 
 If the request looks fraudulent, reject it from the same screen.
 
-— Titan Truck website
+— Nelson Truck website
 """
 
     return ComposedEmail(
         to_email=SALES_INBOX_EMAIL,
-        to_name="Titan Sales",
+        to_name="Nelson Sales",
         subject=subject,
         text_body=text_body,
         reply_to=user_email,
@@ -470,7 +470,7 @@ def compose_customer_link_decision_email(
     """Notify the requester after sales/admin has decided on their link request."""
     verdict = "approved" if approved else "rejected"
     subject = (
-        f"Your Titan account link request "
+        f"Your Nelson account link request "
         f"(#{link_request_id}) was {verdict}"
     )
 
@@ -478,26 +478,26 @@ def compose_customer_link_decision_email(
         body = f"""\
 Hi{(' ' + user_display_name) if user_display_name else ''},
 
-Your request to link your Titan account to customer #{requested_customer_number}
-has been approved. Sign in to titantruck.com and you'll see your jobber /
+Your request to link your Nelson account to customer #{requested_customer_number}
+has been approved. Sign in to nelsontruck.com and you'll see your jobber /
 dealer pricing on the catalog and your account page.
 
 If anything looks off, reply to this email — we're happy to help.
 
-— Titan Truck Equipment
+— Nelson Truck Equipment
 """
     else:
         body = f"""\
 Hi{(' ' + user_display_name) if user_display_name else ''},
 
-We were unable to verify your request to link your Titan account to customer
+We were unable to verify your request to link your Nelson account to customer
 #{requested_customer_number}. Common reasons: the customer number doesn't
 match what's on file, or the billing zip we have doesn't match the one
 submitted.
 
 {('Note from sales: ' + review_notes) if review_notes else 'Reply to this email or call 509-534-5010 if you would like to retry.'}
 
-— Titan Truck Equipment
+— Nelson Truck Equipment
 """
 
     return ComposedEmail(
@@ -537,7 +537,7 @@ class MailDevSender:
 
     name = "maildev"
 
-    def __init__(self, host: str = "localhost", port: int = 1025, from_addr: str = "sales@titantruck.com"):
+    def __init__(self, host: str = "localhost", port: int = 1025, from_addr: str = "sales@nelsontruck.com"):
         self.host = host
         self.port = port
         self.from_addr = from_addr
@@ -605,7 +605,7 @@ def _pick_sender() -> _Sender:
     settings = get_settings()
     provider = (settings.email_provider or "console").lower()
     if provider == "maildev":
-        return MailDevSender(from_addr=settings.email_from or "sales@titantruck.com")
+        return MailDevSender(from_addr=settings.email_from or "sales@nelsontruck.com")
     if provider == "smtp":
         # Real SMTP with auth — TigerTech, Postmark-SMTP, SendGrid-SMTP, etc.
         if not (settings.smtp_host and settings.smtp_user and settings.smtp_password):

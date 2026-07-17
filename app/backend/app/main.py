@@ -116,7 +116,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version="0.1.0",
-    description="Titan Truck Equipment — public ecommerce + B2B portal",
+    description="Nelson Truck Equipment — public ecommerce + B2B portal",
     lifespan=lifespan,
 )
 
@@ -127,8 +127,8 @@ app.add_middleware(
         # Titan-specific ports (5174/4174) so we don't collide with Nelson ERP on 5173/4173
         "http://localhost:5174",  # Vite dev
         "http://localhost:4174",  # Vite preview
-        "https://titantruck.com",
-        "https://www.titantruck.com",
+        "https://nelsontruck.com",
+        "https://www.nelsontruck.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
