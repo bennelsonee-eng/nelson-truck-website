@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState, createContext, useContext, useRef } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useState, createContext, useContext, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { Routes, Route, Link, useParams, useSearchParams, useNavigate, useLocation, useNavigationType } from 'react-router-dom'
 import { QRCodeSVG } from 'qrcode.react'
@@ -1726,11 +1726,24 @@ function MegaPanel({
   section,
   tree,
   onClose,
+  anchorLeft,
 }: {
   section: MegaSection
   tree: CategoryNode[]
   onClose: () => void
+  anchorLeft: number
 }) {
+  // Position the dropdown box's left edge under the hovered tab (anchorLeft,
+  // measured by CategoryNavStrip), but clamp so it never runs off the right edge.
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [left, setLeft] = useState(anchorLeft)
+  useLayoutEffect(() => {
+    const box = boxRef.current
+    const container = box?.parentElement  // the absolute left-0/right-0 wrapper = nav width
+    if (!box || !container) { setLeft(anchorLeft); return }
+    const clamped = Math.max(8, Math.min(anchorLeft, container.offsetWidth - box.offsetWidth - 8))
+    setLeft(clamped)
+  }, [anchorLeft, section])
   // Pre-resolve every sub-section once. Drop any sub_section that the API
   // pruned (no products in that category). Direct-route subsections like
   // "/snow-plows" always pass through since they don't depend on the tree.
@@ -1747,13 +1760,10 @@ function MegaPanel({
   // first category's subcategories.
   return (
     <div className="absolute left-0 right-0 top-full z-30">
-      {/* Aligns with the nav/logo (max-w-[1600px], responsive px). The dropdown box itself is
-          content-width (inline-block) so it starts at the logo on the left and
-          only stretches right as far as the subcategories need — no full-width
-          bar / dead space. data-mega-keep is on the box: hovering it keeps the
-          menu open, hovering the empty area around it closes it. */}
-      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div data-mega-keep className="inline-block max-w-full rounded-b-lg border border-t-0 border-gray-200 bg-white px-6 py-4 shadow-xl">
+      {/* The dropdown box is anchored under the hovered tab (left, clamped to stay
+          on-screen) so it lines up with its parent tab instead of always sitting
+          under the logo. data-mega-keep keeps the menu open while hovering it. */}
+        <div data-mega-keep ref={boxRef} style={{ marginLeft: left }} className="inline-block max-w-[calc(100%-16px)] rounded-b-lg border border-t-0 border-gray-200 bg-white px-6 py-4 shadow-xl">
           <Link
             to={section.view_all_route || `/catalog?category_top=${encodeURIComponent(section.label)}`}
             onClick={onClose}
@@ -1778,7 +1788,6 @@ function MegaPanel({
             </div>
           )}
         </div>
-      </div>
     </div>
   )
 }
@@ -1807,6 +1816,9 @@ function CategoryNavStrip() {
   const showroomActive = showroom && (user?.customer_tier === 'jobber' || user?.customer_tier === 'dealer')
   const [tree, setTree] = useState<CategoryNode[]>(_categoryTree || [])
   const [openSection, setOpenSection] = useState<number | null>(null)
+  const navRef = useRef<HTMLElement>(null)
+  const tabRefs = useRef<(HTMLDivElement | null)[]>([])
+  const [anchorLeft, setAnchorLeft] = useState(0)
   // hover-intent: only open after the cursor DWELLS on a tab for a beat, and
   // only on real mouse devices. This kills the "menu flies open every time the
   // cursor crosses the nav on its way to the search results" annoyance — a
@@ -1850,6 +1862,15 @@ function CategoryNavStrip() {
     closeTimer.current = window.setTimeout(() => setOpenSection(null), HOVER_CLOSE_MS)
   }
   useEffect(() => () => { cancelHoverOpen(); cancelClose() }, [])
+  // Measure the open tab's left offset (relative to the nav) so the dropdown
+  // anchors under its parent tab rather than under the logo.
+  useLayoutEffect(() => {
+    if (openSection === null) return
+    const nav = navRef.current
+    const tab = tabRefs.current[openSection]
+    if (!nav || !tab) return
+    setAnchorLeft(Math.max(8, tab.getBoundingClientRect().left - nav.getBoundingClientRect().left))
+  }, [openSection])
 
   // Load the category tree, RETRYING on transient failure. Previously a single
   // failed fetch (backend restart on deploy, DB/Typesense blip, network stutter)
@@ -1951,7 +1972,7 @@ function CategoryNavStrip() {
     else scheduleClose()
   }
   return (
-    <nav className="bg-gray-50 border-t relative"
+    <nav ref={navRef} className="bg-gray-50 border-t relative"
       onMouseOver={onNavMouseOver}
       onMouseLeave={() => { cancelHoverOpen(); cancelClose(); setOpenSection(null) }}>
       {/* flex-nowrap keeps the divisions on one line (a recognizable horizontal
@@ -1974,6 +1995,7 @@ function CategoryNavStrip() {
           liveSections.map(({ sec }, i) => (
           <div
             key={i}
+            ref={(el) => { tabRefs.current[i] = el }}
             data-mega-keep
             onMouseEnter={() => scheduleOpen(i)}
             onClick={() => { cancelHoverOpen(); cancelClose(); setOpenSection(openSection === i ? null : i) }}
@@ -2026,6 +2048,7 @@ function CategoryNavStrip() {
         <MegaPanel
           section={liveSections[openSection].sec}
           tree={tree}
+          anchorLeft={anchorLeft}
           onClose={() => setOpenSection(null)}
         />
       )}
