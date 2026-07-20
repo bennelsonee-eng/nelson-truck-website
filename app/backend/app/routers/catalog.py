@@ -29,6 +29,7 @@ from app.models import (
     ProductPrice,
     ProductResource,
     User,
+    Warehouse,
 )
 from app.services.pricing_service import (
     TierPricingDisplay,
@@ -43,6 +44,12 @@ log = logging.getLogger(__name__)
 
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
+
+# Nelson's staffed retail counters — the only places a customer can actually
+# "pick it up today." Portland = warehouse code 1, Kent = code 2. Spokane
+# (code 10) is the parent group's HQ warehouse, NOT a Nelson pickup branch, so
+# its on-hand must never feed the homepage "in stock & ready today" promise.
+PICKUP_WAREHOUSE_CODES = (1, 2)
 
 
 def _format_money(d: Decimal | None) -> str | None:
@@ -68,6 +75,7 @@ def _serialize_product_card(hit: dict[str, Any]) -> dict[str, Any]:
         "in_stock": doc.get("in_stock", False),
         "stock_total": doc.get("stock_total", 0),
         "cta_mode": doc.get("cta_mode", "add_to_cart"),
+        "shipping_mode": doc.get("shipping_mode") or "ship",
         "freight_class": doc.get("freight_class") or None,
         "image_url": image_url,
         "category_top": doc.get("category_top") or None,
@@ -100,6 +108,90 @@ async def _viewer_channel(db: AsyncSession, user: User | None, request: Request)
         select(Customer.tier).where(Customer.id == eff_id)
     )).scalar_one_or_none()
     return _tier_to_channel(tier)
+
+
+@router.get("/featured-pickup")
+async def featured_pickup(
+    limit: int = Query(12, ge=1, le=48),
+    db: AsyncSession = Depends(get_db),
+):
+    """Homepage "In stock & ready today" grid.
+
+    Returns only products with positive on-hand at a Nelson pickup counter
+    (Portland / Kent — see ``PICKUP_WAREHOUSE_CODES``). Spokane-only stock is
+    deliberately excluded so the "pick it up today" promise on the card is
+    honest — an item sitting in Spokane can't be grabbed off the shelf in
+    Portland or Kent today.
+
+    Distinct from ``/browse`` (which counts on-hand across *every* warehouse
+    and is served from the company-wide Typesense index).
+    """
+    # Per-product on-hand summed over the pickup branches only. HAVING > 0
+    # drops products whose only stock is at a non-pickup warehouse.
+    pickup_stock_sq = (
+        select(
+            ProductInventory.product_id.label("pid"),
+            func.sum(ProductInventory.on_hand).label("qty"),
+        )
+        .join(Warehouse, Warehouse.id == ProductInventory.warehouse_id)
+        .where(
+            Warehouse.code.in_(PICKUP_WAREHOUSE_CODES),
+            ProductInventory.on_hand > 0,
+        )
+        .group_by(ProductInventory.product_id)
+        .having(func.sum(ProductInventory.on_hand) > 0)
+        .subquery()
+    )
+
+    # A real product photo (not a "photo coming soon" placeholder) makes a far
+    # better showcase card, so rank image-having products first.
+    has_image = (
+        select(ProductImage.id)
+        .where(
+            ProductImage.product_id == Product.id,
+            ProductImage.url.isnot(None),
+            ~ProductImage.url.ilike("%photocomingsoon%"),
+        )
+        .exists()
+        .label("has_image")
+    )
+
+    rows = (await db.execute(
+        select(Product, pickup_stock_sq.c.qty, has_image)
+        .options(selectinload(Product.brand), selectinload(Product.images))
+        .join(Brand, Brand.id == Product.brand_id)
+        .join(pickup_stock_sq, pickup_stock_sq.c.pid == Product.id)
+        .where(
+            Product.is_hidden == False,  # noqa: E712
+            Product.is_for_sale == True,  # noqa: E712
+            Brand.is_active == True,  # noqa: E712
+        )
+        .order_by(has_image.desc(), pickup_stock_sq.c.qty.desc(), Product.name.asc())
+        .limit(limit)
+    )).all()
+
+    def _usable(url: str | None) -> bool:
+        return bool(url) and "photocomingsoon" not in url.lower()
+
+    hits = []
+    for product, pickup_qty, _has_image in rows:
+        imgs = [i for i in product.images if _usable(i.url)]
+        primary = (
+            next((i.url for i in imgs if i.is_primary), None)
+            or (imgs[0].url if imgs else None)
+            or (product.brand.logo_url if (product.brand and product.brand.logo_url) else None)
+        )
+        hits.append({
+            "id": product.id,
+            "sku": product.sku,
+            "name": product.name,
+            "brand": product.brand.name if product.brand else None,
+            "image_url": primary,
+            "in_stock": True,
+            "pickup_stock": int(pickup_qty or 0),
+        })
+
+    return {"hits": hits}
 
 
 @router.get("/browse")
@@ -902,6 +994,7 @@ async def _browse_via_pace(
             "stock_total": stock_total,
             "locations_count": locations_lookup.get(p.id, 0),
             "cta_mode": p.cta_mode.value if hasattr(p.cta_mode, "value") else (p.cta_mode or "add_to_cart"),
+            "shipping_mode": p.shipping_mode or "ship",
             "freight_class": p.freight_class,
             "image_url": primary,
             "category_top": (category_top or category_path or "").split(" > ")[0] or None,
@@ -974,6 +1067,17 @@ async def product_detail(
     product = result.scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail=f"Product not found: {sku}")
+
+    # Hidden / not-for-sale / deactivated-brand products are "gone" to the
+    # public: return 410 so search engines and AI bots drop the URL instead of
+    # indexing a dead page (they get no content, and the SPA renders a noindex
+    # "no longer available" state). Staff (admin/editor) still get the full PDP
+    # so they can preview a hidden line before turning it back on.
+    _role = (user.role.value if user and hasattr(user.role, "value") else str(getattr(user, "role", ""))) if user else ""
+    _is_staff = _role in ("admin", "editor")
+    _brand_active = product.brand.is_active if product.brand else True
+    if (product.is_hidden or not product.is_for_sale or not _brand_active) and not _is_staff:
+        raise HTTPException(status_code=410, detail=f"This product is no longer available: {sku}")
 
     # Categorized text content — PIES descriptions + scraped feature blocks.
     # Source: PIES loader writes generic codes (DES/FEA/INL/WAR/etc.); the
@@ -1188,6 +1292,10 @@ async def product_detail(
         },
         "freight_class": product.freight_class,
         "cta_mode": product.cta_mode.value if hasattr(product.cta_mode, "value") else str(product.cta_mode),
+        # Retail shipping mode + flat-rate (the storefront gates display to
+        # retail; B2B has a separate freight program). See retail_freight.py.
+        "shipping_mode": product.shipping_mode,
+        "flat_ship_amount": float(product.flat_ship_amount) if product.flat_ship_amount is not None else None,
         "is_for_sale": product.is_for_sale,
         "is_hidden": product.is_hidden,
         "images": [

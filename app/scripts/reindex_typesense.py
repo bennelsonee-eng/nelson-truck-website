@@ -36,6 +36,18 @@ async def main(drop_first: bool) -> None:
     engine.sync_engine.echo = False
     from app.services.search import reindex_all_products  # type: ignore
     from app.services.kit_inventory import recompute_all_kits  # type: ignore
+    from app.services.catalog_visibility import resolve_effective  # type: ignore
+
+    # Apply admin catalog overrides (show/hide + shipping mode + flat rate) onto
+    # the derived product columns BEFORE reindexing, so the rebuilt index
+    # reflects tonight's toggles. This is the "takes effect at night" path.
+    log.info("Resolving catalog overrides…")
+    async with async_session() as db:
+        try:
+            res = await resolve_effective(db)
+            log.info("Catalog overrides resolved: %s", res)
+        except Exception:
+            log.exception("Override resolve failed; continuing with reindex")
 
     log.info("Reindexing Typesense (drop_first=%s)…", drop_first)
     async with async_session() as db:

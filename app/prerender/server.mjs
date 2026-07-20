@@ -70,7 +70,11 @@ async function render(targetUrl) {
     await page
       .waitForFunction('window.prerenderReady === true', { timeout: READY_TIMEOUT })
       .catch(() => {}) // fall through on timeout — capture whatever rendered
-    return await page.content()
+    // The SPA sets window.prerenderStatus (e.g. 410 for a hidden/gone product,
+    // 404 for not-found) so bots get a real HTTP status, not a 200 shell.
+    const status = await page.evaluate('window.prerenderStatus || 200').catch(() => 200)
+    const html = await page.content()
+    return { html, status: Number(status) || 200 }
   } finally {
     await ctx.close()
   }
@@ -96,9 +100,11 @@ const server = http.createServer(async (req, res) => {
 
   await acquire()
   try {
-    const html = await render(target)
-    cacheSet(target, html)
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'X-Prerender-Cache': 'MISS' })
+    const { html, status } = await render(target)
+    // Only cache successful pages — never a 410/404, so a re-shown product
+    // isn't stuck serving "gone" for the cache TTL.
+    if (status === 200) cacheSet(target, html)
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'X-Prerender-Cache': 'MISS' })
     res.end(html)
   } catch (e) {
     console.error(`[prerender] ${target} -> ${e.message}`)

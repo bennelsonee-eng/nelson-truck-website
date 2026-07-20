@@ -39,6 +39,23 @@ class CTAMode(str, Enum):
     BROWSE_ONLY = "browse_only"
 
 
+class ShippingMode(str, Enum):
+    """How a product is fulfilled when shipped/picked up (owner ask 2026-07-16).
+
+    Toggleable per product (and by manufacturer line / category / filter) via
+    the admin catalog tree, exactly like `is_hidden` — see
+    app.services.catalog_visibility. Drives the storefront badge + checkout.
+
+    Note: WILL_CALL means pickup-ONLY (not shippable). Separately, will-call
+    pickup is offered on ANY in-stock product at its stocking branch — that is
+    checkout behavior, not this field.
+    """
+
+    SHIP = "ship"                    # normal parcel / ground
+    TRUCK_FREIGHT = "truck_freight"  # LTL freight — shippable, heavy; "Truck Freight" badge
+    WILL_CALL = "will_call"          # pickup only, from current stocking area; "Will Call" badge
+
+
 class GroupRequirement(str, Enum):
     """Tier visibility restriction (mirrors WSM GROUPREQUIRED column).
 
@@ -192,8 +209,32 @@ class Product(Base):
     shipping_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
 
     # Visibility
+    # `is_hidden` is the EFFECTIVE flag every surface reads (search, browse,
+    # sitemap, PDP noindex). It is DERIVED by the catalog-visibility resolver
+    # (app.services.catalog_visibility) from `base_hidden` + admin overrides —
+    # do not hand-set it in import scripts; set `base_hidden` instead.
     is_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    # Baseline "hidden for non-override reasons" (import defaults like the
+    # Buyers 13k, discontinued, never-stocked). Importers write THIS; the
+    # resolver falls back to it for any product with no applicable override.
+    base_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
     is_for_sale: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+
+    # Shipping fulfillment mode — ship | truck_freight | will_call (see
+    # ShippingMode). `shipping_mode` is the EFFECTIVE value (drives badge +
+    # checkout), DERIVED by the catalog resolver from `base_shipping_mode` +
+    # admin overrides — same pattern as is_hidden/base_hidden. Importers /
+    # seeds write `base_shipping_mode`; the resolver falls back to it.
+    shipping_mode: Mapped[str] = mapped_column(String(20), default="ship", nullable=False, index=True)
+    base_shipping_mode: Mapped[str] = mapped_column(String(20), default="ship", nullable=False, index=True)
+
+    # Flat-rate shipping override (owner ask 2026-07-16). NULL = use the normal
+    # weight-tiered freight calc; 0.00 = free shipping; > 0 = charge that flat
+    # amount. `flat_ship_amount` is the EFFECTIVE value (freight_service reads
+    # it), DERIVED by the resolver from `base_flat_ship_amount` + overrides —
+    # same pattern as is_hidden / shipping_mode. will_call items ignore it.
+    flat_ship_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+    base_flat_ship_amount: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     login_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     group_required: Mapped[GroupRequirement | None] = mapped_column(
         SAEnum(GroupRequirement, name="group_requirement"), index=True

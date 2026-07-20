@@ -7,6 +7,8 @@ import { RotatingBanner } from './pages/HomepageMockups'
 // Lazy-loaded: the admin-kits pages (/admin/kits/*) — not on the public critical
 // path, so they load on demand rather than in the initial bundle.
 const AdminKitsListPage = lazy(() => import('./AdminKits').then((m) => ({ default: m.AdminKitsListPage })))
+const AdminCatalogVisibilityPage = lazy(() => import('./pages/AdminCatalogVisibility').then((m) => ({ default: m.AdminCatalogVisibilityPage })))
+const AdminMessagesPage = lazy(() => import('./pages/AdminMessages').then((m) => ({ default: m.AdminMessagesPage })))
 const AdminKitWizardPage = lazy(() => import('./AdminKits').then((m) => ({ default: m.AdminKitWizardPage })))
 // Static content + trust pages (low-traffic → lazy-loaded off the main bundle).
 const FaqPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.FaqPage })))
@@ -228,6 +230,7 @@ interface BrowseHit {
   in_stock: boolean
   stock_total: number
   cta_mode: string
+  shipping_mode?: string | null
   image_url: string | null
   category_top: string | null
   description?: string | null
@@ -379,6 +382,8 @@ interface ProductDetail {
   dimensions: { length_in: number | null; width_in: number | null; height_in: number | null }
   freight_class: string | null
   cta_mode: string
+  shipping_mode: string | null
+  flat_ship_amount: number | null
   is_for_sale: boolean
   is_hidden: boolean
   images: { url: string; alt: string | null; sort_order: number }[]
@@ -1322,6 +1327,48 @@ function AdminIssuesBadge() {
   )
 }
 
+// Admin "Alerts" badge — open admin_message count (kit conflicts + system
+// warnings). Links to the message board. Refreshes on titan:alerts-changed.
+function AdminAlertsBadge() {
+  const [count, setCount] = useState<number | null>(null)
+  useEffect(() => {
+    let alive = true
+    const load = () => {
+      fetch('/api/admin/messages/stats', { credentials: 'include' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (alive && d) setCount(d.open || 0) })
+        .catch(() => {})
+    }
+    load()
+    const timer = window.setInterval(load, 60000)
+    const onFocus = () => load()
+    window.addEventListener('focus', onFocus)
+    window.addEventListener('titan:alerts-changed', load)
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', onFocus)
+      window.removeEventListener('titan:alerts-changed', load)
+    }
+  }, [])
+  const n = count ?? 0
+  return (
+    <Link
+      to="/admin/messages"
+      className={`relative flex items-center gap-1 hover:text-white ${n > 0 ? 'text-amber-300 font-semibold' : ''}`}
+      title={n > 0 ? `${n} open alert${n === 1 ? '' : 's'} — open the message board` : 'No open alerts'}
+    >
+      <span className="text-sm leading-none">&#128226;</span>
+      <span className="hidden sm:inline">Alerts</span>
+      {n > 0 && (
+        <span className="absolute -top-2 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+          {n > 99 ? '99+' : n}
+        </span>
+      )}
+    </Link>
+  )
+}
+
 // Password-gated exit from a locked Showroom kiosk. Verifies the CURRENT
 // session's account password (the jobber's, or the admin's when admin-armed)
 // via POST /api/auth/verify-password before unlocking.
@@ -1454,6 +1501,7 @@ function Header() {
             {user ? (
               <>
                 {isAdmin && <AdminIssuesBadge />}
+                {isAdmin && <AdminAlertsBadge />}
                 <Link to="/account" className="hover:text-white">
                   {user.display_name || user.email}
                   {user.customer_tier && (
@@ -2272,7 +2320,10 @@ function NelsonHeroBanner() {
 function NelsonHome() {
   const [prods, setProds] = useState<any[]>([])
   useEffect(() => {
-    fetch('/api/catalog/browse?per_page=12')
+    // Pickup-branch stock only (Portland/Kent) — the "In stock & ready today"
+    // grid promises same-day counter pickup, so it must exclude Spokane-only
+    // stock that /api/catalog/browse would otherwise count as in-stock.
+    fetch('/api/catalog/featured-pickup?limit=12')
       .then((r) => r.json())
       .then((d) => setProds((d?.hits || []).slice(0, 12)))
       .catch(() => setProds([]))
@@ -3471,13 +3522,25 @@ function ProductListRow({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) 
 }
 
 function ProductCard({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) {
-  const { recentSkus } = useApp()
+  const { recentSkus, user } = useApp()
   const reordered = recentSkus.has(h.sku)
+  // Shipping-mode labels are retail-only (B2B has a separate freight program).
+  const isRetail = !user?.customer_tier || user.customer_tier === 'retail'
+  const shipBadge = isRetail && (h.shipping_mode === 'truck_freight'
+    ? { label: 'Truck Freight', cls: 'bg-amber-500' }
+    : h.shipping_mode === 'will_call'
+      ? { label: 'Will Call', cls: 'bg-blue-600' }
+      : null)
   return (
     <Link
       to={`/product/${h.sku}`}
-      className="group flex flex-col bg-white rounded-lg overflow-hidden shadow-[0_3px_10px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_22px_rgba(0,0,0,0.22)] transition-shadow"
+      className="group relative flex flex-col bg-white rounded-lg overflow-hidden shadow-[0_3px_10px_rgba(0,0,0,0.14)] hover:shadow-[0_8px_22px_rgba(0,0,0,0.22)] transition-shadow"
     >
+      {shipBadge && (
+        <span className={`absolute left-1.5 top-1.5 z-10 flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-white ${shipBadge.cls}`}>
+          🚚 {shipBadge.label}
+        </span>
+      )}
       {/* Product image. mix-blend-mode: multiply blends the JPEG's white
           canvas into the white card so the silhouette reads cleanly with
           no per-image white square. Card-level shadow does the "lifted"
@@ -5016,8 +5079,12 @@ function ProductDetail() {
   // B2B-only affordances (Lost Sale, etc). Retail / anonymous customers
   // get the Add-to-Cart path even when OOS (special order).
   const isB2B = user?.customer_tier === 'jobber' || user?.customer_tier === 'dealer'
+  // Retail-shipping display (badges, flat-rate, will-call) is retail-only —
+  // B2B tiers (jobber/dealer/municipality) use a separate freight program.
+  const isRetail = !user?.customer_tier || user.customer_tier === 'retail'
   const [data, setData] = useState<ProductDetail | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [errorStatus, setErrorStatus] = useState<number | null>(null)
   const [qty, setQty] = useState(1)
   const [adding, setAdding] = useState(false)
   const [added, setAdded] = useState(false)
@@ -5033,10 +5100,14 @@ function ProductDetail() {
     // clicking a card near the bottom of the grid leaves the SPA scrolled to
     // the old grid position and the product view loads off-screen.
     window.scrollTo({ top: 0 })
-    setData(null); setError(null); setAdded(false)
+    setData(null); setError(null); setErrorStatus(null); setAdded(false)
+    // Prerender status signal (server.mjs reads it): default OK, overridden on error.
+    ;(window as unknown as { prerenderStatus?: number }).prerenderStatus = 200
     fetch(`/api/catalog/products/${sku}`)
       .then(async (r) => {
         if (!r.ok) {
+          setErrorStatus(r.status)
+          ;(window as unknown as { prerenderStatus?: number }).prerenderStatus = r.status
           const body = await r.json().catch(() => ({}))
           throw new Error(body.detail || `HTTP ${r.status}`)
         }
@@ -5067,7 +5138,35 @@ function ProductDetail() {
     }
   }
 
-  if (error) return <div className="p-8 text-red-600">Error: {error}</div>
+  if (error) {
+    const gone = errorStatus === 410
+    const notFound = errorStatus === 404
+    return (
+      <>
+        <Seo
+          title={gone ? 'No longer available | Nelson Truck Equipment' : 'Product not found | Nelson Truck Equipment'}
+          description={gone ? 'This product is no longer available.' : 'This product could not be found.'}
+          noindex
+        />
+        <div className="mx-auto max-w-xl px-6 py-16 text-center">
+          <div className="mb-3 text-5xl">{gone ? '🚫' : '🔎'}</div>
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">
+            {gone ? 'This product is no longer available'
+              : notFound ? 'Product not found'
+              : 'Something went wrong'}
+          </h1>
+          <p className="mb-6 text-gray-600">
+            {gone ? 'This item has been discontinued or removed from our catalog.'
+              : notFound ? "We couldn't find that product — it may have moved."
+              : error}
+          </p>
+          <Link to="/catalog" className="inline-block rounded-lg bg-red-600 px-4 py-2 font-medium text-white hover:bg-red-700">
+            Browse the catalog
+          </Link>
+        </div>
+      </>
+    )
+  }
   if (!data) return <div className="p-8 text-gray-500">Loading…</div>
 
   // Markup: the customer's profile default (or 25% via /me), overridable per
@@ -5206,6 +5305,34 @@ function ProductDetail() {
             <div className="text-sm font-semibold mb-2">Stock by warehouse</div>
             <WarehouseStockTable sku={sku!} />
           </div>
+
+          {/* Retail shipping labels — Truck Freight / Will Call / flat-rate.
+              Retail-only: B2B tiers use a separate freight program. */}
+          {isRetail && (() => {
+            const mode = data.shipping_mode
+            const flat = data.flat_ship_amount
+            const branches = [...new Set((data.inventory || []).filter((w) => w.on_hand > 0).map((w) => w.warehouse_name))]
+            if (mode === 'will_call') {
+              return (
+                <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                  <span className="inline-block rounded bg-blue-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Will Call — Pickup Only</span>
+                  <p className="mt-1 text-sm text-blue-900">
+                    Pickup only{branches.length ? ` at ${branches.join(' or ')}` : ' at the branch where it is stocked'} — not available for shipping.
+                  </p>
+                </div>
+              )
+            }
+            const hasNote = mode === 'truck_freight' || flat != null
+            if (!hasNote) return null
+            return (
+              <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                {mode === 'truck_freight' && <span className="inline-block rounded bg-amber-500 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Truck Freight</span>}
+                {flat === 0 && <span className="inline-block rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Free Shipping</span>}
+                {flat != null && flat > 0 && <span className="text-gray-700">Flat-rate shipping: <b>${flat.toFixed(2)}</b> per unit</span>}
+                {mode === 'truck_freight' && flat == null && <span className="text-gray-500">Ships by freight — cost added to your invoice.</span>}
+              </div>
+            )
+          })()}
 
           {data.cta_mode === 'add_to_cart' && (
             <div className="mt-6 space-y-3">
@@ -5955,7 +6082,7 @@ function AccountPage() {
 
   const showFrontCounter = user.customer_tier === 'jobber' || user.customer_tier === 'dealer'
 
-  type AdminTool = { icon: string; title: string; desc: string; to?: string; href?: string; onClick?: () => void }
+  type AdminTool = { icon: string; title: string; desc: string; to?: string; href?: string; onClick?: () => void; newTab?: boolean }
   const adminTools: AdminTool[] = [
     { icon: '🖼️', title: 'Banner Manager', desc: 'Homepage rotating banner — audience-scoped & schedulable slides', to: '/admin/banners' },
     { icon: '📝', title: 'Content pages', desc: 'Edit the FAQ and trust pages (About, Returns, Shipping, Privacy)', to: '/admin/content' },
@@ -5963,6 +6090,8 @@ function AccountPage() {
     { icon: '🩺', title: 'Site Health', desc: 'Nightly product & site health report (both sites) — download the Word doc', to: '/admin/site-health' },
     { icon: '💡', title: 'Build Ideas', desc: 'Backlog of future website features — admin-only, parked for later', to: '/admin/build-ideas' },
     { icon: '📐', title: 'Special Rules', desc: 'Non-obvious storefront rules — e.g. Dodge/RAM make merge', to: '/admin/special-rules' },
+    { icon: '🗂️', title: 'Catalog visibility & shipping', desc: 'Turn manufacturer lines on/off (fully or partially); set shipping mode & flat rates — opens in a new window', href: '/admin/catalog-visibility?window=1', newTab: true },
+    { icon: '📣', title: 'Message board', desc: 'Kit-conflict warnings + live site health (page errors, cart/checkout failures, JS errors)', to: '/admin/messages' },
     { icon: '📦', title: 'Kit packages', desc: 'Create & manage package kits (bill of materials, fitment, placement)', to: '/admin/kits' },
     { icon: '🏷️', title: 'Category image curation', desc: 'Pin a representative image for each catalog category', to: '/admin/category-images' },
     { icon: '🎛️', title: 'Attribute value curation', desc: 'Fold near-duplicate PIES values into one customer-facing filter bucket', to: '/admin/attribute-curator' },
@@ -5996,7 +6125,7 @@ function AccountPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {adminTools.map((t) =>
               t.to ? <Link key={t.title} to={t.to} className={adminCardCls}>{adminCardInner(t)}</Link>
-              : t.href ? <a key={t.title} href={t.href} className={adminCardCls}>{adminCardInner(t)}</a>
+              : t.href ? <a key={t.title} href={t.href} {...(t.newTab ? { target: '_blank', rel: 'noopener noreferrer' } : {})} className={adminCardCls}>{adminCardInner(t)}</a>
               : <button key={t.title} onClick={t.onClick} className={adminCardCls}>{adminCardInner(t)}</button>
             )}
           </div>
@@ -16321,12 +16450,15 @@ function AdminDealsManagerPage() {
 export default function App() {
   // Homepage spatial mockups render their own header/footer chrome, so we
   // suppress the global Header/Footer on /mockup* to avoid a double-header.
-  const { pathname } = useLocation()
+  const { pathname, search } = useLocation()
   const isMockup = pathname.startsWith('/mockup')
+  // "?window=1" opens a route as a bare, full-window admin workspace (no
+  // storefront header/footer) — used by the admin "open in new window" tools.
+  const bare = new URLSearchParams(search).has('window')
   return (
     <AppProvider>
       <ScrollToTop />
-      {!isMockup && <Header />}
+      {!isMockup && !bare && <Header />}
       <main>
         <Suspense fallback={<div className="p-8 text-gray-500">Loading…</div>}>
         <Routes>
@@ -16375,6 +16507,8 @@ export default function App() {
           <Route path="/admin/special-rules" element={<AdminSpecialRulesPage />} />
           <Route path="/admin/rebates" element={<AdminRebateManagerPage />} />
           <Route path="/admin/deals" element={<AdminDealsManagerPage />} />
+          <Route path="/admin/catalog-visibility" element={<AdminCatalogVisibilityPage />} />
+          <Route path="/admin/messages" element={<AdminMessagesPage />} />
           <Route path="/admin/kits" element={<AdminKitsListPage />} />
           <Route path="/admin/kits/new" element={<AdminKitWizardPage />} />
           <Route path="/admin/kits/:id" element={<AdminKitWizardPage />} />
@@ -16384,7 +16518,7 @@ export default function App() {
         </Routes>
         </Suspense>
       </main>
-      {!isMockup && <Footer />}
+      {!isMockup && !bare && <Footer />}
       <GlobalQuickOrderHost />
       <ImpersonationHost />
       <CompareBar />

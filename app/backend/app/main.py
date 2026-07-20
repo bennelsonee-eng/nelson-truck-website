@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
-from app.routers import account, admin, admin_kits, auth, banner, build_ideas, cart, catalog, configurator, content, deals, deweze, error_reports, fitment, health, health_reports, insights, orders, pace_catalog, rebate, rma, seo, showroom, signals, telemetry, weather_alerts, ymm
+from app.routers import account, admin, admin_catalog, admin_kits, admin_messages, auth, banner, build_ideas, cart, catalog, configurator, content, deals, deweze, error_reports, fitment, health, health_reports, insights, orders, pace_catalog, rebate, rma, seo, showroom, signals, telemetry, weather_alerts, ymm
 from app.services import cf_access, content_store, request_telemetry, tester_activity
 from app.services.admin_audit import audit_admin_request
 from app.services.banner_link_cron import run_daily_loop as run_banner_link_loop
@@ -224,6 +224,8 @@ app.include_router(orders.router)
 app.include_router(rma.router)
 app.include_router(admin.router)
 app.include_router(admin_kits.router)
+app.include_router(admin_catalog.router)
+app.include_router(admin_messages.router)
 app.include_router(health_reports.router)
 app.include_router(telemetry.router)
 app.include_router(ymm.router)

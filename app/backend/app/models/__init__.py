@@ -13,6 +13,7 @@ from app.models.catalog import (
     ProductCategory,
     ProductFitment,
     ProductImage,
+    ShippingMode,
 )
 from app.models.warehouse import ProductInventory, Warehouse
 from app.models.pricing import Contract, ProductPrice
@@ -50,6 +51,8 @@ from app.models.weather_alert import WeatherAlertSubscriber
 from app.models.product_match import ProductMatch, ProductMatchStatus, ProductMatchSource
 from app.models.product_resource import ProductResource, ResourceKind
 from app.models.kit import Kit, KitComponent
+from app.models.catalog_visibility import CatalogOverride, OVERRIDABLE_FIELDS
+from app.models.admin_message import AdminMessage
 from app.models.truck_render import TruckRenderRequest, TruckRenderStatus
 from app.models.pace_catalog import (
     VcdbMake,
@@ -90,6 +93,7 @@ __all__ = [
     "ProductCategory",
     "ProductFitment",
     "ProductImage",
+    "ShippingMode",
     # Warehouse
     "ProductInventory",
     "Warehouse",
@@ -160,6 +164,10 @@ __all__ = [
     # Kit / package bill-of-materials (WeatherGuard van packages)
     "Kit",
     "KitComponent",
+    # Catalog tree overrides (admin show/hide + shipping-mode) + admin message board
+    "CatalogOverride",
+    "OVERRIDABLE_FIELDS",
+    "AdminMessage",
     # Truck render requests (FLUX Kontext "see it on my truck")
     "TruckRenderRequest",
     "TruckRenderStatus",
