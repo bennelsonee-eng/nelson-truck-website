@@ -9,9 +9,10 @@ so they sort ahead of out-of-stock items at the same relevance.
 
 from __future__ import annotations
 
+import asyncio
 import datetime
 import logging
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import typesense
 from sqlalchemy import select, func
@@ -139,12 +140,18 @@ def _doc_for_product(
     fit_vehicle_ids: list[int] | None = None,
 ) -> dict[str, Any]:
     in_stock = stock_total > 0
+    # Per-customer-channel visibility: a product hidden from a channel via the
+    # admin catalog tree (Product.is_hidden_<channel>) drops that channel here,
+    # so the storefront's `allowed_channels:=<viewer channel>` filter hides it
+    # for that audience with no extra query. Then intersect with the kit-channel
+    # list (`allowed_channels` arg): None = not a kit / unrestricted; an explicit
+    # [] is a kit hidden right now (inactive / out-of-window) and must stay empty
+    # so the filter excludes it — the intersection preserves that.
+    visible_channels = [c for c in ALL_CHANNELS if not getattr(p, f"is_hidden_{c}", False)]
+    if allowed_channels is not None:
+        visible_channels = [c for c in visible_channels if c in allowed_channels]
     doc: dict[str, Any] = {
-        # None = not a kit / unrestricted -> all channels. An explicit [] is a
-        # kit that's hidden right now (inactive / out-of-window / no channels)
-        # — keep it empty so the channel filter excludes it (don't `or` it back
-        # to ALL_CHANNELS, since [] is falsy).
-        "allowed_channels": ALL_CHANNELS if allowed_channels is None else allowed_channels,
+        "allowed_channels": visible_channels,
         "id": str(p.id),
         "sku": p.sku,
         "name": p.name,
@@ -304,10 +311,18 @@ async def reindex_all_products(db: AsyncSession, *, drop_first: bool = False) ->
     return indexed
 
 
-async def index_products(db: AsyncSession, product_ids: list[int]) -> int:
-    """Re-index a handful of specific products (e.g. after a kit save changes
-    its channel availability). Best-effort: swallows Typesense errors so a save
-    never fails on a search hiccup. Returns docs upserted."""
+async def index_products(
+    db: AsyncSession,
+    product_ids: list[int],
+    *,
+    progress: Callable[[int, int], None] | None = None,
+) -> int:
+    """Re-index specific products by id. Gathers all lookup data ONCE (inventory,
+    images, categories, kit channels, fitment) then imports to Typesense in
+    chunks, so a large set is a single round of DB queries (not per-chunk). If
+    `progress` is given it's called with (done, total) after each import chunk —
+    used to drive the Apply-now progress bar. Best-effort: swallows Typesense
+    errors so a save never fails on a search hiccup. Returns docs upserted."""
     if not product_ids:
         return 0
     if not _probe_typesense():
@@ -373,12 +388,20 @@ async def index_products(db: AsyncSession, product_ids: list[int]) -> int:
         )
         for p in prods
     ]
-    try:
-        client().collections[COLLECTION].documents.import_(docs, {"action": "upsert"})
-    except Exception:
-        log.exception("index_products upsert failed (non-fatal)")
-        return 0
-    return len(docs)
+    # All the expensive gathering above ran ONCE for the whole id set. Only the
+    # Typesense import is chunked — each chunk in a worker thread so the event
+    # loop keeps serving status polls (and other requests) during a big reindex.
+    total = len(docs)
+    coll = client().collections[COLLECTION].documents
+    IMPORT_CHUNK = 2000
+    for i in range(0, total, IMPORT_CHUNK):
+        try:
+            await asyncio.to_thread(coll.import_, docs[i:i + IMPORT_CHUNK], {"action": "upsert"})
+        except Exception:
+            log.exception("index_products upsert chunk failed (non-fatal)")
+        if progress is not None:
+            progress(min(i + IMPORT_CHUNK, total), total)
+    return total
 
 
 def _probe_typesense() -> bool:
@@ -430,10 +453,11 @@ def search_products(
         raise ConnectionError("Typesense unreachable — fast-fail")
     c = client()
     filters: list[str] = ["is_hidden:false", "is_for_sale:true"]
-    if channel:
-        # Hide channel-restricted kits from disallowed viewers. Every product
-        # carries all four channels, so non-kit products always match.
-        filters.append(f"allowed_channels:={channel}")
+    # Always apply the channel filter (default retail for un-channeled callers)
+    # so per-channel-hidden products and channel-restricted kits never leak to
+    # the wrong audience. Every product carries its visible channels in
+    # `allowed_channels`, so unrestricted products match their own channels.
+    filters.append(f"allowed_channels:={channel or 'retail'}")
     if brand:
         filters.append(f"brand_name:={brand}")
     if in_stock_only:

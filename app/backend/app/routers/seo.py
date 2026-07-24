@@ -53,10 +53,12 @@ STATIC_ROUTES: list[tuple[str, str, str]] = [
 
 # Product visibility gate — mirror the storefront's "is this sellable to an
 # anonymous visitor" rule so the sitemap never advertises hidden / login-gated
-# products (which would render as thin/blocked pages for a crawler).
+# products (which would render as thin/blocked pages for a crawler). Crawlers
+# are anonymous = the RETAIL channel, so use per-channel retail visibility: a
+# product hidden only from wholesale/dealer/municipality stays in the sitemap.
 def _visible_products():
     return (
-        (Product.is_hidden.is_(False))
+        (Product.is_hidden_retail.is_(False))
         & (Product.is_for_sale.is_(True))
         & (Product.login_required.is_(False))
     )

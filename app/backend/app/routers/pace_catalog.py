@@ -19,11 +19,14 @@ Endpoints:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import get_current_user
+from app.models import User
 from app.services import pace_search
+from app.services.channels import viewer_channel
 
 
 router = APIRouter(prefix="/api/pace", tags=["pace-catalog"])
@@ -80,11 +83,13 @@ async def vehicle_brands(
 @router.get("/vehicles/{base_vehicle_id}/parts")
 async def vehicle_parts(
     base_vehicle_id: int,
+    request: Request,
     part_type_id: int | None = Query(None, description="Filter to one PartType (category)"),
     brand_id: int | None = Query(None, description="Filter to one brand"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict:
     return await pace_search.parts_for_vehicle(
         db, base_vehicle_id,
@@ -92,6 +97,7 @@ async def vehicle_parts(
         brand_id=brand_id,
         limit=limit,
         offset=offset,
+        channel=await viewer_channel(db, user, request),
     )
 
 
@@ -171,6 +177,7 @@ async def vehicle_next_facet(
 @router.get("/vehicles/{base_vehicle_id}/parts-with-status")
 async def vehicle_parts_with_status(
     base_vehicle_id: int,
+    request: Request,
     sub_model_id: int | None = Query(None),
     bed_length_id: int | None = Query(None),
     bed_type_id: int | None = Query(None),
@@ -187,6 +194,7 @@ async def vehicle_parts_with_status(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict:
     """Like /parts but each item has fitment_status: 'exact' | 'maybe'.
 
@@ -203,6 +211,7 @@ async def vehicle_parts_with_status(
         db, base_vehicle_id, qualifiers,
         part_type_id=part_type_id, brand_id=brand_id,
         limit=limit, offset=offset,
+        channel=await viewer_channel(db, user, request),
     )
 
 
@@ -225,11 +234,14 @@ async def list_part_types(
 @router.get("/part-types/{part_type_id}/parts")
 async def parts_in_part_type(
     part_type_id: int,
+    request: Request,
     brand_id: int | None = Query(None),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict:
     return await pace_search.parts_in_part_type(
-        db, part_type_id, brand_id=brand_id, limit=limit, offset=offset
+        db, part_type_id, brand_id=brand_id, limit=limit, offset=offset,
+        channel=await viewer_channel(db, user, request),
     )

@@ -15,6 +15,7 @@ from sqlalchemy import and_, case, distinct, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.services.channels import visible_to_channel_clause
 from app.models import (
     Brand,
     PacePart,
@@ -114,6 +115,7 @@ async def parts_for_vehicle(
     brand_id: int | None = None,
     limit: int = 50,
     offset: int = 0,
+    channel: str = "retail",
 ) -> dict[str, Any]:
     """All Products that fit the given BaseVehicle, optionally filtered by category and brand.
 
@@ -144,7 +146,7 @@ async def parts_for_vehicle(
     )
     if brand_id is not None:
         base = base.where(Product.brand_id == brand_id)
-    base = base.where(Product.is_hidden == False, Product.is_for_sale == True)  # noqa: E712
+    base = base.where(visible_to_channel_clause(channel), Product.is_for_sale == True)  # noqa: E712
 
     total = (await db.execute(select(func.count()).select_from(base.subquery()))).scalar_one()
 
@@ -266,6 +268,7 @@ async def parts_in_part_type(
     brand_id: int | None = None,
     limit: int = 50,
     offset: int = 0,
+    channel: str = "retail",
 ) -> dict[str, Any]:
     """Browse parts in a category (no fitment filter).
 
@@ -277,7 +280,7 @@ async def parts_in_part_type(
         .options(selectinload(Product.brand))
         .join(PacePart, PacePart.product_id == Product.id)
         .where(PacePart.part_terminology_id == part_type_id)
-        .where(Product.is_hidden == False, Product.is_for_sale == True)  # noqa: E712
+        .where(visible_to_channel_clause(channel), Product.is_for_sale == True)  # noqa: E712
     )
     if brand_id is not None:
         base = base.where(Product.brand_id == brand_id)
@@ -407,6 +410,7 @@ async def parts_for_vehicle_with_status(
     brand_id: int | None = None,
     limit: int = 50,
     offset: int = 0,
+    channel: str = "retail",
 ) -> dict[str, Any]:
     """Fitment-aware product list with per-part 'fitment_status' (exact|maybe).
 
@@ -429,7 +433,7 @@ async def parts_for_vehicle_with_status(
         .options(selectinload(Product.brand))
         .join(PacePart, PacePart.product_id == Product.id)
         .where(PacePart.id.in_(candidate_part_ids_q))
-        .where(Product.is_hidden == False, Product.is_for_sale == True)  # noqa: E712
+        .where(visible_to_channel_clause(channel), Product.is_for_sale == True)  # noqa: E712
     )
     if brand_id is not None:
         pq = pq.where(Product.brand_id == brand_id)

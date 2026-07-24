@@ -37,6 +37,14 @@ from app.services.pricing_service import (
     build_tier_display,
     build_tier_display_batch,
 )
+from app.services.channels import (
+    ALL_CHANNELS,
+    hidden_col_name,
+    product_hidden_for,
+    visible_to_channel_clause,
+)
+from app.services.channels import tier_to_channel as _tier_to_channel
+from app.services.channels import viewer_channel as _viewer_channel
 from app.services.search import search_products
 
 
@@ -84,36 +92,12 @@ def _serialize_product_card(hit: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _tier_to_channel(tier) -> str:
-    """Map a customer tier to its kit-availability channel. Anonymous/retail
-    and any unknown tier fall back to 'retail'."""
-    from app.models import CustomerTier
-    if tier == CustomerTier.JOBBER:
-        return "wholesale"
-    if tier == CustomerTier.DEALER:
-        return "dealer"
-    if tier == CustomerTier.MUNICIPALITY:
-        return "municipality"
-    return "retail"
-
-
-async def _viewer_channel(db: AsyncSession, user: User | None, request: Request) -> str:
-    """The viewer's kit channel — honors admin 'Shop as Customer' impersonation."""
-    if user is None:
-        return "retail"
-    eff_id = await resolve_effective_customer_id(db, user, request)
-    if not eff_id:
-        return "retail"
-    tier = (await db.execute(
-        select(Customer.tier).where(Customer.id == eff_id)
-    )).scalar_one_or_none()
-    return _tier_to_channel(tier)
-
-
 @router.get("/featured-pickup")
 async def featured_pickup(
+    request: Request,
     limit: int = Query(12, ge=1, le=48),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ):
     """Homepage "In stock & ready today" grid.
 
@@ -156,13 +140,16 @@ async def featured_pickup(
         .label("has_image")
     )
 
+    # Per-customer-channel visibility (parity with /browse + hot-products): a
+    # product hidden from this viewer's channel drops off the pickup showcase.
+    channel = await _viewer_channel(db, user, request)
     rows = (await db.execute(
         select(Product, pickup_stock_sq.c.qty, has_image)
         .options(selectinload(Product.brand), selectinload(Product.images))
         .join(Brand, Brand.id == Product.brand_id)
         .join(pickup_stock_sq, pickup_stock_sq.c.pid == Product.id)
         .where(
-            Product.is_hidden == False,  # noqa: E712
+            visible_to_channel_clause(channel),
             Product.is_for_sale == True,  # noqa: E712
             Brand.is_active == True,  # noqa: E712
         )
@@ -421,13 +408,20 @@ async def _browse_via_pace(
     )
     _t0 = _time.perf_counter()
 
+    # Resolve the viewer's channel so per-customer-channel hides apply on this
+    # DB path too (Typesense-down / YMM-filter fallback). Internal callers pass
+    # no request -> retail.
+    channel = "retail"
+    if user is not None and request is not None:
+        channel = await _viewer_channel(db, user, request)
+
     # Always join Brand so we can filter out deactivated brands (RV-OEM
     # noise like Lippert / Dometic that snuck in via PACE feeds).
     base_q = (
         select(Product)
         .options(selectinload(Product.brand), selectinload(Product.images))
         .join(Brand, Brand.id == Product.brand_id)
-        .where(Product.is_hidden == False, Product.is_for_sale == True,  # noqa: E712
+        .where(visible_to_channel_clause(channel), Product.is_for_sale == True,  # noqa: E712
                Brand.is_active == True)  # noqa: E712
     )
 
@@ -1068,15 +1062,21 @@ async def product_detail(
     if product is None:
         raise HTTPException(status_code=404, detail=f"Product not found: {sku}")
 
-    # Hidden / not-for-sale / deactivated-brand products are "gone" to the
-    # public: return 410 so search engines and AI bots drop the URL instead of
-    # indexing a dead page (they get no content, and the SPA renders a noindex
-    # "no longer available" state). Staff (admin/editor) still get the full PDP
-    # so they can preview a hidden line before turning it back on.
+    # The viewer's channel (retail for anonymous/bots) — drives the per-channel
+    # visibility gate below and is reused by the kit gate further down.
+    channel = await _viewer_channel(db, user, request)
+
+    # Hidden-for-this-channel / not-for-sale / deactivated-brand products are
+    # "gone" to that audience: return 410 so search engines and AI bots (which
+    # are the retail channel) drop the URL instead of indexing a dead page (they
+    # get no content, and the SPA renders a noindex "no longer available" state).
+    # A product visible to retail but hidden from, say, wholesale still serves a
+    # normal 200 to the public. Staff (admin/editor) always get the full PDP so
+    # they can preview a hidden line before turning it back on.
     _role = (user.role.value if user and hasattr(user.role, "value") else str(getattr(user, "role", ""))) if user else ""
     _is_staff = _role in ("admin", "editor")
     _brand_active = product.brand.is_active if product.brand else True
-    if (product.is_hidden or not product.is_for_sale or not _brand_active) and not _is_staff:
+    if (product_hidden_for(product, channel) or not product.is_for_sale or not _brand_active) and not _is_staff:
         raise HTTPException(status_code=410, detail=f"This product is no longer available: {sku}")
 
     # Categorized text content — PIES descriptions + scraped feature blocks.
@@ -1142,7 +1142,6 @@ async def product_detail(
         # availability window, AND allowed for the viewer's channel — otherwise
         # 404 (hide entirely; parity with the catalog/search hide).
         from app.services.kit_inventory import kit_enabled_channels
-        channel = await _viewer_channel(db, user, request)
         live_channels = kit_enabled_channels(
             is_active=kit.is_active, available_from=kit.available_from,
             available_until=kit.available_until,
@@ -1297,7 +1296,9 @@ async def product_detail(
         "shipping_mode": product.shipping_mode,
         "flat_ship_amount": float(product.flat_ship_amount) if product.flat_ship_amount is not None else None,
         "is_for_sale": product.is_for_sale,
-        "is_hidden": product.is_hidden,
+        # Per-channel: hidden for THIS viewer (retail for bots) — drives the
+        # SPA <Seo noindex>. A wholesale-only hide stays indexable to the public.
+        "is_hidden": product_hidden_for(product, channel),
         "images": [
             {"url": img.url, "alt": img.alt_text, "sort_order": img.sort_order}
             for img in product.images
@@ -1812,6 +1813,7 @@ _ATTR_DENYLIST_PATTERNS = (
 
 @router.get("/category-attributes")
 async def category_attributes(
+    request: Request,
     category_top: str | None = Query(None, description="Top-level category name"),
     category_path: str | None = Query(None, description="Exact full category path"),
     base_vehicle_id: int | None = Query(None, description="Restrict to parts that fit this vehicle"),
@@ -1819,6 +1821,7 @@ async def category_attributes(
     max_keys: int = Query(6, ge=1, le=20, description="Max attribute keys to return"),
     max_values_per_key: int = Query(8, ge=1, le=50, description="Max values per attribute key"),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Per-subcategory PIES attribute facets.
 
@@ -1870,11 +1873,13 @@ async def category_attributes(
         return cached
 
     # Build the same product filter chain that /browse uses (only active,
-    # for-sale products under an active brand, optionally vehicle-filtered).
+    # for-sale products under an active brand, optionally vehicle-filtered),
+    # scoped to the viewer's channel so facets reflect what they can see.
+    channel = await _viewer_channel(db, user, request)
     base_q = (
         select(Product.id)
         .join(Brand, Brand.id == Product.brand_id)
-        .where(Product.is_hidden == False, Product.is_for_sale == True,  # noqa: E712
+        .where(visible_to_channel_clause(channel), Product.is_for_sale == True,  # noqa: E712
                Brand.is_active == True)  # noqa: E712
     )
     pid_subq = _category_product_ids_subq(category_top, category_path)
@@ -2643,17 +2648,20 @@ async def autocomplete(
             "search_time_ms": response.get("search_time_ms", 0),
         }
     except Exception:
-        # Typesense unreachable. Drop to DB ILIKE.
-        return await _autocomplete_db_fallback(db, q, parts_limit, category_top)
+        # Typesense unreachable. Drop to DB ILIKE (scoped to the viewer channel).
+        _ch = await _viewer_channel(db, user, request)
+        return await _autocomplete_db_fallback(db, q, parts_limit, category_top, channel=_ch)
 
 
 async def _autocomplete_db_fallback(
-    db: AsyncSession, q: str, parts_limit: int, category_top: str | None = None
+    db: AsyncSession, q: str, parts_limit: int, category_top: str | None = None,
+    channel: str = "retail",
 ) -> dict[str, Any]:
     """ILIKE-based fallback when Typesense is down. Matches against SKU,
     product name, and brand name. Categories + Brands are derived from
     the matching product set. `category_top` scopes everything to one
-    top-level category subtree (Retail Showroom Mode)."""
+    top-level category subtree (Retail Showroom Mode). `channel` scopes to the
+    viewer's per-channel visibility."""
     from sqlalchemy import and_, func, or_, text as sa_text
     from app.models import Category, ProductImage, ProductCategory
     # Strip Year/Make/Model tokens (same rationale as the Typesense path) so a
@@ -2683,7 +2691,7 @@ async def _autocomplete_db_fallback(
         select(Product, Brand)
         .join(Brand, Brand.id == Product.brand_id)
         .where(
-            Product.is_hidden == False,  # noqa: E712
+            visible_to_channel_clause(channel),
             Product.is_for_sale == True,  # noqa: E712
             Brand.is_active == True,  # noqa: E712
             and_(*token_clauses),
@@ -2813,8 +2821,10 @@ async def product_fitments(
 
 @router.get("/hot-products")
 async def hot_products(
+    request: Request,
     limit: int = Query(8, ge=1, le=24),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> list[dict[str, Any]]:
     """Pick "hot" products for the home-page widget.
 
@@ -2825,9 +2835,11 @@ async def hot_products(
     picks products with images, ordered by featured-brand-first so the
     widget shows recognizable hero brands (CURT, WeatherTech, ARB...).
     """
+    # Scope to the viewer's channel so a product hidden from them never shows.
+    channel = await _viewer_channel(db, user, request)
     pool_size = min(100, max(limit * 8, 24))
     try:
-        response = search_products(query=None, in_stock_only=True, per_page=pool_size)
+        response = search_products(query=None, in_stock_only=True, per_page=pool_size, channel=channel)
         out: list[dict[str, Any]] = []
         for h in response.get("hits", []):
             doc = h["document"]
@@ -2849,7 +2861,8 @@ async def hot_products(
         # the top product per brand (by id DESC) so the rail shows ONE
         # product per featured brand (variety > recency-bias).
         from sqlalchemy import text as sa_text
-        rows = (await db.execute(sa_text("""
+        _hcol = hidden_col_name(channel)  # safe identifier (validated channel)
+        rows = (await db.execute(sa_text(f"""
           WITH ranked AS (
             SELECT p.id, p.sku, p.name, b.name AS brand_name, pi.url,
                    ROW_NUMBER() OVER (PARTITION BY b.id ORDER BY p.id DESC) AS rn,
@@ -2857,7 +2870,7 @@ async def hot_products(
             FROM product p
             JOIN brand b ON b.id = p.brand_id
             JOIN product_image pi ON pi.product_id = p.id AND pi.is_primary
-            WHERE p.is_hidden = false AND p.is_for_sale = true
+            WHERE p.{_hcol} = false AND p.is_for_sale = true
               AND b.is_active = true
               AND pi.url LIKE 'http%'
           )
@@ -2992,7 +3005,11 @@ async def snow_plow_compare(ids: str = Query(..., description="Comma-separated m
 
 
 @router.get("/snow-plows-landing")
-async def snow_plows_landing(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
+async def snow_plows_landing(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+) -> dict[str, Any]:
     """One-shot payload for the /snow-plows landing page.
 
     Bundles the data the page needs so the frontend doesn't have to chain
@@ -3004,6 +3021,10 @@ async def snow_plows_landing(db: AsyncSession = Depends(get_db)) -> dict[str, An
     """
     from app.models import Brand, Product, ProductImage, ProductInventory, Warehouse, Category, ProductCategory
     from sqlalchemy import select, func
+
+    # Per-channel visibility so a line hidden from this viewer's channel drops
+    # out of the brand counts too (parity with the browse/search listings).
+    channel = await _viewer_channel(db, user, request)
 
     # Top snow plow brand names — ranked by REAL Titan sales velocity from
     # tte_rcv390 (last 12 months, Apr 2025 - Apr 2026):
@@ -3094,7 +3115,7 @@ async def snow_plows_landing(db: AsyncSession = Depends(get_db)) -> dict[str, An
                 .where(
                     Product.brand_id == b.id,
                     Product.is_for_sale.is_(True),
-                    Product.is_hidden.is_(False),
+                    visible_to_channel_clause(channel),
                     ProductCategory.category_id.in_(snow_descendant_ids),
                 )
             )
@@ -3106,7 +3127,7 @@ async def snow_plows_landing(db: AsyncSession = Depends(get_db)) -> dict[str, An
                 func.count(Product.id).filter(ProductInventory.on_hand > 0),
             ).select_from(Product).outerjoin(
                 ProductInventory, ProductInventory.product_id == Product.id
-            ).where(Product.brand_id == b.id, Product.is_for_sale.is_(True), Product.is_hidden.is_(False))
+            ).where(Product.brand_id == b.id, Product.is_for_sale.is_(True), visible_to_channel_clause(channel))
             snow_total, snow_in_stock = (await db.execute(inv_q)).one()
         else:
             snow_total, snow_in_stock = 0, 0
@@ -3236,10 +3257,12 @@ async def warehouse_stock(sku: str, db: AsyncSession = Depends(get_db)) -> dict[
 @router.get("/products/{sku}/alternates")
 async def product_alternates(
     sku: str,
+    request: Request,
     base_vehicle_id: int | None = Query(None, description="When set, only return parts fitting this vehicle"),
     limit: int = Query(8, ge=1, le=20),
     in_stock_only: bool = Query(False, description="Only return alternates with stock_total > 0"),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Like-products / alternates rail for the PDP. Owner ask 2026-05-17 (R1).
 
@@ -3298,7 +3321,9 @@ async def product_alternates(
             if r.part_type_id:
                 own_part_type_ids.add(r.part_type_id)
 
-    # Candidate query: same primary category, different product, active.
+    # Candidate query: same primary category, different product, active +
+    # visible to the viewer's channel.
+    channel = await _viewer_channel(db, user, request)
     base_q = (
         select(Product)
         .options(selectinload(Product.brand), selectinload(Product.images))
@@ -3308,7 +3333,7 @@ async def product_alternates(
             ProductCategory.is_primary.is_(True),
             Product.id != product.id,
             Product.is_for_sale.is_(True),
-            Product.is_hidden.is_(False),
+            visible_to_channel_clause(channel),
         )
     )
 

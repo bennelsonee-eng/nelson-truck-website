@@ -24,11 +24,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, func, select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.dependencies import get_current_user
+from app.models import User
+from app.services.channels import hidden_col_name, viewer_channel
 
 
 router = APIRouter(prefix="/api/deweze", tags=["deweze"])
@@ -126,12 +129,14 @@ async def list_engines(
 
 @router.get("/kits")
 async def list_kits(
+    request: Request,
     make: str | None = Query(None),
     year: int | None = Query(None),
     engine: str | None = Query(None, description="Match engine_or_model (substring, case-insensitive)"),
     pump_type: str | None = Query(None, description="A/AA/B etc."),
     include_obsolete: bool = Query(False),
     db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Filtered DewEze kit products with full per-product details.
 
@@ -157,6 +162,8 @@ async def list_kits(
     if not include_obsolete:
         where.append("a.obsolete = FALSE")
 
+    # Per-channel visibility for the viewer (retail for anonymous).
+    _hcol = hidden_col_name(await viewer_channel(db, user, request))
     sql = f"""
         SELECT DISTINCT p.id, p.sku, p.name, p.description, p.legacy_wsm_url,
                (SELECT url FROM product_image
@@ -164,7 +171,7 @@ async def list_kits(
                 ORDER BY id LIMIT 1) AS image_url
         FROM product p
         JOIN deweze_application a ON a.product_id = p.id
-        WHERE p.brand_id = 91 AND p.is_for_sale AND NOT p.is_hidden
+        WHERE p.brand_id = 91 AND p.is_for_sale AND NOT p.{_hcol}
           AND {' AND '.join(where)}
         ORDER BY p.sku
     """

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -48,22 +49,46 @@ from app.services.catalog_visibility import (
     resolve_effective,
     scope_key_for,
 )
+from app.services.channels import ALL_CHANNELS
 
 log = logging.getLogger("admin_catalog")
 router = APIRouter(prefix="/api/admin/catalog", tags=["admin-catalog"])
 
-FieldT = Literal["hidden", "shipping_mode", "flat_ship_amount"]
+FieldT = Literal[
+    "hidden_retail",
+    "hidden_wholesale",
+    "hidden_dealer",
+    "hidden_municipality",
+    "shipping_mode",
+    "flat_ship_amount",
+]
+
+# Visibility is now per customer channel — one hidden_<channel> field each. The
+# admin UI's audience selector (above the manufacturer dropdown) picks which of
+# these the per-node Visibility control binds to; each is tagged with `channel`
+# + group "visibility" so the UI can show just the active one.
+_CHANNEL_LABELS = {
+    "retail": "Retail",
+    "wholesale": "Jobber (Wholesale)",
+    "dealer": "Dealer",
+    "municipality": "Municipality",
+}
+_VIS_VALUES = [
+    {"value": "false", "label": "Visible"},
+    {"value": "true", "label": "Hidden"},
+    {"value": "in_stock_only", "label": "Hidden except in-stock"},
+]
 
 # Field metadata drives the UI's per-node controls. Values are the strings
 # stored in catalog_override.value; the resolver casts them.
 FIELD_META: list[dict[str, Any]] = [
     {
-        "key": "hidden", "label": "Visibility", "type": "enum",
-        "values": [
-            {"value": "false", "label": "Visible"},
-            {"value": "true", "label": "Hidden"},
-        ],
-    },
+        "key": f"hidden_{ch}", "label": "Visibility", "group": "visibility",
+        "channel": ch, "channel_label": _CHANNEL_LABELS[ch], "type": "enum",
+        "values": _VIS_VALUES,
+    }
+    for ch in ALL_CHANNELS
+] + [
     {
         "key": "shipping_mode", "label": "Shipping", "type": "enum",
         "values": [
@@ -80,6 +105,7 @@ FIELD_META: list[dict[str, Any]] = [
 ]
 
 _SHIPPING_VALUES = {m.value for m in ShippingMode}
+_HIDDEN_FIELDS = {f"hidden_{ch}" for ch in ALL_CHANNELS}
 
 
 # --------------------------------------------------------------------------- #
@@ -88,10 +114,10 @@ _SHIPPING_VALUES = {m.value for m in ShippingMode}
 
 def _validate_value(field: str, value: str | None) -> str:
     """Normalize/validate an override value for a field. Raises 400 on bad input."""
-    if field == "hidden":
+    if field in _HIDDEN_FIELDS:
         v = str(value).strip().lower()
-        if v not in ("true", "false"):
-            raise HTTPException(400, "hidden value must be 'true' or 'false'")
+        if v not in ("true", "false", "in_stock_only"):
+            raise HTTPException(400, f"{field} value must be 'true', 'false', or 'in_stock_only'")
         return v
     if field == "shipping_mode":
         v = str(value).strip()
@@ -386,7 +412,9 @@ async def get_parts(
 
     rows_q = select(
         Product.id, Product.sku, Product.name,
-        Product.is_hidden, Product.shipping_mode, Product.flat_ship_amount,
+        Product.is_hidden_retail, Product.is_hidden_wholesale,
+        Product.is_hidden_dealer, Product.is_hidden_municipality,
+        Product.shipping_mode, Product.flat_ship_amount,
     )
     if where is not None:
         rows_q = rows_q.where(where)
@@ -406,7 +434,10 @@ async def get_parts(
             "type": "part",
             "product_id": pid, "sku": sku, "label": name,
             "effective": {
-                "hidden": bool(is_hidden),
+                "hidden_retail": bool(h_ret),
+                "hidden_wholesale": bool(h_who),
+                "hidden_dealer": bool(h_dea),
+                "hidden_municipality": bool(h_mun),
                 "shipping_mode": shipping_mode,
                 "flat_ship_amount": (f"{flat:.2f}" if flat is not None else None),
             },
@@ -414,7 +445,7 @@ async def get_parts(
             "scope_key": scope_key_for(product_id=pid),
             "overrides": prod_ovs.get(pid, {}),
         }
-        for pid, sku, name, is_hidden, shipping_mode, flat in rows
+        for pid, sku, name, h_ret, h_who, h_dea, h_mun, shipping_mode, flat in rows
     ]
     return {"parts": parts, "total": total, "page": page, "page_size": page_size}
 
@@ -701,30 +732,73 @@ async def get_pending(
 
 _apply_lock = asyncio.Lock()
 
+# Live progress for the Apply-now background job (one job at a time via the lock).
+# The frontend polls GET /apply-status to render a progress bar. `_t0` is a
+# monotonic start stamp kept server-side (not sent to the client).
+_apply_state: dict[str, Any] = {
+    "running": False, "phase": "idle", "done": 0, "total": 0,
+    "changed": 0, "hidden_total": 0, "error": None, "elapsed_ms": 0, "_t0": None,
+}
+
 
 async def _apply_and_reindex() -> None:
-    """Resolve overrides, then rebuild the search index so the change is live
-    everywhere (DB-backed surfaces reflect it the moment resolve commits)."""
-    async with async_session() as db:
-        await resolve_effective(db)
+    """Resolve overrides, then re-index ONLY the products whose derived columns
+    changed (not the whole ~326K catalog), so Apply-now finishes in seconds for a
+    typical line/category change. DB-backed surfaces (browse, PDP, sitemap)
+    reflect the change the moment resolve commits; search catches up as the
+    targeted reindex runs. Updates _apply_state for the progress UI."""
+    t0 = time.monotonic()
+    _apply_state.update(running=True, phase="resolving", done=0, total=0, changed=0,
+                        error=None, elapsed_ms=0, _t0=t0)
     try:
-        from app.services.search import reindex_all_products
         async with async_session() as db:
-            n = await reindex_all_products(db)
-        log.info("apply-now reindexed %d products", n)
-    except Exception:
-        log.exception("apply-now reindex failed (resolve already committed)")
+            res = await resolve_effective(db)
+        changed = sorted(res.changed_pids)
+        _apply_state.update(phase="reindexing", total=len(changed), changed=len(changed),
+                            hidden_total=res.hidden_total)
+        if changed:
+            from app.services.search import index_products
+            # Reindex ALL changed products in ONE call — the expensive DB
+            # gathering (inventory/images/categories/fitment) runs once, not per
+            # chunk; the progress callback advances the bar as Typesense import
+            # chunks land. Best-effort: a no-op if Typesense is unreachable.
+            def _prog(done: int, total: int) -> None:
+                _apply_state["done"] = done
+                _apply_state["total"] = total
+            async with async_session() as db:
+                await index_products(db, changed, progress=_prog)
+            _apply_state["done"] = _apply_state["total"]   # ensure the bar completes
+        _apply_state.update(running=False, phase="done",
+                            elapsed_ms=int((time.monotonic() - t0) * 1000))
+        log.info("apply-now: reindexed %d changed products in %d ms",
+                 len(changed), _apply_state["elapsed_ms"])
+    except Exception as e:
+        log.exception("apply-now failed")
+        _apply_state.update(running=False, phase="error", error=str(e)[:300],
+                            elapsed_ms=int((time.monotonic() - t0) * 1000))
+
+
+@router.get("/apply-status")
+async def apply_status(admin: User = Depends(require_admin)) -> dict[str, Any]:
+    """Live status of the Apply-now job (drives the progress bar)."""
+    s = {k: v for k, v in _apply_state.items() if not k.startswith("_")}
+    if s.get("running") and _apply_state.get("_t0") is not None:
+        s["elapsed_ms"] = int((time.monotonic() - _apply_state["_t0"]) * 1000)
+    return s
 
 
 @router.post("/apply-now")
 async def apply_now(
     admin: User = Depends(require_admin),
 ) -> dict[str, Any]:
-    """Resolve overrides now and kick off a background reindex. DB-backed
-    surfaces (browse, sitemap, product pages) reflect the change immediately;
-    search catches up when the reindex finishes."""
+    """Resolve overrides now and kick off a background TARGETED reindex (only the
+    products that changed). DB-backed surfaces reflect the change immediately;
+    search catches up as the reindex runs. Poll GET /apply-status for progress."""
     if _apply_lock.locked():
         return {"status": "already_running"}
+    # Mark running synchronously so the first status poll never races the task.
+    _apply_state.update(running=True, phase="starting", done=0, total=0, changed=0,
+                        error=None, elapsed_ms=0, _t0=time.monotonic())
 
     async def _runner():
         async with _apply_lock:

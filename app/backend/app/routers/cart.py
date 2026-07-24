@@ -236,14 +236,27 @@ async def add_line(
     ).scalar_one_or_none()
     if product is None:
         raise HTTPException(status_code=404, detail=f"Product not found: {body.sku}")
-    if not product.is_for_sale or product.is_hidden:
+    # Block add-to-cart if the product is hidden from THIS viewer's channel
+    # (a retail-hidden part can't be added by a retail shopper, etc.).
+    from app.services.channels import (
+        product_hidden_for, product_instock_only_for, total_on_hand, viewer_channel,
+    )
+    channel = await viewer_channel(db, user, request)
+    if not product.is_for_sale or product_hidden_for(product, channel):
         raise HTTPException(status_code=400, detail="Product not available")
+
+    # Blowout ("Hidden except in-stock") items: never sell past LIVE on-hand, so
+    # nobody buys 10 of the last 1 at the clearance price (and none once sold out).
+    instock_only = product_instock_only_for(product, channel)
+    on_hand_cap = await total_on_hand(db, product.id) if instock_only else None
+    if instock_only and on_hand_cap <= 0:
+        raise HTTPException(status_code=400, detail="This clearance item is sold out.")
 
     session_token = get_or_issue_session_token(request, response)
     owner_id = await _resolve_owner(request, db, user)
     cart = await _get_or_create_cart(db, owner_id, session_token)
 
-    # Upsert line — if already in cart, add to qty
+    # Upsert line — if already in cart, add to qty (capped at on-hand for blowouts).
     existing_line = (
         await db.execute(
             select(CartLine)
@@ -252,10 +265,12 @@ async def add_line(
         )
     ).scalar_one_or_none()
     if existing_line:
-        existing_line.quantity = min(999, existing_line.quantity + body.quantity)
+        want = existing_line.quantity + body.quantity
+        existing_line.quantity = min(999, want if on_hand_cap is None else min(want, on_hand_cap))
     else:
-        new_line = CartLine(cart_id=cart.id, product_id=product.id, quantity=body.quantity)
-        db.add(new_line)
+        want = body.quantity
+        db.add(CartLine(cart_id=cart.id, product_id=product.id,
+                        quantity=min(999, want if on_hand_cap is None else min(want, on_hand_cap))))
     await db.commit()
     await db.refresh(cart)
     customer = await _customer_for_id(db, owner_id)
@@ -281,7 +296,16 @@ async def update_line(
     ).scalar_one_or_none()
     if line is None:
         raise HTTPException(status_code=404, detail="Line not in cart")
-    line.quantity = body.quantity
+    # Cap blowout ("Hidden except in-stock") items at live on-hand.
+    from app.services.channels import product_instock_only_for, total_on_hand, viewer_channel
+    qty = body.quantity
+    prod = (await db.execute(select(Product).where(Product.id == line.product_id))).scalar_one_or_none()
+    if prod is not None and product_instock_only_for(prod, await viewer_channel(db, user, request)):
+        oh = await total_on_hand(db, line.product_id)
+        if oh <= 0:
+            raise HTTPException(status_code=400, detail="This clearance item is sold out.")
+        qty = min(qty, oh)
+    line.quantity = qty
     await db.commit()
     customer = await _customer_for_id(db, owner_id)
     return await _serialize_cart(db, cart, customer)

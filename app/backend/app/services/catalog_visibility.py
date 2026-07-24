@@ -34,8 +34,10 @@ from app.models import (
     Product,
     ProductAttribute,
     ProductCategory,
+    ProductInventory,
 )
 from app.services.attribute_canonical import auto_canonical
+from app.services.channels import ALL_CHANNELS
 
 log = logging.getLogger("catalog_visibility")
 
@@ -56,14 +58,35 @@ def _to_decimal_or_none(v) -> Decimal | None:
         return None
 
 
+def _bool_cast(v) -> bool:
+    return str(v).lower() in ("1", "true", "t", "yes")
+
+
 # Each overridable field maps to the (effective column, baseline column) it
 # materializes, plus a caster turning the stored string `value` into the
-# column's Python type.
+# column's Python type. The four hidden_<channel> fields materialize onto the
+# per-customer-channel visibility columns; legacy Product.is_hidden is NOT a
+# field here — it's recomputed as the AND of the four in resolve_effective.
 _FIELD_SPECS = {
-    "hidden": {
-        "col": Product.is_hidden,
+    "hidden_retail": {
+        "col": Product.is_hidden_retail,
         "base": Product.base_hidden,
-        "cast": lambda v: str(v).lower() in ("1", "true", "t", "yes"),
+        "cast": _bool_cast,
+    },
+    "hidden_wholesale": {
+        "col": Product.is_hidden_wholesale,
+        "base": Product.base_hidden,
+        "cast": _bool_cast,
+    },
+    "hidden_dealer": {
+        "col": Product.is_hidden_dealer,
+        "base": Product.base_hidden,
+        "cast": _bool_cast,
+    },
+    "hidden_municipality": {
+        "col": Product.is_hidden_municipality,
+        "base": Product.base_hidden,
+        "cast": _bool_cast,
     },
     "shipping_mode": {
         "col": Product.shipping_mode,
@@ -258,20 +281,34 @@ class ResolveResult:
     kit_conflicts_open: int
     kit_conflicts_resolved: int
     per_field: dict = dc_field(default_factory=dict)
+    changed_pids: set = dc_field(default_factory=set)  # product ids whose derived cols moved
 
 
-async def _apply_field(db: AsyncSession, field_name: str, overrides: list[CatalogOverride]) -> None:
-    spec = _FIELD_SPECS[field_name]
-    col, base, cast = spec["col"], spec["base"], spec["cast"]
+def _cast_instock_only(v) -> bool:
+    """True when an override value selects 'Hidden except in-stock' mode."""
+    return str(v).strip().lower() == "in_stock_only"
 
-    # 1. Reset drifted rows to baseline (tiny write in the common case).
-    await db.execute(
-        update(Product).where(col.is_distinct_from(base)).values({col: base})
-    )
 
-    # 2. Apply overrides for this field, least→most specific (specificity), with
-    #    deeper categories applied later so a deeper override still wins.
+async def _apply_field(db: AsyncSession, field_name: str, col, base, cast, overrides: list[CatalogOverride],
+                       extra_where=None) -> set[int]:
+    """Materialize one (col, base, cast) from the overrides carrying `field_name`.
+    `base` may be a Product column (per-field baseline) or a literal (e.g. False).
+    `extra_where`, if given, restricts BOTH the reset and the applies to a subset
+    of products (used to leave in-stock-only rows to refresh_instock_only, which
+    owns their is_hidden — otherwise this step and the refresh churn each other).
+    Returns the set of product ids whose value actually changed (via RETURNING),
+    so callers can re-index only what moved.
+
+    The reset step SKIPS rows already covered by a current override — step 2 sets
+    those to their exact value, so resetting them to baseline just to re-apply is
+    pure wasted writes. That reset→re-apply churn dominated resolve time for large
+    hidden / in-stock lines and grew with every line added."""
+    changed: set[int] = set()
+
     field_ovs = [o for o in overrides if o.field == field_name]
+
+    # Resolve each override's scope predicate ONCE (reused by the reset guard and
+    # the apply loop), ordered least→most specific so a deeper override wins.
     cat_ids = [o.category_id for o in field_ovs if o.category_id]
     depths = dict((await db.execute(
         select(Category.id, Category.depth).where(Category.id.in_(cat_ids or [-1]))
@@ -280,16 +317,66 @@ async def _apply_field(db: AsyncSession, field_name: str, overrides: list[Catalo
     def sort_key(o: CatalogOverride):
         return (_specificity(o), depths.get(o.category_id, 0) if o.category_id else 0)
 
-    for ov in sorted(field_ovs, key=sort_key):
-        pred = await _scope_predicate(db, ov)
+    scoped = [(ov, await _scope_predicate(db, ov)) for ov in sorted(field_ovs, key=sort_key)]
+    covered = [p for _, p in scoped if p is not None]
+
+    # 1. Reset drifted rows to baseline — but NOT rows an override covers (those
+    #    are set exactly in step 2; a value already correct there stays put).
+    reset_where = [col.is_distinct_from(base)]
+    if extra_where is not None:
+        reset_where.append(extra_where)
+    if covered:
+        reset_where.append(~or_(*covered))
+    res = await db.execute(
+        update(Product).where(*reset_where).values({col: base}).returning(Product.id)
+    )
+    changed.update(r[0] for r in res)
+
+    # 2. Apply overrides (least→most specific), writing only where the value moves.
+    #    is_distinct_from = NULL-safe "not equal", valid for bool/str/numeric alike.
+    for ov, pred in scoped:
         if pred is None:
             continue
         target = cast(ov.value)
-        # is_distinct_from = NULL-safe "not equal", valid for bool/str/numeric
-        # alike (col.is_not(x) only works for NULL/bool operands in Postgres).
-        await db.execute(
-            update(Product).where(pred, col.is_distinct_from(target)).values({col: target})
+        apply_where = [pred, col.is_distinct_from(target)]
+        if extra_where is not None:
+            apply_where.append(extra_where)
+        res = await db.execute(
+            update(Product).where(*apply_where).values({col: target}).returning(Product.id)
         )
+        changed.update(r[0] for r in res)
+    return changed
+
+
+async def refresh_instock_only(db: AsyncSession, product_ids=None) -> set[int]:
+    """For products in 'Hidden except in-stock' mode on a channel, set
+    is_hidden_<channel> to reflect LIVE stock — hidden iff on_hand <= 0 — so a
+    blowout item shows only while in stock and auto-hides when it sells out.
+
+    Optionally scoped to `product_ids` (the inventory sync passes the stock-
+    changed set). Does NOT commit (callers do). Returns the ids whose
+    is_hidden_<channel> flipped, so the caller can re-index them.
+    """
+    changed: set[int] = set()
+    in_stock = select(ProductInventory.product_id).where(ProductInventory.on_hand > 0)
+    ids = list(product_ids) if product_ids is not None else None
+    if ids is not None and not ids:
+        return changed
+    for ch in ALL_CHANNELS:
+        col = getattr(Product, f"is_hidden_{ch}")
+        oc = getattr(Product, f"instock_only_{ch}")
+        target = ~Product.id.in_(in_stock)  # hidden when NOT in stock
+        stmt = (
+            update(Product)
+            .where(oc.is_(True), col.is_distinct_from(target))
+            .values({col: target})
+            .returning(Product.id)
+        )
+        if ids is not None:
+            stmt = stmt.where(Product.id.in_(ids))
+        res = await db.execute(stmt)
+        changed.update(r[0] for r in res)
+    return changed
 
 
 async def resolve_effective(db: AsyncSession, *, commit: bool = True) -> ResolveResult:
@@ -297,8 +384,48 @@ async def resolve_effective(db: AsyncSession, *, commit: bool = True) -> Resolve
     reconcile kit-conflict messages. Commits by default (batch job)."""
     overrides = (await db.execute(select(CatalogOverride))).scalars().all()
 
-    for field_name in _FIELD_SPECS:
-        await _apply_field(db, field_name, overrides)
+    changed_pids: set[int] = set()
+
+    # 1. "Hidden except in-stock" MODE flag per channel FIRST — the is_hidden
+    #    materialization below reads it to leave those rows to refresh_instock_only.
+    for ch in ALL_CHANNELS:
+        changed_pids |= await _apply_field(
+            db, f"hidden_{ch}", getattr(Product, f"instock_only_{ch}"),
+            False, _cast_instock_only, overrides,
+        )
+
+    # 2. Every field: is_hidden_<channel> (EXCLUDING in_stock_only rows, whose
+    #    is_hidden is owned by refresh_instock_only below — otherwise this step
+    #    sets them false and the refresh sets them true, churning every resolve),
+    #    plus the global shipping_mode / flat_ship_amount.
+    for field_name, spec in _FIELD_SPECS.items():
+        extra = None
+        if field_name.startswith("hidden_"):
+            extra = ~getattr(Product, f"instock_only_{field_name[len('hidden_'):]}")
+        changed_pids |= await _apply_field(
+            db, field_name, spec["col"], spec["base"], spec["cast"], overrides, extra_where=extra
+        )
+
+    # 3. Fold LIVE stock into is_hidden_<channel> for in_stock_only products
+    #    (hidden iff on_hand<=0) so a blowout item shows only while in stock.
+    changed_pids |= await refresh_instock_only(db)
+
+    # Recompute legacy Product.is_hidden = "hidden from EVERY channel" (AND of
+    # the four per-channel columns) so admin/internal "fully hidden" reads
+    # (kit-conflict, admin tree) stay correct. Only touch rows that changed.
+    fully_hidden = and_(
+        Product.is_hidden_retail,
+        Product.is_hidden_wholesale,
+        Product.is_hidden_dealer,
+        Product.is_hidden_municipality,
+    )
+    _legacy = await db.execute(
+        update(Product)
+        .where(Product.is_hidden.is_distinct_from(fully_hidden))
+        .values(is_hidden=fully_hidden)
+        .returning(Product.id)
+    )
+    changed_pids.update(r[0] for r in _legacy)
 
     # Stamp every override as applied so the UI can show "pending until tonight"
     # for any toggle made after the last resolve (updated_at > applied_at).
@@ -326,6 +453,7 @@ async def resolve_effective(db: AsyncSession, *, commit: bool = True) -> Resolve
         kit_conflicts_open=opened,
         kit_conflicts_resolved=resolved,
         per_field=per_field,
+        changed_pids=changed_pids,
     )
 
 

@@ -18,10 +18,14 @@ from app.models.base import Base
 
 
 class BannerAudience(str, Enum):
-    """Who a slide is shown to. Admin-controlled, mirrors rebate audience."""
+    """Who a slide is shown to. Admin-controlled. `both` is the all-channels
+    catch-all; retail / wholesale(=jobber) / dealer / municipality target one
+    customer channel (mirrors services.channels.ALL_CHANNELS)."""
 
     RETAIL = "retail"
     WHOLESALE = "wholesale"
+    DEALER = "dealer"
+    MUNICIPALITY = "municipality"
     BOTH = "both"
 
 

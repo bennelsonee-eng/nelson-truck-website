@@ -218,6 +218,35 @@ class Product(Base):
     # Buyers 13k, discontinued, never-stocked). Importers write THIS; the
     # resolver falls back to it for any product with no applicable override.
     base_hidden: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+    # Per-customer-channel visibility (owner ask 2026-07-22). Each channel —
+    # retail / wholesale(=jobber) / dealer / municipality — can be hidden
+    # independently via the admin catalog tree. `is_hidden_<channel>` is the
+    # EFFECTIVE per-channel flag the storefront filters on for that viewer (see
+    # visible_to_channel_clause in services.channels). These are DERIVED by the
+    # catalog-visibility resolver by overlaying that channel's overrides on the
+    # shared `base_hidden` baseline above — do not hand-set them, and there is no
+    # per-channel baseline (a discontinued/never-stocked product is hidden from
+    # everyone). Legacy `is_hidden` above stays meaningful = hidden from EVERY
+    # channel (resolver recomputes it = AND of the four), for admin/"fully
+    # hidden" reads.
+    is_hidden_retail: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_hidden_wholesale: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_hidden_dealer: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    is_hidden_municipality: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+
+    # "Hidden except in-stock" mode per channel (blowout/clearance). When set for
+    # a channel, the resolver folds live stock into is_hidden_<channel> above:
+    # is_hidden_<c> = hard-hidden OR (instock_only_<c> AND on_hand<=0) — so the
+    # item shows only while in stock and auto-hides at 0. Set by the admin tree
+    # (override value 'in_stock_only'); NOT stock itself. The 15-min inventory
+    # sync re-materializes is_hidden_<c> + re-indexes when stock crosses 0, and
+    # cart/checkout enforce the live quantity cap (no re-order past on-hand).
+    instock_only_retail: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    instock_only_wholesale: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    instock_only_dealer: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    instock_only_municipality: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
     is_for_sale: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
     # Shipping fulfillment mode — ship | truck_freight | will_call (see

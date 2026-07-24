@@ -31,9 +31,20 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 
-# field -> (product column it materializes, allowed values). "hidden" stores
-# "true"/"false"; "shipping_mode" stores a ShippingMode value.
-OVERRIDABLE_FIELDS = ("hidden", "shipping_mode", "flat_ship_amount")
+# field -> (product column it materializes, allowed values). The four
+# hidden_<channel> fields each store "true"/"false" and materialize onto the
+# matching Product.is_hidden_<channel> column (per-customer-channel visibility);
+# "shipping_mode" stores a ShippingMode value. The legacy bare "hidden" field is
+# retired — its rows were fanned out to the four channels by migration
+# k9n3p7q1r5s8; the resolver still tolerates it as an alias for "all channels".
+OVERRIDABLE_FIELDS = (
+    "hidden_retail",
+    "hidden_wholesale",
+    "hidden_dealer",
+    "hidden_municipality",
+    "shipping_mode",
+    "flat_ship_amount",
+)
 
 
 class CatalogOverride(Base):
@@ -52,10 +63,11 @@ class CatalogOverride(Base):
     #   filter:{brand_id|*}:{category_id|*}:{attr_key}={attr_value}
     scope_key: Mapped[str] = mapped_column(String(400), nullable=False, index=True)
 
-    # What this override sets. See OVERRIDABLE_FIELDS.
-    field: Mapped[str] = mapped_column(String(30), nullable=False, default="hidden")
-    # The value for `field` as text: hidden -> "true"/"false"; shipping_mode ->
-    # "ship"/"truck_freight"/"will_call".
+    # What this override sets. See OVERRIDABLE_FIELDS. (Every insert sets this
+    # explicitly; the default is only a fallback.)
+    field: Mapped[str] = mapped_column(String(30), nullable=False, default="hidden_retail")
+    # The value for `field` as text: hidden_<channel> -> "true"/"false";
+    # shipping_mode -> "ship"/"truck_freight"/"will_call".
     value: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Structured scope targets (only the ones relevant to scope_type are set).

@@ -238,6 +238,32 @@ async def checkout(
     if not line_rows:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
+    # Blowout ("Hidden except in-stock") lines: re-validate against LIVE on-hand
+    # so a race (two shoppers grabbing the last unit) or a stale cart can't check
+    # out more than exists. No backorder for these.
+    from app.models import Product
+    from app.services.channels import on_hand_map, product_instock_only_for, viewer_channel
+    _channel = await viewer_channel(db, user, request)
+    _lpids = [ln.product_id for ln in line_rows if ln.product_id]
+    _prods = {p.id: p for p in (await db.execute(
+        select(Product).where(Product.id.in_(_lpids))
+    )).scalars().all()} if _lpids else {}
+    _oh = await on_hand_map(db, _lpids)
+    _short = [
+        # Nelson's CartLine has no sku column, so take it from the joined Product.
+        f"{p.sku}: {_oh.get(ln.product_id, 0)} in stock (cart has {ln.quantity})"
+        for ln in line_rows
+        if (p := _prods.get(ln.product_id)) is not None
+        and product_instock_only_for(p, _channel)
+        and ln.quantity > _oh.get(ln.product_id, 0)
+    ]
+    if _short:
+        raise HTTPException(
+            status_code=409,
+            detail="Some clearance items are no longer available in the requested quantity: "
+                   + "; ".join(_short) + ". Please adjust your cart and try again.",
+        )
+
     plan = await plan_fulfillment(db, cart=cart, customer=customer)
     if not plan.buckets:
         raise HTTPException(status_code=500, detail="Fulfillment planning produced no buckets")
@@ -604,6 +630,8 @@ async def reorder(
         await db.flush()
 
     skipped: list[str] = []
+    from app.services.channels import product_hidden_for, viewer_channel
+    channel = await viewer_channel(db, user, request)
     added = 0
     for line in order.lines:
         if line.is_freight or line.is_discount or line.is_handling:
@@ -617,7 +645,7 @@ async def reorder(
         if product is None:
             skipped.append(f"{line.sku}: no longer in catalog")
             continue
-        if product.is_hidden or not product.is_for_sale:
+        if product_hidden_for(product, channel) or not product.is_for_sale:
             skipped.append(f"{line.sku}: discontinued or hidden")
             continue
         existing = (await db.execute(

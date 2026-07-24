@@ -14896,7 +14896,7 @@ interface BannerSlideRow {
   image_url: string
   alt: string
   link_url: string | null
-  audience: 'retail' | 'wholesale' | 'both'
+  audience: 'retail' | 'wholesale' | 'dealer' | 'municipality' | 'both'
   placement: string
   sort_order: number
   is_active: boolean
@@ -15974,6 +15974,8 @@ function AdminBannerManagerPage() {
   const AUD_BADGE: Record<string, string> = {
     retail: 'bg-emerald-100 text-emerald-700',
     wholesale: 'bg-blue-100 text-blue-700',
+    dealer: 'bg-amber-100 text-amber-700',
+    municipality: 'bg-teal-100 text-teal-700',
     both: 'bg-purple-100 text-purple-700',
   }
 
@@ -16145,9 +16147,11 @@ function AdminBannerManagerPage() {
                 <div>
                   <label className="block text-xs font-semibold text-gray-600">Audience</label>
                   <select value={draft.audience} onChange={(e) => setDraft({ ...draft, audience: e.target.value as BannerDraft['audience'] })} className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
+                    <option value="both">All customers</option>
                     <option value="retail">Retail</option>
-                    <option value="wholesale">Wholesale (B2B)</option>
-                    <option value="both">Both</option>
+                    <option value="wholesale">Jobber (Wholesale)</option>
+                    <option value="dealer">Dealer</option>
+                    <option value="municipality">Municipality</option>
                   </select>
                 </div>
                 <div>

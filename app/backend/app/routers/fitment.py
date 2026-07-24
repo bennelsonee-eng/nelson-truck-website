@@ -54,7 +54,7 @@ async def get_combos(db: AsyncSession) -> dict[str, Any]:
             {_slug('md.name')} AS model
         FROM product_inventory pi
         JOIN product p        ON p.id = pi.product_id
-                              AND p.is_hidden = false AND p.is_for_sale = true
+                              AND p.is_hidden_retail = false AND p.is_for_sale = true
         JOIN pace_part pp     ON pp.product_id = p.id
         JOIN pace_fitment pf  ON pf.pace_part_id = pp.id
         JOIN vcdb_base_vehicle bv ON bv.id = pf.base_vehicle_id
@@ -130,7 +130,7 @@ async def page(category: str, make: str, model: str,
                               WHERE product_id = p.id), 0) AS stock_total
             FROM product p
             JOIN brand b ON b.id = p.brand_id
-            WHERE p.is_hidden = false AND p.is_for_sale = true
+            WHERE p.is_hidden_retail = false AND p.is_for_sale = true
               AND EXISTS (SELECT 1 FROM product_inventory pi
                           WHERE pi.product_id = p.id AND pi.on_hand > 0)
               AND EXISTS (SELECT 1 FROM product_category pc

@@ -682,15 +682,24 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
         if not dry_run:
             try:
                 from app.database import async_session
+                from app.services.catalog_visibility import refresh_instock_only
                 from app.services.kit_inventory import recompute_and_reindex_kits
                 from app.services.search import index_products
                 changed_pids = sorted({r["product_id"] for r in inventory.values()
                                        if r.get("product_id")} | zeroed_pids)
                 async with async_session() as session:
                     ks = await recompute_and_reindex_kits(session)
+                    # Blowout ("Hidden except in-stock") items: flip
+                    # is_hidden_<channel> to match the fresh stock (hidden iff
+                    # on_hand<=0) BEFORE re-indexing, so listings/search follow
+                    # stock within one sync cycle. Cart/checkout are the instant
+                    # gate; this keeps the shelf tidy.
+                    flipped = await refresh_instock_only(session, changed_pids)
+                    if flipped:
+                        await session.commit()
                     n_idx = await index_products(session, changed_pids)
-                log.info("Post-load: kit recompute=%s, reindexed %d changed products",
-                         ks, n_idx)
+                log.info("Post-load: kit recompute=%s, in_stock_only flipped=%d, reindexed %d changed products",
+                         ks, len(flipped), n_idx)
             except Exception:
                 log.exception("Post-inventory-load recompute/reindex failed (non-fatal)")
 

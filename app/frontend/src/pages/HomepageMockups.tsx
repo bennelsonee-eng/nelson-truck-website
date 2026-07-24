@@ -62,7 +62,7 @@ export function RotatingBanner({
   audience = 'retail',
   fallback = null,
   fadeBottom = false,
-}: { tight?: boolean; audience?: 'retail' | 'wholesale'; fallback?: ReactNode; fadeBottom?: boolean }) {
+}: { tight?: boolean; audience?: 'retail' | 'wholesale' | 'dealer' | 'municipality'; fallback?: ReactNode; fadeBottom?: boolean }) {
   // When the homepage tiles overlap the banner, fade its bottom 45px to 0%
   // opacity so it blends into the page instead of ending on a hard edge.
   const fadeMask = fadeBottom
