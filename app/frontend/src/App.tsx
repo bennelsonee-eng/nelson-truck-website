@@ -5432,6 +5432,185 @@ function ProductDetail() {
   )
 }
 
+// ============================================================================
+// Product videos — click-to-load ("lite facade") embeds
+// ============================================================================
+
+type ParsedVideo = {
+  provider: 'youtube' | 'vimeo'
+  id: string
+  /** Poster image URL, or null when the provider has no key-free still. */
+  thumb: string | null
+  /** Player URL, only ever loaded after the customer clicks. */
+  embed: string
+}
+
+/** Resolve a product_resource video URL to a provider + id we can embed.
+ *
+ *  Returns null for anything we can't turn into a player (e.g. In The Ditch's
+ *  `intheditch.com/itd-videos/` hub page, which is a listing, not a video) so
+ *  the caller can fall back to a plain link instead of rendering a dead frame.
+ *
+ *  YouTube forms handled: watch?v=ID, youtu.be/ID, /embed/ID, /shorts/ID,
+ *  /v/ID, /live/ID — on youtube.com, m.youtube.com and youtube-nocookie.com.
+ *  Vimeo forms handled: vimeo.com/ID, player.vimeo.com/video/ID,
+ *  vimeo.com/channels/<name>/ID, plus the /ID/<hash> unlisted-video form.
+ */
+function parseVideoUrl(raw: string | null | undefined): ParsedVideo | null {
+  if (!raw) return null
+  const url = raw.trim()
+
+  if (/^https?:\/\/(?:[\w-]+\.)*(?:youtube(?:-nocookie)?\.com|youtu\.be)\//i.test(url)) {
+    const m =
+      url.match(/[?&]v=([A-Za-z0-9_-]{11})/) ||
+      url.match(/youtu\.be\/([A-Za-z0-9_-]{11})/) ||
+      url.match(/\/(?:embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/)
+    if (!m) return null
+    return {
+      provider: 'youtube',
+      id: m[1],
+      // hqdefault is the one still that exists for every upload (maxresdefault
+      // 404s on older/low-res videos and would leave a broken poster).
+      thumb: `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg`,
+      // -nocookie + no autoplay until click = nothing hits YouTube's tracking
+      // surface for a customer who never plays the video.
+      embed: `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0`,
+    }
+  }
+
+  if (/^https?:\/\/(?:[\w-]+\.)*vimeo\.com\//i.test(url)) {
+    const m = url.match(/vimeo\.com\/(?:video\/)?(?:channels\/[\w-]+\/)?(\d{6,})(?:\/([0-9a-z]+))?/i)
+    if (!m) return null
+    return {
+      provider: 'vimeo',
+      id: m[1],
+      // Vimeo posters need an oEmbed round-trip per video; phoning home on page
+      // load is exactly what the facade exists to avoid, so Vimeo gets a styled
+      // placeholder poster instead (see VideoFacade).
+      thumb: null,
+      embed: `https://player.vimeo.com/video/${m[1]}?${m[2] ? `h=${m[2]}&` : ''}autoplay=1`,
+    }
+  }
+
+  return null
+}
+
+/** One video tile. Shows a poster + play button; swaps in the real iframe on
+ *  click (autoplay=1, so the same click that loads the player also starts it).
+ *
+ *  WHY A FACADE: a PDP like DRL-TRACKED-AERIAL-LIFT carries 7 videos. Seven
+ *  live YouTube iframes is ~7 MB of player JS and seven third-party cookie
+ *  jars on every page view, for a video most customers never play. Seven
+ *  thumbnails is ~100 KB and zero player JS until someone actually clicks.
+ */
+function VideoFacade({ video, title }: { video: ParsedVideo; title: string }) {
+  const [playing, setPlaying] = useState(false)
+  const [thumbBroken, setThumbBroken] = useState(false)
+  const showThumb = !!video.thumb && !thumbBroken
+
+  return (
+    <figure className="m-0">
+      <div className="relative aspect-video bg-gray-900 border rounded overflow-hidden">
+        {playing ? (
+          <iframe
+            src={video.embed}
+            title={title}
+            className="absolute inset-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPlaying(true)}
+            aria-label={`Play video: ${title}`}
+            className="group absolute inset-0 w-full h-full flex items-center justify-center cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2"
+          >
+            {showThumb ? (
+              <img
+                src={video.thumb!}
+                alt=""
+                loading="lazy"
+                onError={() => setThumbBroken(true)}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            ) : (
+              // No key-free poster (Vimeo, or a YouTube still that 404'd):
+              // a dark branded card carrying the title so the tile still reads
+              // as a specific video rather than an empty box.
+              <span className="absolute inset-0 bg-gradient-to-br from-gray-800 to-gray-900 flex items-end p-3">
+                <span className="text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  {video.provider === 'vimeo' ? 'Vimeo' : 'Video'}
+                </span>
+              </span>
+            )}
+            <span
+              aria-hidden
+              className="absolute inset-0 bg-black/25 group-hover:bg-black/10 transition"
+            />
+            <span
+              aria-hidden
+              className="relative flex items-center justify-center w-16 h-16 rounded-full bg-red-700/90 shadow-lg transition group-hover:bg-red-700 group-hover:scale-105"
+            >
+              <svg viewBox="0 0 24 24" className="w-7 h-7 ml-1 fill-white">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </span>
+          </button>
+        )}
+      </div>
+      <figcaption className="mt-2 text-sm text-gray-700">{title}</figcaption>
+    </figure>
+  )
+}
+
+/** "Videos" block for the PDP description tab. Embeddable resources become
+ *  facade tiles; anything we couldn't parse degrades to a labelled link.
+ */
+function ProductVideos({ resources }: { resources: { kind: string; url: string; title: string | null }[] }) {
+  // Same URL can arrive more than once per product (multi-source scrapes);
+  // one tile per distinct URL.
+  const seen = new Set<string>()
+  const items = resources
+    .filter((r) => {
+      if (seen.has(r.url)) return false
+      seen.add(r.url)
+      return true
+    })
+    .map((r) => ({ r, video: parseVideoUrl(r.url) }))
+
+  const tiles = items.filter((x) => x.video)
+  const links = items.filter((x) => !x.video)
+  if (tiles.length === 0 && links.length === 0) return null
+
+  return (
+    <div className="mt-6 not-prose">
+      <h4 className="font-semibold text-gray-900 mb-3">Videos</h4>
+      {tiles.length > 0 && (
+        <div className="grid gap-6 sm:grid-cols-2">
+          {tiles.map((x) => (
+            <VideoFacade key={x.r.url} video={x.video!} title={x.r.title || 'Product video'} />
+          ))}
+        </div>
+      )}
+      {links.length > 0 && (
+        <ul className={`space-y-2 text-sm ${tiles.length > 0 ? 'mt-4' : ''}`}>
+          {links.map((x) => (
+            <li key={x.r.url}>
+              <a href={x.r.url} target="_blank" rel="noopener noreferrer"
+                 className="inline-flex items-center gap-2 text-red-700 hover:underline">
+                <span aria-hidden>🎬</span>
+                {x.r.title || 'Watch video'}
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) {
   const { ymm } = useApp()
   const hasKit = !!(data.kit && data.kit.components.length > 0)
@@ -5447,9 +5626,12 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
   // FEA (features) rows from the scraped/PIES descriptions, in source order.
   // Each row's text is either a single bullet sentence (Layout C/D hero
   // bullets) or "HEADING\n\nbody paragraph" (Layout B carousel) — splitFeature
-  // handles both. Other description codes (DES/INL/WAR) are reserved for
-  // future rendering; we surface FEA explicitly here because that's the
-  // bulk of what the Buyers scrape produced (656 rows across the catalog).
+  // handles both. We surface FEA explicitly because it's the only code that
+  // carries customer-facing prose we aren't already showing: DES is the product
+  // name verbatim, MKT is what product.description already renders above, EXT
+  // is the spec string the Specs tab renders, and SHO is an internal category
+  // slug ("VanStorageSystemAccy"). INL/WAR don't exist in this catalog at all.
+  // Checked against prod 2026-07-26 -- don't "fix" this by rendering the rest.
   const features = (() => {
     const all = data.descriptions ?? []
     const fea = all.filter((d) => d.code === 'FEA' && d.text?.trim())
@@ -5475,6 +5657,12 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
   const hasDescContent = (
     !!data.description || !!data.extended_description || features.length > 0
   )
+  // Videos get their own section (click-to-load embeds, see ProductVideos);
+  // everything else stays in Documents & Downloads. Before this split a video
+  // rendered as a generic paper-icon link and read as just another PDF.
+  const allResources = data.resources ?? []
+  const videoResources = allResources.filter((r) => r.kind === 'video')
+  const docResources = allResources.filter((r) => r.kind !== 'video')
 
   return (
     <div className="mt-12 border-t pt-6">
@@ -5519,11 +5707,12 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
               </ul>
             </div>
           )}
-          {(data.resources ?? []).length > 0 && (
+          {videoResources.length > 0 && <ProductVideos resources={videoResources} />}
+          {docResources.length > 0 && (
             <div className="mt-6">
               <h4 className="font-semibold text-gray-900 mb-3">Documents &amp; Downloads</h4>
               <ul className="space-y-2 text-sm not-prose">
-                {(data.resources ?? []).map((r, i) => (
+                {docResources.map((r, i) => (
                   <li key={i}>
                     <a href={r.url} target="_blank" rel="noopener noreferrer"
                        className="inline-flex items-center gap-2 text-red-700 hover:underline">
@@ -5536,7 +5725,7 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
               </ul>
             </div>
           )}
-          {!hasDescContent && (data.resources ?? []).length === 0 && (
+          {!hasDescContent && allResources.length === 0 && (
             <p className="text-gray-500 italic">No description on file. Call sales for details.</p>
           )}
         </div>
