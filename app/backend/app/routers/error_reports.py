@@ -124,7 +124,8 @@ def _jsonb(value) -> str:
 
 
 def _send_report_alert(
-    report_id: int, title: str, route: str, severity: str, reported_by: str
+    report_id: int, title: str, route: str, severity: str, reported_by: str,
+    cf_email: str | None = None,
 ) -> None:
     """Email someone that a report was filed.
 
@@ -145,8 +146,14 @@ def _send_report_alert(
             logger.info("report %s: no alert address configured, not emailing", report_id)
             return
         site = settings.app_name
+        # Name the person, not just the account. The app login is shared, so the
+        # account name alone never said who filed a report; the
+        # Cloudflare-Access address is per-person and is shown next to it.
+        who = reported_by or "someone"
+        if cf_email and cf_email != reported_by:
+            who = f"{reported_by} ({cf_email})" if reported_by else cf_email
         body = (
-            f"{reported_by or 'someone'} filed issue #{report_id} on the {site} site.\n\n"
+            f"{who} filed issue #{report_id} on the {site} site.\n\n"
             f"  Title:    {title}\n"
             f"  Page:     {route or '(not recorded)'}\n"
             f"  Severity: {severity}\n\n"
@@ -304,15 +311,21 @@ async def create_error_report(
     severity = (body.severity if body.severity in
                 {"low", "normal", "high", "critical"} else "normal")
 
+    # The Cloudflare-Access email, kept even when an app user is logged in.
+    # `username` can only name an ACCOUNT, because the app login is shared;
+    # Access identities are per-person, since everyone signs in with a code sent
+    # to their own address.
+    cf_email = _scrub(reporter.cf_email) if reporter.cf_email else None
+
     insert_sql = text("""
         INSERT INTO error_reports (
             title, description, route, severity, status,
-            reported_by_user_id, reported_by_username,
+            reported_by_user_id, reported_by_username, reported_by_cf_email,
             speech_segments, click_events, pages_visited,
             dom_state, mic_diagnostics, browser_info
         ) VALUES (
             :title, :description, :route, :severity, 'open',
-            :user_id, :username,
+            :user_id, :username, :cf_email,
             CAST(:speech_segments AS JSONB), CAST(:click_events AS JSONB),
             CAST(:pages_visited AS JSONB), CAST(:dom_state AS JSONB),
             CAST(:mic_diagnostics AS JSONB), :browser_info
@@ -326,6 +339,7 @@ async def create_error_report(
         "severity": severity,
         "user_id": reporter.user_id,
         "username": username,
+        "cf_email": cf_email,
         "speech_segments": _jsonb(body.speech_segments),
         "click_events": _jsonb(body.click_events),
         "pages_visited": _jsonb(body.pages_visited),
@@ -370,7 +384,7 @@ async def create_error_report(
     # near the mail provider, so a slow or failing send can only cost the
     # notification, never the report itself.
     background.add_task(
-        _send_report_alert, new_id, title, route, severity, username,
+        _send_report_alert, new_id, title, route, severity, username, cf_email,
     )
     return {"id": new_id, "title": title, "status": "open"}
 
@@ -482,7 +496,8 @@ async def list_error_reports(
     rows = (await db.execute(text(f"""
         SELECT id, title, description, route, severity, status,
                reported_by_username, video_path, created_at, resolved_at,
-               speech_segments, click_events, pages_visited
+               speech_segments, click_events, pages_visited,
+               reported_by_cf_email
         FROM error_reports {where}
         ORDER BY created_at DESC LIMIT 100
     """), params)).fetchall()
@@ -496,6 +511,9 @@ async def list_error_reports(
             "id": r[0], "title": r[1], "description": (r[2] or "")[:240],
             "route": r[3], "severity": r[4], "status": r[5],
             "reported_by": r[6], "video_path": r[7],
+            # Who actually filed it. reported_by can only name an account --
+            # the app login is shared -- so the queue shows both.
+            "reported_by_cf_email": r[13],
             "reported_at": str(r[8]), "resolved_at": str(r[9]) if r[9] else None,
             "speech_segment_count": len(speech),
             "click_event_count": len(clicks),

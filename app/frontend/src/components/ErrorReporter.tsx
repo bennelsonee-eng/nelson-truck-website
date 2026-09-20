@@ -29,6 +29,10 @@ interface MicError { when_ms: number; code: string; message: string }
 interface ReportRow {
   id: number; title: string; status: string; severity: string; route: string
   reported_by: string | null
+  // The Cloudflare-Access address, which is per-person. reported_by can only
+  // name an ACCOUNT, because the app login is shared -- both are shown so a
+  // report says who actually filed it.
+  reported_by_cf_email?: string | null
   reported_at: string; resolved_at: string | null; video_path: string | null
   speech_segment_count: number; click_event_count: number
 }
@@ -904,7 +908,10 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
                 </div>
                 <div className="text-slate-300 leading-snug mb-1 line-clamp-2">{r.title}</div>
                 <div className="flex items-center justify-between text-[10px] text-slate-500 mb-2">
-                  <span>👤 {r.reported_by || 'unknown'} · {new Date(r.reported_at).toLocaleString()}</span>
+                  <span>👤 {r.reported_by || 'unknown'}
+                    {r.reported_by_cf_email && r.reported_by_cf_email !== r.reported_by
+                      ? ` (${r.reported_by_cf_email})` : ''}
+                    {' · '}{new Date(r.reported_at).toLocaleString()}</span>
                   {r.video_path && <a href={r.video_path} target="_blank" rel="noreferrer" className="text-red-400 hover:underline">video ▶</a>}
                 </div>
                 {r.status === 'resolved' || r.status === 'closed' ? (

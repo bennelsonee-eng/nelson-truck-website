@@ -90,6 +90,13 @@ class ReporterIdentity:
     user_id: int | None   # app User.id, or None for a Cloudflare-only tester
     username: str          # name/email stamped onto the report
     is_admin: bool
+    # The Cloudflare-Access email, captured whenever Access verified one --
+    # INCLUDING when an app user is also logged in.
+    #
+    # `username` alone cannot answer "who filed this", because the app login is
+    # shared: it names an ACCOUNT. The Access identity is per-person, since
+    # everyone signs in with a code sent to their own address.
+    cf_email: str | None = None
 
 
 async def require_reporter(
@@ -106,15 +113,21 @@ async def require_reporter(
     (others only to one they just filed). The admin Reports queue + resolve stay
     gated separately by require_admin.
     """
+    cf_email = cf.email if cf is not None else None
     if user is not None:
         return ReporterIdentity(
             user_id=user.id,
             username=user.email or user.display_name or f"user#{user.id}",
             is_admin=user.role in (UserRole.ADMIN, UserRole.EDITOR),
+            cf_email=cf_email,
         )
     if cf is not None:
-        return ReporterIdentity(user_id=None, username=cf.email, is_admin=False)
-    return ReporterIdentity(user_id=None, username="anonymous", is_admin=False)
+        return ReporterIdentity(
+            user_id=None, username=cf.email, is_admin=False, cf_email=cf_email,
+        )
+    return ReporterIdentity(
+        user_id=None, username="anonymous", is_admin=False, cf_email=None,
+    )
 
 
 def get_impersonating_customer_id(request: Request) -> int | None:

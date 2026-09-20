@@ -25,6 +25,11 @@ CREATE TABLE IF NOT EXISTS public.error_reports (
     reported_by_user_id  integer,
     -- Cloudflare-Access testers have no user row; their email lands here.
     reported_by_username text        NOT NULL DEFAULT '',
+    -- The Cloudflare-Access email, recorded even when an app user is logged in.
+    -- The app login is shared, so reported_by_username can only name an
+    -- account; Access identities are per-person, since everyone signs in with a
+    -- code sent to their own address.
+    reported_by_cf_email text,
     speech_segments      jsonb       NOT NULL DEFAULT '[]'::jsonb,
     click_events         jsonb       NOT NULL DEFAULT '[]'::jsonb,
     pages_visited        jsonb       NOT NULL DEFAULT '[]'::jsonb,
@@ -50,6 +55,7 @@ CREATE INDEX IF NOT EXISTS ix_error_reports_status  ON public.error_reports (sta
 -- Columns added after the table first shipped. Spelled out individually so an
 -- older database catches up instead of being left half-formed.
 ALTER TABLE public.error_reports
-    ADD COLUMN IF NOT EXISTS mic_diagnostics jsonb NOT NULL DEFAULT '{}'::jsonb,
-    ADD COLUMN IF NOT EXISTS video_path      text,
-    ADD COLUMN IF NOT EXISTS source          text  NOT NULL DEFAULT 'nelson_website';
+    ADD COLUMN IF NOT EXISTS mic_diagnostics      jsonb NOT NULL DEFAULT '{}'::jsonb,
+    ADD COLUMN IF NOT EXISTS video_path           text,
+    ADD COLUMN IF NOT EXISTS source               text  NOT NULL DEFAULT 'nelson_website',
+    ADD COLUMN IF NOT EXISTS reported_by_cf_email text;
