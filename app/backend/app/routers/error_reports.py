@@ -1,14 +1,18 @@
 """
-Error Report API — in-app issue recorder for the Titan website.
+Error Report API — in-app issue recorder for the Nelson Truck website.
 
 Admin-only. The frontend ErrorReporter panel records a screen video (webm +
 mic audio), a live voice transcript, click events, pages visited, DOM/route
 state, and microphone diagnostics. Reports are saved here and pulled in
 Claude Code for resolution.
 
-Ported/adapted from the Nelson ERP error reporter, using Titan's auth
-(`require_admin`) + cookie session. Table `error_reports` is created out of
-band (idempotent SQL); no ORM model needed — raw SQL keeps it self-contained.
+Ported/adapted from the Nelson ERP error reporter, using this site's auth
+(`require_admin`) + cookie session. No ORM model — raw SQL keeps it
+self-contained. The table is defined in
+`app/scripts/create_error_reports_table.sql`: it used to be created by hand
+against the database with nothing in the repo, and this site inherited the
+code without it, so every report 500'd on the final INSERT while the panel
+reported success.
 
 Endpoints:
   POST   /api/error-reports              — create a report, returns {id}
@@ -31,10 +35,12 @@ from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import get_settings
 from app.database import async_session, get_db
 from app.dependencies import ReporterIdentity, require_admin, require_reporter
 from app.models import User
 from app.services import transcription
+from app.services.email_service import ComposedEmail, send_email
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +52,52 @@ router = APIRouter(prefix="/api/error-reports", tags=["Error Reports"])
 VIDEO_DIR = Path(__file__).resolve().parent.parent.parent / "error_report_media"
 
 VALID_STATUSES = {"open", "in_progress", "resolved", "closed"}
+
+
+def _send_report_alert(
+    report_id: int, title: str, route: str, severity: str, reported_by: str
+) -> None:
+    """Email someone that a report was filed.
+
+    Until now a report only existed if somebody thought to open the queue and
+    look, which meant a tester could record a problem, be told it was saved,
+    and have it sit unread indefinitely. The recorder is the feedback channel
+    for people who are not going to chase us a second time.
+
+    Runs as a background task and swallows everything: the report is already
+    committed by the time this is called, and a mail outage must never be the
+    reason a filed report looks like a failure. `send_email` does not raise on
+    its own, but the compose step and the settings lookup can.
+    """
+    try:
+        settings = get_settings()
+        to = (settings.error_report_alert_email or "").strip()
+        if not to:
+            logger.info("report %s: no alert address configured, not emailing", report_id)
+            return
+        site = settings.app_name
+        body = (
+            f"{reported_by or 'someone'} filed issue #{report_id} on the {site} site.\n\n"
+            f"  Title:    {title}\n"
+            f"  Page:     {route or '(not recorded)'}\n"
+            f"  Severity: {severity}\n\n"
+            "Open the site as an admin and use the Issues badge in the header to\n"
+            "watch the recording and read the transcript.\n"
+        )
+        result = send_email(ComposedEmail(
+            to_email=to,
+            to_name=None,
+            # Severity first: a critical report should be sortable in a mailbox
+            # without opening it.
+            subject=f"[{site}] {severity.upper()} issue #{report_id}: {title[:80]}",
+            text_body=body,
+        ))
+        if result.ok:
+            logger.info("report %s: alert emailed to %s", report_id, to)
+        else:
+            logger.warning("report %s: alert email failed: %s", report_id, result.error)
+    except Exception:
+        logger.exception("report %s: alert email raised", report_id)
 
 
 async def _store_transcript(report_id: int, result: dict) -> None:
@@ -125,6 +177,7 @@ class ErrorReportPatch(BaseModel):
 @router.post("")
 async def create_error_report(
     body: ErrorReportCreate,
+    background: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     reporter: ReporterIdentity = Depends(require_reporter),
 ):
@@ -176,6 +229,15 @@ async def create_error_report(
     )
     await db.commit()
     new_id = result.fetchone()[0]
+
+    # Committed first, alerted after: the report is safe on disk before we go
+    # near the mail provider, so a slow or failing send can only cost the
+    # notification, never the report itself.
+    background.add_task(
+        _send_report_alert, new_id, title, body.route,
+        body.severity if body.severity in {"low", "normal", "high", "critical"} else "normal",
+        reporter.username,
+    )
     return {"id": new_id, "title": title, "status": "open"}
 
 

@@ -136,6 +136,12 @@ class Settings(BaseSettings):
     #     cutover must keep that bridge host reachable for BOTH sites.
     canonical_base_url: str = "https://nelsontruck.com"
 
+    # --- Issue recorder -------------------------------------------------
+    # Where "a new issue was filed" alerts go. Nelson and Titan run entirely
+    # separate reporting stacks (separate databases, separate inboxes), so this
+    # deliberately does NOT share Titan's address. Override in .env per env.
+    error_report_alert_email: str = "admin@nelsontruck.com"
+
     # --- Anonymous-retail customer sentinel for FACS (per addendum 003) ---
     facs_anonymous_retail_customer_id: str = "106415"
 
