@@ -20,7 +20,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 
-type RecState = 'idle' | 'recording' | 'paused' | 'saving' | 'saved'
+type RecState = 'idle' | 'recording' | 'paused' | 'saving' | 'saved' | 'error'
 type View = 'record' | 'list'
 
 interface SpeechSegment { text: string; timestamp_ms: number; confidence: number }
@@ -93,6 +93,7 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
   const [elapsed, setElapsed] = useState(0)
   const [savedId, setSavedId] = useState<number | null>(null)
   const [saveNote, setSaveNote] = useState<string>('')
+  const [saveError, setSaveError] = useState<string>('')
 
   // Mic device selection + live input level. A getUserMedia track can succeed
   // yet carry pure silence (muted device, or a wrong default like "Stereo Mix").
@@ -538,6 +539,7 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
 
   const stopAndSave = useCallback(async () => {
     if (state === 'saving' || state === 'saved') return
+    setSaveError('')
     setState('saving')
 
     // Finalize the recorder and wait for the last chunk.
@@ -573,13 +575,21 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
           browser_info: navigator.userAgent,
         }),
       })
+      // `api` is a thin fetch wrapper, so it resolves for any status: a 500
+      // arrived here as a perfectly ordinary Response. Without these two
+      // checks the id came back undefined, the panel went green anyway, and
+      // the person walked away believing they had filed something that was
+      // never written. That is exactly how the two lost ERP reports stayed
+      // invisible until someone went looking in the database.
+      if (!res.ok) throw new Error(`Server returned ${res.status}`)
       const data = await res.json()
+      if (typeof data?.id !== 'number') throw new Error('No report id in the response')
       id = data.id
       setSavedId(id)
     } catch (err) {
       console.error('save metadata failed', err)
-      setSaveNote('Could not save the report. Check your connection and try again.')
-      setState('saved')
+      setSaveError(err instanceof Error ? err.message : 'Could not reach the server')
+      setState('error')
       return
     }
 
@@ -605,7 +615,8 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
   const resetForNew = () => {
     stopTestMic()
     setState('idle'); setSpeech([]); setClicks([]); setPages([]); setInterim('')
-    setElapsed(0); setSavedId(null); setSaveNote(''); setMicStatus({ tone: 'ok', text: '' })
+    setElapsed(0); setSavedId(null); setSaveNote(''); setSaveError('')
+    setMicStatus({ tone: 'ok', text: '' })
     chunksRef.current = []
   }
 
@@ -732,7 +743,7 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
 
         {/* Tabs */}
         <div className="flex gap-1 mb-3 text-xs">
-          <button onClick={() => { setView('record'); if (state === 'saved') resetForNew() }}
+          <button onClick={() => { setView('record'); if (state === 'saved' || state === 'error') resetForNew() }}
             className={`flex-1 py-1.5 rounded-lg font-semibold ${view === 'record' ? 'bg-red-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'}`}>Record</button>
           {canViewList && (
             <button onClick={() => setView('list')} disabled={state === 'recording' || state === 'paused'}
@@ -813,6 +824,19 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
                 </>
               )}
               {state === 'saving' && <div className="flex-1 py-2.5 text-center text-sm text-slate-400">Saving…</div>}
+              {state === 'error' && (
+                <div className="flex-1 text-center py-1">
+                  <div className="mx-auto mb-2 w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center text-red-400 text-2xl leading-none">!</div>
+                  <div className="text-red-400 font-bold text-sm">Report NOT saved</div>
+                  <div className="text-[11px] text-red-300 mt-0.5 leading-snug">
+                    {saveError}. Nothing was written — please tell us directly so it isn&rsquo;t lost.
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center mt-3">
+                    <button onClick={resetForNew} className="text-xs px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg">Try again</button>
+                    <button onClick={() => { resetForNew(); setOpen(false) }} className="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg">Close</button>
+                  </div>
+                </div>
+              )}
               {state === 'saved' && (
                 <div className="flex-1 text-center py-1">
                   <div className="mx-auto mb-2 w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center text-green-400 text-2xl leading-none">&#10003;</div>

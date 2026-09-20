@@ -27,6 +27,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import re
 from pathlib import Path
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile
@@ -52,6 +53,74 @@ router = APIRouter(prefix="/api/error-reports", tags=["Error Reports"])
 VIDEO_DIR = Path(__file__).resolve().parent.parent.parent / "error_report_media"
 
 VALID_STATUSES = {"open", "in_progress", "resolved", "closed"}
+
+
+# A recorder session must never be lost because of a character in it.
+#
+# Ported from the Nelson ERP (commits 0b8da8f3 and 499a9035), which lost reports
+# this way twice before the cause was found. The first vanished on 2026-08-28:
+# the POST returned 500 with
+#     invalid input syntax for type json
+#     DETAIL: Unicode low surrogate must follow a high surrogate
+# after the capture clicked a sidebar link whose label starts with an emoji.
+#
+# The JSON columns here are jsonb, which PARSES what it stores (a plain `json`
+# column would not), and PostgreSQL rejects an unpaired UTF-16 surrogate
+# outright. That gap is why this hid for so long: a test asserting only "this is
+# valid JSON" passes on a payload the database will refuse.
+#
+# The lone half comes from the browser. JavaScript strings are UTF-16, so any
+# client-side slice() -- and this panel slices captured click text, the first
+# speech segment and the joined transcript -- can cut an emoji between its two
+# surrogates and send the leftover on its own. Python then holds a real
+# surrogate codepoint, which is not encodable as UTF-8 at all, so it breaks the
+# plain text columns too, not just the jsonb ones.
+#
+# Stripping every surrogate is safe: Python stores an intact emoji as ONE
+# codepoint, never as a pair, so anything left in U+D800-U+DFFF is a broken half
+# carrying no meaning. Emoji that arrived whole are untouched -- which matters
+# here, because this site's own nav labels and category names carry them, so a
+# recording that clicks one can trigger this.
+#
+# U+0000 is the same loss with a different character: PostgreSQL rejects it in
+# jsonb ("unsupported Unicode escape sequence") and in every text column
+# ("invalid byte sequence"), and it reaches us the same way, out of captured
+# DOM text.
+#
+# Deliberately defensive rather than a fix to the caller: the recorder is how
+# people tell us the site is broken, so it must not be the thing that breaks.
+# And the loss is silent -- the panel said "your issue has been sent in" for
+# every one of these.
+_UNSTORABLE = re.compile(r"[\ud800-\udfff\x00]")
+
+
+def _scrub(value, limit: int | None = None):
+    """Strip characters PostgreSQL cannot store, and optionally truncate.
+
+    Recurses into dicts and lists (and dict KEYS) because the break can be
+    anywhere in a capture blob; non-strings pass through untouched.
+
+    `limit` is the destination column's varchar width. Every column this router
+    writes is unbounded `text` -- verified 2026-09-20 against both production
+    databases and the checked-in table definition -- so nothing passes a limit
+    today. That is the one way these sites differ from the ERP, where title(200),
+    route(500) and browser_info(500) are bounded and an over-long value 500'd the
+    POST. The parameter stays so narrowing a column is a one-word change here,
+    and `test_every_written_column_is_unbounded` fails if one ever is.
+    """
+    if isinstance(value, str):
+        cleaned = _UNSTORABLE.sub("", value)
+        return cleaned[:limit] if limit else cleaned
+    if isinstance(value, dict):
+        return {_scrub(k): _scrub(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_scrub(v) for v in value]
+    return value
+
+
+def _jsonb(value) -> str:
+    """Serialise for a jsonb column, with unstorable characters removed first."""
+    return json.dumps(_scrub(value))
 
 
 def _send_report_alert(
@@ -153,9 +222,13 @@ async def _store_transcript(report_id: int, result: dict) -> None:
                 WHERE id = :id
             """),
             {
-                "segs": json.dumps(result.get("segments", [])),
-                "text": result.get("text", ""),
-                "meta": json.dumps(meta),
+                # Same guard as the create path. This one runs inside a
+                # background task whose caller swallows every exception, so an
+                # unstorable character here would lose the transcript with
+                # nothing but a log line to show for it.
+                "segs": _jsonb(result.get("segments", [])),
+                "text": _scrub(result.get("text", "")),
+                "meta": _jsonb(meta),
                 "id": report_id,
             },
         )
@@ -219,47 +292,85 @@ async def create_error_report(
     if not description and body.speech_segments:
         description = " ".join(s.get("text", "") for s in body.speech_segments)[:4000]
 
-    result = await db.execute(
-        text("""
-            INSERT INTO error_reports (
-                title, description, route, severity, status,
-                reported_by_user_id, reported_by_username,
-                speech_segments, click_events, pages_visited,
-                dom_state, mic_diagnostics, browser_info
-            ) VALUES (
-                :title, :description, :route, :severity, 'open',
-                :user_id, :username,
-                CAST(:speech_segments AS JSONB), CAST(:click_events AS JSONB),
-                CAST(:pages_visited AS JSONB), CAST(:dom_state AS JSONB),
-                CAST(:mic_diagnostics AS JSONB), :browser_info
-            ) RETURNING id
-        """),
-        {
-            "title": title,
-            "description": description,
-            "route": body.route,
-            "severity": body.severity if body.severity in
-                        {"low", "normal", "high", "critical"} else "normal",
-            "user_id": reporter.user_id,
-            "username": reporter.username,
-            "speech_segments": json.dumps(body.speech_segments),
-            "click_events": json.dumps(body.click_events),
-            "pages_visited": json.dumps(body.pages_visited),
-            "dom_state": json.dumps(body.dom_state),
-            "mic_diagnostics": json.dumps(body.mic_diagnostics),
-            "browser_info": body.browser_info,
-        },
-    )
-    await db.commit()
+    # Scrub before anything else touches these. The scrubbed values are what we
+    # store, what we put in the alert email, and what we hand back to the panel
+    # -- a lone surrogate left in the title would also fail the JSON encoding of
+    # our own 200 response, turning a committed report into a 500 that the panel
+    # would (correctly, now) report as a failure.
+    title = _scrub(title)
+    description = _scrub(description)
+    route = _scrub(body.route)
+    username = _scrub(reporter.username)
+    severity = (body.severity if body.severity in
+                {"low", "normal", "high", "critical"} else "normal")
+
+    insert_sql = text("""
+        INSERT INTO error_reports (
+            title, description, route, severity, status,
+            reported_by_user_id, reported_by_username,
+            speech_segments, click_events, pages_visited,
+            dom_state, mic_diagnostics, browser_info
+        ) VALUES (
+            :title, :description, :route, :severity, 'open',
+            :user_id, :username,
+            CAST(:speech_segments AS JSONB), CAST(:click_events AS JSONB),
+            CAST(:pages_visited AS JSONB), CAST(:dom_state AS JSONB),
+            CAST(:mic_diagnostics AS JSONB), :browser_info
+        ) RETURNING id
+    """)
+
+    params = {
+        "title": title,
+        "description": description,
+        "route": route,
+        "severity": severity,
+        "user_id": reporter.user_id,
+        "username": username,
+        "speech_segments": _jsonb(body.speech_segments),
+        "click_events": _jsonb(body.click_events),
+        "pages_visited": _jsonb(body.pages_visited),
+        "dom_state": _jsonb(body.dom_state),
+        "mic_diagnostics": _jsonb(body.mic_diagnostics),
+        "browser_info": _scrub(body.browser_info),
+    }
+
+    try:
+        result = await db.execute(insert_sql, params)
+        await db.commit()
+    except Exception as exc:
+        # Last-ditch save. The scrub covers the shapes we know break, but the
+        # capture blobs come from the browser and we cannot enumerate every
+        # future one. What the person SAID is the part of a report that cannot
+        # be reconstructed, so retry once keeping the words and dropping the
+        # machine-generated blobs rather than losing the lot.
+        await db.rollback()
+        logger.error(
+            "error report insert failed (%s) - retrying without capture blobs; "
+            "sizes: speech=%d clicks=%d pages=%d dom=%d",
+            exc,
+            len(params["speech_segments"]), len(params["click_events"]),
+            len(params["pages_visited"]), len(params["dom_state"]),
+        )
+        degraded = dict(params)
+        for key in ("speech_segments", "click_events", "pages_visited"):
+            degraded[key] = "[]"
+        for key in ("dom_state", "mic_diagnostics"):
+            degraded[key] = "{}"
+        degraded["description"] = (
+            (params["description"] or "")
+            + "\n\n[Capture detail was dropped - it could not be stored. "
+              "See the server log.]"
+        )
+        result = await db.execute(insert_sql, degraded)
+        await db.commit()
+
     new_id = result.fetchone()[0]
 
     # Committed first, alerted after: the report is safe on disk before we go
     # near the mail provider, so a slow or failing send can only cost the
     # notification, never the report itself.
     background.add_task(
-        _send_report_alert, new_id, title, body.route,
-        body.severity if body.severity in {"low", "normal", "high", "critical"} else "normal",
-        reporter.username,
+        _send_report_alert, new_id, title, route, severity, username,
     )
     return {"id": new_id, "title": title, "status": "open"}
 
@@ -454,13 +565,13 @@ async def update_error_report(
             sets.append("resolved_at = NULL")
     if body.resolution_notes is not None:
         sets.append("resolution_notes = :rn")
-        params["rn"] = body.resolution_notes
+        params["rn"] = _scrub(body.resolution_notes)
     if body.severity is not None:
         sets.append("severity = :sev")
         params["sev"] = body.severity
     if body.title is not None:
         sets.append("title = :title")
-        params["title"] = body.title
+        params["title"] = _scrub(body.title)
     if not sets:
         raise HTTPException(status_code=400, detail="No fields to update")
 
