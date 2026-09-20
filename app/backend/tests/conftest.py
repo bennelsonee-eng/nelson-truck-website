@@ -1,9 +1,17 @@
 """Shared pytest fixtures.
 
-We run integration tests against a dedicated `titan_test` database (sibling of
-the dev `titan_web` database, same Postgres instance on port 5433). Schema is
-applied once per session via ``Base.metadata.create_all`` — fast enough for the
-suite size and avoids dragging in alembic.
+We run integration tests against a dedicated `nelson_web_test` database
+(sibling of the dev `nelson_web` database), on the native Postgres on port 5432.
+Schema is applied once per session via ``Base.metadata.create_all`` — fast
+enough for the suite size and avoids dragging in alembic.
+
+This was `titan_test` on :5433 until 2026-09-20 — inherited verbatim when this
+site was cloned from Titan, and never corrected. :5433 is a docker Postgres that
+no longer runs, so EVERY database test in this repo skipped or errored rather
+than running, silently, for as long as the clone has existed. Titan itself moved
+off that container on 2026-08-06 for the same reason; this is that move, applied
+here. Pointing at Titan's catalog was wrong on its own terms too: these are
+different sites with different schemas.
 
 Each test gets a fresh AsyncSession; tests are responsible for cleaning up
 their own seed data (we don't run inside a transaction-rollback wrapper because
@@ -25,7 +33,7 @@ from sqlalchemy.pool import NullPool
 # via lru_cache).  This protects accidental dev-DB writes from a stray test.
 TEST_DB_URL = os.environ.setdefault(
     "DATABASE_URL",
-    "postgresql+asyncpg://postgres:titan2026@localhost:5433/titan_test",
+    "postgresql+asyncpg://postgres:nelson2026@localhost:5432/nelson_web_test",
 )
 # Background tasks (FACS heartbeat, etc.) need a long-lived event loop and a
 # real DB they can poll — neither is appropriate during unit tests.
@@ -46,7 +54,7 @@ async def _ensure_schema():
     global _SCHEMA_INITIALIZED
     if _SCHEMA_INITIALIZED:
         return
-    if "titan_test" not in TEST_DB_URL:
+    if "nelson_web_test" not in TEST_DB_URL:
         raise RuntimeError(
             f"Refusing to run tests against non-test DB: {TEST_DB_URL!r}"
         )

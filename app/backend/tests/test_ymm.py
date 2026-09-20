@@ -101,63 +101,88 @@ class TestFindModel:
 
 
 # =========================================================================
-# Router endpoints (no DB needed — these are pure)
+# Router endpoints, against an EMPTY vcdb — the static-seed fallback
 # =========================================================================
+#
+# These used to be introduced as "no DB needed — these are pure", and were
+# called with no arguments at all. That stopped being true when the router moved
+# onto the PACE-loaded vcdb_make / vcdb_model / vcdb_base_vehicle tables: every
+# endpoint took `db: AsyncSession = Depends(get_db)`, and calling it directly
+# with nothing passed the `Depends` SENTINEL as the session. All nine failed
+# with `AttributeError: 'Depends' object has no attribute 'execute'` — a broken
+# call, not a broken endpoint, so they said nothing about the router either way.
+#
+# The assertions below were always right, and they still are: the router falls
+# back to the static seed in `services/ymm_data.py` when the vcdb tables are
+# empty, which is the state of a fresh checkout before PACE ingest has run. So
+# these now take `clean_db` — a real session against a truncated database — and
+# what they actually pin is that fallback. The path is reachable in production
+# on any box where the ingest has not run, and until now nothing covered it.
+#
+# A make/model that only exists in vcdb (not in the static seed) therefore does
+# NOT belong in this class; that wants seeded vcdb rows and a test of its own.
+#
+# `year` and `vehicle_type` are passed explicitly everywhere below for the same
+# reason `db` is: their defaults are `Query(None)`, and FastAPI only swaps a
+# Query object for a real value while serving a request. A direct call gets the
+# Query object itself, which reaches ymm_data and fails on `year <= ...` with
+# `TypeError: '<=' not supported between instances of 'int' and 'Query'`. Any
+# parameter a direct caller relies on must be named, never left to default.
 
 
-class TestYmmRouter:
+class TestYmmRouterStaticFallback:
     @pytest.mark.asyncio
-    async def test_get_years_returns_descending_list(self):
-        years = await get_years()
+    async def test_get_years_returns_descending_list(self, clean_db):
+        years = await get_years(clean_db)
         assert years[0] > years[-1]
         assert min(years) == 1990
 
     @pytest.mark.asyncio
-    async def test_get_makes_returns_dicts_with_slug_and_name(self):
-        makes = await get_makes()
+    async def test_get_makes_returns_dicts_with_slug_and_name(self, clean_db):
+        makes = await get_makes(year=None, vehicle_type=None, db=clean_db)
         assert all("slug" in m and "name" in m and "is_featured" in m for m in makes)
 
     @pytest.mark.asyncio
-    async def test_get_models_for_known_make(self):
-        models = await get_models("ford")
+    async def test_get_models_for_known_make(self, clean_db):
+        models = await get_models("ford", year=None, vehicle_type=None, db=clean_db)
         assert any(m["slug"] == "f150" for m in models)
         assert all("body_type" in m for m in models)
 
     @pytest.mark.asyncio
-    async def test_get_models_unknown_make_returns_404(self):
+    async def test_get_models_unknown_make_returns_404(self, clean_db):
         with pytest.raises(HTTPException) as exc:
-            await get_models("doesnotexist")
+            await get_models("doesnotexist", year=None, vehicle_type=None, db=clean_db)
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_models_with_year_filter(self):
-        models_2024 = await get_models("ford", year=2024)
+    async def test_get_models_with_year_filter(self, clean_db):
+        models_2024 = await get_models("ford", year=2024, vehicle_type=None, db=clean_db)
         assert any(m["slug"] == "maverick" for m in models_2024)
-        models_2010 = await get_models("ford", year=2010)
+        models_2010 = await get_models("ford", year=2010, vehicle_type=None, db=clean_db)
         assert not any(m["slug"] == "maverick" for m in models_2010)
 
     @pytest.mark.asyncio
-    async def test_resolve_valid_combo_returns_label(self):
-        out = await resolve(year=2020, make_slug="ford", model_slug="f150")
+    async def test_resolve_valid_combo_returns_label(self, clean_db):
+        out = await resolve(year=2020, make_slug="ford", model_slug="f150", db=clean_db)
         assert out["label"] == "2020 Ford F-150"
         assert out["make"]["slug"] == "ford"
         assert out["model"]["slug"] == "f150"
 
     @pytest.mark.asyncio
-    async def test_resolve_unknown_make_404(self):
+    async def test_resolve_unknown_make_404(self, clean_db):
         with pytest.raises(HTTPException) as exc:
-            await resolve(year=2020, make_slug="xyz", model_slug="f150")
+            await resolve(year=2020, make_slug="xyz", model_slug="f150", db=clean_db)
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_resolve_unknown_model_404(self):
+    async def test_resolve_unknown_model_404(self, clean_db):
         with pytest.raises(HTTPException) as exc:
-            await resolve(year=2020, make_slug="ford", model_slug="xyz")
+            await resolve(year=2020, make_slug="ford", model_slug="xyz", db=clean_db)
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_resolve_year_outside_production_window_400(self):
+    async def test_resolve_year_outside_production_window_400(self, clean_db):
         # Maverick starts 2022 — 2010 should reject
         with pytest.raises(HTTPException) as exc:
-            await resolve(year=2010, make_slug="ford", model_slug="maverick")
+            await resolve(year=2010, make_slug="ford", model_slug="maverick", db=clean_db)
         assert exc.value.status_code == 400

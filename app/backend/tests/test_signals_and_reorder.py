@@ -9,6 +9,7 @@ import pytest_asyncio
 from fastapi import HTTPException
 from sqlalchemy import select
 
+from tests.fake_request import anon_request
 from app.models import (
     Brand,
     Cart,
@@ -211,6 +212,32 @@ def _checkout_body(**overrides):
     return CheckoutRequest(**payload)
 
 
+async def _current_cart(db, customer_id):
+    """The customer's LIVE (unsubmitted) cart, created if there isn't one.
+
+    checkout() consumes the cart: it stamps submitted_at, and both a second
+    checkout() and reorder() then look for a cart with submitted_at IS NULL.
+    These tests used to hold on to the pre-checkout cart id, which after the
+    first checkout is a submitted cart nothing will ever pick up again -- so the
+    second checkout raised 400 "No cart found", and reorder quietly filled a NEW
+    cart while the assertions looked at the old one. The endpoints were right;
+    the tests had simply never run (their module could not be collected) since
+    the behaviour was introduced.
+    """
+    cart = (await db.execute(
+        select(Cart)
+        .where(Cart.customer_id == customer_id, Cart.submitted_at.is_(None))
+        .order_by(Cart.updated_at.desc())
+        .limit(1)
+    )).scalar_one_or_none()
+    if cart is None:
+        cart = Cart(customer_id=customer_id)
+        db.add(cart)
+        await db.commit()
+        await db.refresh(cart)
+    return cart
+
+
 @pytest.fixture(autouse=True)
 def stub_facs(monkeypatch):
     async def fake_push_csvs(csvs):
@@ -223,18 +250,20 @@ class TestReorder:
     async def test_reorder_clones_lines_back_into_cart(self, reorder_world):
         db, w = reorder_world
         # Place an order first (consumes the cart)
-        order = await checkout(body=_checkout_body(), user=w["user"], db=db)
+        order = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
         # Cart is now empty
         cart_lines = (await db.execute(select(CartLine).where(CartLine.cart_id == w["cart"].id))).scalars().all()
         assert cart_lines == []
 
         # Reorder
-        result = await reorder(web_order_number=order.web_order_number, user=w["user"], db=db)
+        result = await reorder(web_order_number=order.web_order_number, user=w["user"], db=db, request=anon_request())
         assert result.lines_added == 2
         assert result.lines_skipped == 0
 
-        # Cart should now have 2 lines back
-        cart_lines = (await db.execute(select(CartLine).where(CartLine.cart_id == w["cart"].id))).scalars().all()
+        # Into the CURRENT cart: checkout submitted the original, so
+        # reorder opened a new one. The old id holds nothing.
+        cart = await _current_cart(db, w["cust"].id)
+        cart_lines = (await db.execute(select(CartLine).where(CartLine.cart_id == cart.id))).scalars().all()
         assert len(cart_lines) == 2
 
     @pytest.mark.asyncio
@@ -247,7 +276,7 @@ class TestReorder:
         spo = next(wh for wh in warehouses if wh.code == 10)
         db.add(ProductInventory(product_id=w["p3"].id, warehouse_id=spo.id, on_hand=10))
         await db.commit()
-        order = await checkout(body=_checkout_body(), user=w["user"], db=db)
+        order = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
 
         # Now mutate p3 to be discontinued AFTER the order was placed
         product3 = (await db.execute(select(Product).where(Product.sku == "RE-3"))).scalar_one()
@@ -255,14 +284,14 @@ class TestReorder:
         product3.is_for_sale = False
         await db.commit()
 
-        result = await reorder(web_order_number=order.web_order_number, user=w["user"], db=db)
+        result = await reorder(web_order_number=order.web_order_number, user=w["user"], db=db, request=anon_request())
         assert result.lines_skipped >= 1
         assert any("discontinued" in r or "hidden" in r for r in result.skipped_reasons)
 
     @pytest.mark.asyncio
     async def test_reorder_other_users_order_forbidden(self, reorder_world):
         db, w = reorder_world
-        order = await checkout(body=_checkout_body(), user=w["user"], db=db)
+        order = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
 
         other_cust = Customer(customer_number="OTHER", name="Other", tier=CustomerTier.JOBBER)
         db.add(other_cust); await db.flush()
@@ -273,20 +302,20 @@ class TestReorder:
         db.add(other_user); await db.commit()
 
         with pytest.raises(HTTPException) as exc:
-            await reorder(web_order_number=order.web_order_number, user=other_user, db=db)
+            await reorder(web_order_number=order.web_order_number, user=other_user, db=db, request=anon_request())
         assert exc.value.status_code == 403
 
     @pytest.mark.asyncio
     async def test_unknown_order_404(self, reorder_world):
         db, w = reorder_world
         with pytest.raises(HTTPException) as exc:
-            await reorder(web_order_number="TTW0099999", user=w["user"], db=db)
+            await reorder(web_order_number="TTW0099999", user=w["user"], db=db, request=anon_request())
         assert exc.value.status_code == 404
 
     @pytest.mark.asyncio
     async def test_unlinked_user_400(self, reorder_world):
         db, w = reorder_world
-        order = await checkout(body=_checkout_body(), user=w["user"], db=db)
+        order = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
         # Make a fresh user with no customer
         bare = User(
             email="bare@example.com", password_hash=hash_password("p"),
@@ -294,20 +323,22 @@ class TestReorder:
         )
         db.add(bare); await db.commit()
         with pytest.raises(HTTPException) as exc:
-            await reorder(web_order_number=order.web_order_number, user=bare, db=db)
+            await reorder(web_order_number=order.web_order_number, user=bare, db=db, request=anon_request())
         assert exc.value.status_code == 400
 
     @pytest.mark.asyncio
     async def test_reorder_sums_into_existing_cart_lines(self, reorder_world):
         db, w = reorder_world
-        order = await checkout(body=_checkout_body(), user=w["user"], db=db)
-        # Pre-populate cart with p1 qty=5
-        db.add(CartLine(cart_id=w["cart"].id, product_id=w["p1"].id, quantity=5))
+        order = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
+        # Pre-populate the CURRENT cart with p1 qty=5 -- reorder sums into
+        # whichever cart is live after checkout, not the submitted one.
+        cart = await _current_cart(db, w["cust"].id)
+        db.add(CartLine(cart_id=cart.id, product_id=w["p1"].id, quantity=5))
         await db.commit()
 
-        await reorder(web_order_number=order.web_order_number, user=w["user"], db=db)
+        await reorder(web_order_number=order.web_order_number, user=w["user"], db=db, request=anon_request())
         # p1 should be 5 + 1 = 6
         line = (await db.execute(
-            select(CartLine).where(CartLine.cart_id == w["cart"].id, CartLine.product_id == w["p1"].id)
+            select(CartLine).where(CartLine.cart_id == cart.id, CartLine.product_id == w["p1"].id)
         )).scalar_one()
         assert line.quantity == 6
