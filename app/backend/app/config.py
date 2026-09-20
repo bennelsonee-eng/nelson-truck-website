@@ -141,6 +141,16 @@ class Settings(BaseSettings):
     # separate reporting stacks (separate databases, separate inboxes), so this
     # deliberately does NOT share Titan's address. Override in .env per env.
     error_report_alert_email: str = "admin@nelsontruck.com"
+    # Alerts can use their OWN mailbox rather than the site-wide provider. The
+    # site runs maildev before launch (nothing is delivered), which is right for
+    # customer mail and useless for an alert -- and flipping the site-wide
+    # provider to fix that would start sending real customer mail from a
+    # pre-launch site. Unset = fall back to the site's provider.
+    error_report_smtp_host: str = ""
+    error_report_smtp_port: int = 587
+    error_report_smtp_user: str = ""
+    error_report_smtp_password: str = ""
+    error_report_smtp_from: str = ""
 
     # --- Anonymous-retail customer sentinel for FACS (per addendum 003) ---
     facs_anonymous_retail_customer_id: str = "106415"

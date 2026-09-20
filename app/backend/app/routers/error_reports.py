@@ -40,7 +40,7 @@ from app.database import async_session, get_db
 from app.dependencies import ReporterIdentity, require_admin, require_reporter
 from app.models import User
 from app.services import transcription
-from app.services.email_service import ComposedEmail, send_email
+from app.services.email_service import AuthSmtpSender, ComposedEmail, send_email
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +84,37 @@ def _send_report_alert(
             "Open the site as an admin and use the Issues badge in the header to\n"
             "watch the recording and read the transcript.\n"
         )
-        result = send_email(ComposedEmail(
+        email = ComposedEmail(
             to_email=to,
             to_name=None,
             # Severity first: a critical report should be sortable in a mailbox
             # without opening it.
             subject=f"[{site}] {severity.upper()} issue #{report_id}: {title[:80]}",
             text_body=body,
-        ))
+        )
+        # Alerts get their own mailbox, on purpose.
+        #
+        # This site runs EMAIL_PROVIDER=maildev before launch, so every email it
+        # sends is caught locally and delivered nowhere. That is correct for
+        # order confirmations and RMAs on a site that is not live yet -- and
+        # useless for an issue alert, which is worth nothing if it is not read.
+        # Switching the site-wide provider to make alerts work would also start
+        # sending real customer mail from a pre-launch site, so instead an alert
+        # can carry its own SMTP credentials and go out on its own.
+        #
+        # Unset (the default) means fall back to whatever the site uses, which
+        # keeps this a no-op in dev.
+        if settings.error_report_smtp_host and settings.error_report_smtp_user:
+            sender = AuthSmtpSender(
+                host=settings.error_report_smtp_host,
+                port=settings.error_report_smtp_port,
+                user=settings.error_report_smtp_user,
+                password=settings.error_report_smtp_password,
+                from_addr=settings.error_report_smtp_from or settings.error_report_smtp_user,
+            )
+            result = sender.send(email)
+        else:
+            result = send_email(email)
         if result.ok:
             logger.info("report %s: alert emailed to %s", report_id, to)
         else:
