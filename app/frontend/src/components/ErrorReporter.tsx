@@ -658,11 +658,16 @@ export default function ErrorReporter({ canViewList = true }: { canViewList?: bo
 
   useEffect(() => { if (open && view === 'list') loadReports() }, [open, view, loadReports])
 
-  // Let the header alert badge pop this panel straight to the Reports queue.
+  // The header alert badge opens this panel on Record, not on the queue.
+  //
+  // It used to jump straight to Reports, which is why opening the panel from
+  // the header landed on an empty "No reports yet" list instead of the thing
+  // the panel is for. Recording is the common case; the Reports tab is one
+  // click away for an admin who wants it.
   useEffect(() => {
-    const openList = () => { setOpen(true); setView('list') }
-    window.addEventListener('titan:open-reports', openList)
-    return () => window.removeEventListener('titan:open-reports', openList)
+    const openPanel = () => { setOpen(true); setView('record') }
+    window.addEventListener('titan:open-reports', openPanel)
+    return () => window.removeEventListener('titan:open-reports', openPanel)
   }, [])
 
   // Cleanup on unmount
