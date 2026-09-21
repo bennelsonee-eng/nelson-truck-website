@@ -1,0 +1,18 @@
+[Unit]
+Description=Nelson inventory sync — fetch tte/nte_inv_days from the MySQL bridge, load into nelson_web + reindex nelson_products
+After=network-online.target
+Wants=network-online.target
+OnFailure=backup-alert@%n.service
+
+[Service]
+Type=oneshot
+User=titan
+WorkingDirectory=/home/titan/nelson-truck-website/app/backend
+EnvironmentFile=/home/titan/nelson-truck-website/app/.env
+# The site fetches its own CSVs (app/data/mysql_dumps is a real folder). Until
+# 2026-09-21 it read Titan's copy through a symlink, refreshed by a Titan job on
+# nelson-prod; Titan now runs only on titan-prod.
+ExecStartPre=/home/titan/nelson-truck-website/app/backend/.venv/bin/python /home/titan/nelson-truck-website/app/scripts/fetch_inventory_csvs.py
+ExecStart=/home/titan/nelson-truck-website/app/backend/.venv/bin/python /home/titan/nelson-truck-website/app/scripts/link_nelson_inventory.py --seed-warehouses --no-prices
+StandardOutput=append:/home/titan/nelson-inventory-sync.log
+StandardError=append:/home/titan/nelson-inventory-sync.log
