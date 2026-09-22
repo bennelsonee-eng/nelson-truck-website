@@ -1,207 +1,215 @@
 part_sku,part_name,group,families,rule,bodies_linked
-KNP-12010500,"HARNESS, 17+ FORD C/C",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12014390,"LOOSE, RECEIVER HITCH KIT 18",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-12015020,"HITCH, GOOSNECK 19+RAM",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,14
+KNP-12010500,"HARNESS, 17+ FORD C/C",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12014390,"LOOSE, RECEIVER HITCH KIT 18",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-12015020,"HITCH, GOOSNECK 19+RAM",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,16
 KNP-12219432,"GLASS, KUV FRONT BODY",Glass & windows,kuv,kuv+glass,3
-KNP-12221479,"SEAL, DOOR PER FT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-12221958,"SEAL, DOOR PER FT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-12247300,"CAGE, LATCH NGL ROTARY ELOCK","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-12247359,"KEY, ONE PLUS #","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-12247730,BUSHING GUIDE ROD NXG,"Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-12252722,"LIGHT, AMBER RECT LED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12253548,"LIGHT, MARKER, RED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12256319,"HARNESS, RR STROBE W/OSWITCH",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12256442,"LIGHT, STT W/ BACKUP",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12256459,"LIGHT, STT",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12256491,"LIGHT, NEW LED STT",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-12270781,"HITCH, GOOSENECK 2500",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,14
-KNP-12270799,"HITCH, GOOSENECK 3500 RAM",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,14
-KNP-12315156,"PAINT, 11OZ AEROSOL",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-12315172,"PAINT, 1/2OZ BRUSH",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-12315735,"EMBLEM, KNAPHEIDE",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-20009670,"ADAPTER, 17OLD FORD 40/56CA",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-20031880,"LIGHT KIT, KC SRW",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-20039480,"LIGHT, LED 6 CIRCUIT FLUSH",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-20046884,ALUM GRAB HANDLES,Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,36
-KNP-20049557,"CABINET, 9 BIN",Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,36
-KNP-20051510,INSTALL KIT 15+ GM 56CA,Mounting & installation kits,service,sb-install,18
-KNP-20051520,INSTALL KIT 15+ GM 60CA,Mounting & installation kits,service,sb-install,18
-KNP-20051530,INSTALL KIT 15+ GM 84CA,Mounting & installation kits,service,sb-install,18
-KNP-20051550,INSTALL KIT 17+ FORD 56CA,Mounting & installation kits,service,sb-install,18
-KNP-20051560,Vehicle-specific installation kit designed for 2017+ Ford F-Series trucks with 60CA configuration. Provides all necessary hardware and components for proper equipment mounting and integration.,Mounting & installation kits,service,sb-install,18
-KNP-20051590,INSTALL KIT 15+ RAM 56CA,Mounting & installation kits,service,sb-install,18
-KNP-20051600,INSTALL KIT 15+ RAM 60CA,Mounting & installation kits,service,sb-install,18
-KNP-20063020,SIDE MOUNT SINGLE LADDER RACK,"Racks, bulkheads & sides","service, kuv",service-racks,21
-KNP-20072732,"VISE BRACKET,",Mounting & installation kits,"service, mechanics",vise,19
-KNP-20080172,TOOLBOX,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,37
-KNP-20094540,"KIT,QK MT FORD 56CA 2017+",Mounting & installation kits,service,sb-install,18
-KNP-20094550,"INSTALL KIT, 2017+FORD 60/84",Mounting & installation kits,service,sb-install,18
-KNP-20094580,"KIT, INSTALL 14+RAM 60/84",Mounting & installation kits,service,sb-install,18
-KNP-20103480,"BUMPER, 78"" GALV W/ RECESS",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-20103600,"BUMPER, GALVAGRIP BALL 89""",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-20170494,DIVIDER FOR SHELF,Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,36
-KNP-20195110,"BUMPER, STEP 78""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-20205160,"BUMPER, 78"" 20 GM OE HITCH",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-20222750,"MOUNTING KIT, GM W/O H 2020-C",Mounting & installation kits,service,sb-install,18
-KNP-20226000,INSTALLATION KIT,Mounting & installation kits,service,sb-install,18
-KNP-20226010,"KIT, INSTALL 20 GM WITH HITCH",Mounting & installation kits,service,sb-install,18
-KNP-20226020,INSTALLATION KIT,Mounting & installation kits,service,sb-install,18
-KNP-20226030,"KIT, INST 20 GM56CA NO HITCH",Mounting & installation kits,service,sb-install,18
-KNP-21-10-062-3,"MOUNTING KIT, 12"" TAILGATE",Mounting & installation kits,"platform, dump, landscape",tailgate-mount,22
-KNP-21102876,LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-21802160,mount kit,Mounting & installation kits,service,sb-install,18
-KNP-25105974,SHOVEL BOX MOUNT KIT,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,37
-KNP-26053199,"83"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-26053207,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-26053371,"BUMPER, STEP 78""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-26053397,"BUMPER, STEP 94""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-26058123,"BUMPER, STEP 94"" NOTCHED",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-26102434,MOUNT KIT UNIV 56CA,Mounting & installation kits,service,sb-install,18
-KNP-26102533,"HITCH, CLASS V RECEIVER",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-26103523,"ADAPTER, WIRING 97 OLD FORD",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26203802,"MT KIT, GM",Mounting & installation kits,service,sb-install,18
-KNP-26203810,MOUNT KIT RAM 03-13,Mounting & installation kits,service,sb-install,18
-KNP-26208264,"SPRING, DOORKIT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-26226035,"MT KIT, RAM 14+",Mounting & installation kits,service,sb-install,18
-KNP-26227868,LATCH,"Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-26227876,"LATCH, KIT RVLS","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-26230151,LED LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26259531,"KIT, REP NXG ROTARY LATCH","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-26259937,"KIT, NXG LATCH KY2017","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-26262667,"ADAPTER, 16+ GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26265918,LEFT WING FOR CAB GUARD,"Racks, bulkheads & sides","service, dump, landscape",cab-guard,22
-KNP-26266098,RIGHT WING FOR CAB GUARD,"Racks, bulkheads & sides","service, dump, landscape",cab-guard,22
-KNP-26266379,"CAB GUARD MODULAR 49"" UNIV","Racks, bulkheads & sides","service, dump, landscape",cab-guard,22
-KNP-26266494,LED LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26266577,"ADAPTER, 01-07 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26266585,"ADAPTER, 07-14 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26267948,"ADAPTER, WIRING 11+ FORD",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26267955,"ADAPTER, 15 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26267963,"ADAPTER, 07+ RAM CHASSIS",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26267971,"ADAPTER, 03+ RAM PICKUP",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-26278176,"LATCH, T-HANDLE","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-32010166,STAKE RACK INSTALL KIT,"Racks, bulkheads & sides","platform, gooseneck",stake,32
-KNP-32439090,"MT KIT, 17+ FORD 60/84CA",Mounting & installation kits,service,sb-install,18
-KNP-32450550,Superseded part number directing to updated mounting kit KNP32-45-055-0. This part has been replaced with the current version for improved compatibility.,Mounting & installation kits,service,sb-install,18
-KNP-32492370,Universal mounting kit designed for Ford truck chassis applications. Provides secure attachment points for Knapheide truck bodies to Ford commercial vehicle platforms.,Mounting & installation kits,service,sb-install,18
+KNP-12221479,"SEAL, DOOR PER FT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-12221958,"SEAL, DOOR PER FT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-12247300,"CAGE, LATCH NGL ROTARY ELOCK","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-12247359,"KEY, ONE PLUS #","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-12247730,BUSHING GUIDE ROD NXG,"Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-12252722,"LIGHT, AMBER RECT LED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12253548,"LIGHT, MARKER, RED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12256319,"HARNESS, RR STROBE W/OSWITCH",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12256442,"LIGHT, STT W/ BACKUP",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12256459,"LIGHT, STT",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12256491,"LIGHT, NEW LED STT",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-12270781,"HITCH, GOOSENECK 2500",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,16
+KNP-12270799,"HITCH, GOOSENECK 3500 RAM",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,16
+KNP-12315156,"PAINT, 11OZ AEROSOL",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-12315172,"PAINT, 1/2OZ BRUSH",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-12315735,"EMBLEM, KNAPHEIDE",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-12321204,HARNESS - 7 PLUG PLATFORM - HALF OF COMPLETE SET,Lighting & wiring,platform,platform-word+lighting,22
+KNP-20009670,"ADAPTER, 17OLD FORD 40/56CA",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-20031880,"LIGHT KIT, KC SRW",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-20039480,"LIGHT, LED 6 CIRCUIT FLUSH",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-20046884,ALUM GRAB HANDLES,Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,43
+KNP-20049557,"CABINET, 9 BIN",Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,43
+KNP-20051510,INSTALL KIT 15+ GM 56CA,Mounting & installation kits,service,sb-install,23
+KNP-20051520,INSTALL KIT 15+ GM 60CA,Mounting & installation kits,service,sb-install,23
+KNP-20051530,INSTALL KIT 15+ GM 84CA,Mounting & installation kits,service,sb-install,23
+KNP-20051550,INSTALL KIT 17+ FORD 56CA,Mounting & installation kits,service,sb-install,23
+KNP-20051560,Vehicle-specific installation kit designed for 2017+ Ford F-Series trucks with 60CA configuration. Provides all necessary hardware and components for proper equipment mounting and integration.,Mounting & installation kits,service,sb-install,23
+KNP-20051590,INSTALL KIT 15+ RAM 56CA,Mounting & installation kits,service,sb-install,23
+KNP-20051600,INSTALL KIT 15+ RAM 60CA,Mounting & installation kits,service,sb-install,23
+KNP-20063020,SIDE MOUNT SINGLE LADDER RACK,"Racks, bulkheads & sides","service, kuv",service-racks,26
+KNP-20072732,"VISE BRACKET,",Mounting & installation kits,"service, mechanics",vise,24
+KNP-20080172,TOOLBOX,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,43
+KNP-20094540,"KIT,QK MT FORD 56CA 2017+",Mounting & installation kits,service,sb-install,23
+KNP-20094550,"INSTALL KIT, 2017+FORD 60/84",Mounting & installation kits,service,sb-install,23
+KNP-20094580,"KIT, INSTALL 14+RAM 60/84",Mounting & installation kits,service,sb-install,23
+KNP-20103480,"BUMPER, 78"" GALV W/ RECESS",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-20103600,"BUMPER, GALVAGRIP BALL 89""",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-20170494,DIVIDER FOR SHELF,Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,43
+KNP-20195000,"BUMPER SB 78"" STEP LINED F&R",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-20195110,"BUMPER, STEP 78""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-20205160,"BUMPER, 78"" 20 GM OE HITCH",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-20222750,"MOUNTING KIT, GM W/O H 2020-C",Mounting & installation kits,service,sb-install,23
+KNP-20226000,INSTALLATION KIT,Mounting & installation kits,service,sb-install,23
+KNP-20226010,"KIT, INSTALL 20 GM WITH HITCH",Mounting & installation kits,service,sb-install,23
+KNP-20226020,INSTALLATION KIT,Mounting & installation kits,service,sb-install,23
+KNP-20226030,"KIT, INST 20 GM56CA NO HITCH",Mounting & installation kits,service,sb-install,23
+KNP-21-10-062-3,"MOUNTING KIT, 12"" TAILGATE",Mounting & installation kits,"platform, dump, landscape",tailgate-mount,26
+KNP-21102876,LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-21802160,mount kit,Mounting & installation kits,service,sb-install,23
+KNP-25105974,SHOVEL BOX MOUNT KIT,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,43
+KNP-26053199,"83"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-26053207,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-26053215,BUMPER SB 78 SRW KUV 07+RAM - OLD STYLE,Bumpers & hitches,kuv,kuv+sb-bumper,3
+KNP-26053371,"BUMPER, STEP 78""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-26053397,"BUMPER, STEP 94""KNAPLINER",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-26058123,"BUMPER, STEP 94"" NOTCHED",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-26102434,MOUNT KIT UNIV 56CA,Mounting & installation kits,service,sb-install,23
+KNP-26102533,"HITCH, CLASS V RECEIVER",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-26103523,"ADAPTER, WIRING 97 OLD FORD",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26203802,"MT KIT, GM",Mounting & installation kits,service,sb-install,23
+KNP-26203810,MOUNT KIT RAM 03-13,Mounting & installation kits,service,sb-install,23
+KNP-26208264,"SPRING, DOORKIT","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-26226035,"MT KIT, RAM 14+",Mounting & installation kits,service,sb-install,23
+KNP-26227868,LATCH,"Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-26227876,"LATCH, KIT RVLS","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-26230151,LED LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26259531,"KIT, REP NXG ROTARY LATCH","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-26259937,"KIT, NXG LATCH KY2017","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-26262667,"ADAPTER, 16+ GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26265918,LEFT WING FOR CAB GUARD,"Racks, bulkheads & sides","service, dump, landscape",cab-guard,27
+KNP-26266098,RIGHT WING FOR CAB GUARD,"Racks, bulkheads & sides","service, dump, landscape",cab-guard,27
+KNP-26266379,"CAB GUARD MODULAR 49"" UNIV","Racks, bulkheads & sides","service, dump, landscape",cab-guard,27
+KNP-26266494,LED LIGHT KIT,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26266577,"ADAPTER, 01-07 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26266585,"ADAPTER, 07-14 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26267948,"ADAPTER, WIRING 11+ FORD",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26267955,"ADAPTER, 15 GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26267963,"ADAPTER, 07+ RAM CHASSIS",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26267971,"ADAPTER, 03+ RAM PICKUP",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-26278176,"LATCH, T-HANDLE","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-32010166,STAKE RACK INSTALL KIT,"Racks, bulkheads & sides","platform, gooseneck",stake,38
+KNP-32439090,"MT KIT, 17+ FORD 60/84CA",Mounting & installation kits,service,sb-install,23
+KNP-32450550,Superseded part number directing to updated mounting kit KNP32-45-055-0. This part has been replaced with the current version for improved compatibility.,Mounting & installation kits,service,sb-install,23
+KNP-32492370,Universal mounting kit designed for Ford truck chassis applications. Provides secure attachment points for Knapheide truck bodies to Ford commercial vehicle platforms.,Mounting & installation kits,service,sb-install,23
 KNP-33670260,BUMPER,,,UNMATCHED - stays in Parts & Accessories,0
-KNP-33764281,"HARNESS, WIRING GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-33847560,"INTALL KIT, PGN",Mounting & installation kits,gooseneck,pgt-pgn+sb-install,14
-KNP-33903923,PGN UNIVERSAL INSTALLATION,Mounting & installation kits,gooseneck,pgt-pgn+sb-install,14
-KNP-33931779,"HITCH, 17+FORD",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
-KNP-34000948,"ADAPTER, 2020+FORD PU BED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-34030363,"HARNESS, 7WAY",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-34087632,Light adapter specifically engineered for 2020 GMC trucks to ensure proper electrical integration. Enables seamless connection between GMC chassis lighting systems and aftermarket truck body equipment.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-34109178,"HITCH, RCVR 2020 GM",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
+KNP-33764281,"HARNESS, WIRING GM",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-33847560,"INTALL KIT, PGN",Mounting & installation kits,gooseneck,pgt-pgn+sb-install,16
+KNP-33903923,PGN UNIVERSAL INSTALLATION,Mounting & installation kits,gooseneck,pgt-pgn+sb-install,16
+KNP-33931779,"HITCH, 17+FORD",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
+KNP-34000948,"ADAPTER, 2020+FORD PU BED",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-34030363,"HARNESS, 7WAY",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-34087632,Light adapter specifically engineered for 2020 GMC trucks to ensure proper electrical integration. Enables seamless connection between GMC chassis lighting systems and aftermarket truck body equipment.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-34109178,"HITCH, RCVR 2020 GM",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
 KNP-34280900,"KIT, PUMP RESEVOIR",Fuel fill & hydraulics,dump,pump,3
-KNP-34360468,KIT FUEL FILL 21-42 KNAP,Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,22
-KNP-34537687,"Heavy-duty 21,000 lb capacity receiver hitch designed specifically for Knapheide 9' and 11' PGT service bodies. Provides secure towing capability for commercial work trucks with integrated mounting system.",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch-named,14
-KNP-34568583,"MOUNT KIT, 17+FOR 60/80CA",Mounting & installation kits,service,sb-install,18
-KNP-34568585,INSTALLATION KIT PGT MD,Mounting & installation kits,gooseneck,pgt-pgn+sb-install,14
-KNP-34860163,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34860545,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34860792,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34861613,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34861644,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34861695,78-inch galvanized receiver-lined rear bumper specifically engineered for 2017+ Ford trucks with 56CA chassis. Features durable galvanized construction with integrated receiver mounting capability.,Mounting & installation kits,service,sb-install,18
-KNP-34861872,94-inch wide galvanized grip-style rear bumper with receiver kit integration. Features textured galvanized surface for enhanced durability and includes complete receiver mounting hardware.,Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-34861873,94-inch wide galvanized grip-style rear bumper with receiver integration for 2017+ Ford 56CA and RAM 60-inch chassis applications. Combines durability with multi-vehicle compatibility.,Mounting & installation kits,service,sb-install,18
-KNP-34893741,"CLASS V 2"" RECEIVER HITCH",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-35135312,"CLASS V HITCH SB 2""",Bumpers & hitches,service,sb-hitch,18
-KNP-35154108,"CLASS V HITCH SB 2""",Bumpers & hitches,service,sb-hitch,18
-KNP-35154118,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-35206100,"CLASS V 21,000 LB RECEIVER HI",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-35316948,"ADAPTER, 23+ FORD PU BOX REMOV",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-35346424,"ADAPTER, 23+ FORD CAB CHASSIS",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-35509895,"BUMPER, 94"" KNAP LIFTGATE CUT",Bumpers & hitches,service,liftgate-bumper,18
-KNP-36096095,"DOOR VT ASY 1-RVTLS,28X36","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-36501279,"BUMPER, 78"" KNAP LIFTGATE CUT",Bumpers & hitches,service,liftgate-bumper,18
-KNP-77001972,"Black powder-coated utility rack system designed for 96-inch service bodies with 24-inch height. Provides additional exterior storage capacity for ladders, lumber, and oversized equipment.","Racks, bulkheads & sides","service, kuv",service-racks,21
-KNP-77009660,"KIT, POWER LOCK 600 SERIES","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-80010330,"MOUNT KIT, GM/RAM 60/84CA",Mounting & installation kits,service,sb-install,18
-KNP-80030820,MOUNT KI,Mounting & installation kits,service,sb-install,18
-KNP-80040980,UNDERBODY TOOLBOX MOUNTING BR,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,37
-KNP-80045360,hitch,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
-KNP-80049030,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-80049090,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-80412257,"MOUNT KIT, PLATFORM",Mounting & installation kits,platform,platform-word+sb-install,18
-KNP-80412281,"MOUNT KIT, PLATFORM",Mounting & installation kits,platform,platform-word+sb-install,18
-KNP-80412745,"MOUNT KIT, 60""RAM",Mounting & installation kits,service,sb-install,18
-KNP-80413719P,"DOOR, GOOSENECK","Doors, latches & locks",gooseneck,pgt-pgn+latches,14
-KNP-82010570,STAKE RACK MOUNT,"Racks, bulkheads & sides","platform, gooseneck",stake,32
-KNP-82013905,MUDFLAP BRACKET,Mounting & installation kits,"platform, dump, landscape",mudflap,22
-KNP-85412607LED,LED LIGHT KIT PVM SERIES,Lighting & wiring,platform,pvm+lighting,18
-KNP-85412615LED,"LIGHT KIT, LED PVM",Lighting & wiring,platform,pvm+lighting,18
-KNP-85413128,"ICC BUMPER 34"" FRAME",Bumpers & hitches,"platform, dump",icc,21
-KNP-85415958,"hitch, class 5 12k",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-BH3580C,"BULKHEAD, 35""Hx80"" WIDE","Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BH4080C,Standard bulkhead measuring 40 inches wide by 80 inches tall for truck body cargo separation. Provides essential barrier between cab and cargo area for safety and load organization.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHG4080C,Reinforced gussetted bulkhead measuring 40 inches by 80 inches with additional structural reinforcement. Features corner gussets for enhanced strength in heavy-duty applications.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR40102C,BULKHEAD BHR,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR4094,Heavy-duty reinforced headboard measuring 40 inches wide by 94 inches tall for maximum cargo protection. Features additional structural reinforcement for demanding commercial applications.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR4494C,Reinforced headboard specifically designed for Ford F650-750 trucks measuring 44 inches by 94 inches. Engineered to match the wider cab dimensions of medium-duty Ford chassis.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR4894C,"BULKHEAD, REINFORCED 48""X94","Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR5694C,Heavy-duty reinforced bulkhead designed to separate and protect cargo areas in commercial truck beds. Provides structural integrity and safety barrier between different load compartments or between cab and cargo area.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-BHR5696C,Heavy-duty reinforced bulkhead designed to separate and protect cargo areas in commercial truck beds. Provides structural integrity and safety barrier between different load compartments or between cab and cargo area.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-KNP12010008,"RIVNUT, 1/2 SPIN TITE",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-KNP12010010,NUT. WHIZ,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-KNP12010040,BOLT WHIZ,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-KNP12014260,"LOOSE, RECEIVER HITCH KIT 18",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-KNP12180659,SCREW HEX FLANGE 3/8-16X1 ECO,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-KNP12180667,"LUG STEEL 1.38""X1.13""",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
+KNP-34360468,KIT FUEL FILL 21-42 KNAP,Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,27
+KNP-34537687,"Heavy-duty 21,000 lb capacity receiver hitch designed specifically for Knapheide 9' and 11' PGT service bodies. Provides secure towing capability for commercial work trucks with integrated mounting system.",Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch-named,16
+KNP-34568583,"MOUNT KIT, 17+FOR 60/80CA",Mounting & installation kits,service,sb-install,23
+KNP-34568585,INSTALLATION KIT PGT MD,Mounting & installation kits,gooseneck,pgt-pgn+sb-install,16
+KNP-34858011,BUMPER SB 94 PHR PRIME - NEW,Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34860163,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34860545,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34860792,"94"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34861613,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34861644,"78"" WIDE KNAPLINED GALVA-GRIP",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34861695,78-inch galvanized receiver-lined rear bumper specifically engineered for 2017+ Ford trucks with 56CA chassis. Features durable galvanized construction with integrated receiver mounting capability.,Mounting & installation kits,service,sb-install,23
+KNP-34861872,94-inch wide galvanized grip-style rear bumper with receiver kit integration. Features textured galvanized surface for enhanced durability and includes complete receiver mounting hardware.,Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-34861873,94-inch wide galvanized grip-style rear bumper with receiver integration for 2017+ Ford 56CA and RAM 60-inch chassis applications. Combines durability with multi-vehicle compatibility.,Mounting & installation kits,service,sb-install,23
+KNP-34893741,"CLASS V 2"" RECEIVER HITCH",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-35135312,"CLASS V HITCH SB 2""",Bumpers & hitches,service,sb-hitch,23
+KNP-35154108,"CLASS V HITCH SB 2""",Bumpers & hitches,service,sb-hitch,23
+KNP-35154118,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-35206100,"CLASS V 21,000 LB RECEIVER HI",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-35316948,"ADAPTER, 23+ FORD PU BOX REMOV",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-35346424,"ADAPTER, 23+ FORD CAB CHASSIS",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-35509895,"BUMPER, 94"" KNAP LIFTGATE CUT",Bumpers & hitches,service,liftgate-bumper,23
+KNP-36096095,"DOOR VT ASY 1-RVTLS,28X36","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-36501279,"BUMPER, 78"" KNAP LIFTGATE CUT",Bumpers & hitches,service,liftgate-bumper,23
+KNP-77001972,"Black powder-coated utility rack system designed for 96-inch service bodies with 24-inch height. Provides additional exterior storage capacity for ladders, lumber, and oversized equipment.","Racks, bulkheads & sides","service, kuv",service-racks,26
+KNP-77009660,"KIT, POWER LOCK 600 SERIES","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-80010330,"MOUNT KIT, GM/RAM 60/84CA",Mounting & installation kits,service,sb-install,23
+KNP-80030820,MOUNT KI,Mounting & installation kits,service,sb-install,23
+KNP-80040980,UNDERBODY TOOLBOX MOUNTING BR,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,43
+KNP-80045360,hitch,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
+KNP-80049030,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-80049090,"CLASS V 12,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-80412257,"MOUNT KIT, PLATFORM",Mounting & installation kits,platform,platform-word+sb-install,22
+KNP-80412281,"MOUNT KIT, PLATFORM",Mounting & installation kits,platform,platform-word+sb-install,22
+KNP-80412745,"MOUNT KIT, 60""RAM",Mounting & installation kits,service,sb-install,23
+KNP-80413719P,"DOOR, GOOSENECK","Doors, latches & locks",gooseneck,pgt-pgn+latches,16
+KNP-82010570,STAKE RACK MOUNT,"Racks, bulkheads & sides","platform, gooseneck",stake,38
+KNP-82013905,MUDFLAP BRACKET,Mounting & installation kits,"platform, dump, landscape",mudflap,26
+KNP-85412607LED,LED LIGHT KIT PVM SERIES,Lighting & wiring,platform,pvm+lighting,22
+KNP-85412615LED,"LIGHT KIT, LED PVM",Lighting & wiring,platform,pvm+lighting,22
+KNP-85413128,"ICC BUMPER 34"" FRAME",Bumpers & hitches,"platform, dump",icc,25
+KNP-85415958,"hitch, class 5 12k",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-BH3580C,"BULKHEAD, 35""Hx80"" WIDE","Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BH4080C,Standard bulkhead measuring 40 inches wide by 80 inches tall for truck body cargo separation. Provides essential barrier between cab and cargo area for safety and load organization.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHG4080C,Reinforced gussetted bulkhead measuring 40 inches by 80 inches with additional structural reinforcement. Features corner gussets for enhanced strength in heavy-duty applications.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR40102C,BULKHEAD BHR,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR4094,Heavy-duty reinforced headboard measuring 40 inches wide by 94 inches tall for maximum cargo protection. Features additional structural reinforcement for demanding commercial applications.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR4094C,"HEADBOARD 40""X94"" REINFORCED","Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR4494C,Reinforced headboard specifically designed for Ford F650-750 trucks measuring 44 inches by 94 inches. Engineered to match the wider cab dimensions of medium-duty Ford chassis.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR4894C,"BULKHEAD, REINFORCED 48""X94","Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR5694C,Heavy-duty reinforced bulkhead designed to separate and protect cargo areas in commercial truck beds. Provides structural integrity and safety barrier between different load compartments or between cab and cargo area.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-BHR5696C,Heavy-duty reinforced bulkhead designed to separate and protect cargo areas in commercial truck beds. Provides structural integrity and safety barrier between different load compartments or between cab and cargo area.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-KNP12010008,"RIVNUT, 1/2 SPIN TITE",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-KNP12010010,NUT. WHIZ,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-KNP12010040,BOLT WHIZ,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-KNP12014260,"LOOSE, RECEIVER HITCH KIT 18",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-KNP12180659,SCREW HEX FLANGE 3/8-16X1 ECO,Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-KNP12180667,"LUG STEEL 1.38""X1.13""",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
 KNP-KNP12211173,KUV REAR DOOR WINDOW,Glass & windows,kuv,kuv+glass,3
-KNP-KNP12221297,"BUMPER, RUBBER 1""OD X 1.5""LG",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,60
-KNP-KNP12253522,"LIGHT, MARKER, AMBER",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-KNP12302543,"AY TUBE/HITCH RECEIVER UB 44""",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
+KNP-KNP12221297,"BUMPER, RUBBER 1""OD X 1.5""LG",Hardware & touch-up,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",hardware,71
+KNP-KNP12253522,"LIGHT, MARKER, AMBER",Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-KNP12302543,"AY TUBE/HITCH RECEIVER UB 44""",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
 KNP-KNP20042379,"KIT, GLASS REPAIR",Glass & windows,kuv,glass,3
-KNP-KNP20048435,"ALUMINUM FUEL FILL, RAM",Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,22
-KNP-KNP20074060,ALUMINUM SHELF DIVIDERS (5),Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,36
-KNP-KNP20089940,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP20089950,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP20095500,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP20095520,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP20095530,Service body mounting kit specifically engineered for 2017+ Ford trucks with 60 & 84 CA wheelbase configurations. Features new-style design for improved installation and load distribution.,Mounting & installation kits,service,sb-install,18
-KNP-KNP20095540,Supplemental mounting system for 2014+ RAM trucks with 60-84 inch cab-to-axle configurations. Features new-style design for enhanced service body support and stability.,Mounting & installation kits,service,sb-install,18
-KNP-KNP20103280,"BUMPER, AYGLVGRP 78",Bumpers & hitches,"service, kuv",sb-bumper,21
-KNP-KNP20128850,LED SURFACE MNT STOP/TAIL/TURN,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-KNP20188540,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP20192605,"DRAWER, UNIT CTECH",Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,36
-KNP-KNP20226040,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP26104596,"FUEL FILL KIT, GM DIESEL 2011+",Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,22
-KNP-KNP26259929,"KIT,REP NXG 2PTRRLTCH KY016","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,36
-KNP-KNP26266163,Specialized mounting bracket designed for Turbo Beam light systems. Provides secure and adjustable positioning for high-performance LED light bars on truck equipment installations.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-KNP33456590,INSTALLATION KIT FOR STEEL,Mounting & installation kits,service,sb-install,18
-KNP-KNP33911903,18K HITCH FOR 9'/11' PGT BODY,Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,14
-KNP-KNP33931798,"CLASS V 21,000LB HITCH/ICC",Bumpers & hitches,"platform, dump",icc,21
-KNP-KNP33957161,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP33966834,HITCH KIT,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
-KNP-KNP34312869,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP34879956,"Universal bolt-on 21,000 lb capacity receiver hitch assembly compatible with Ford, RAM, and GM chassis with 35-series frames. Engineered for heavy-duty commercial towing applications.",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-KNP35154118,"CLASS V 16,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,57
-KNP-KNP35217729,Supplemental mounting bracket designed for 2014+ RAM trucks with 56CA chassis configuration. Provides additional structural support for service body installations with new-style mounting requirements.,Mounting & installation kits,service,sb-install,18
-KNP-KNP35362071,Specialized 6-circuit wiring harness adapter for 2023+ GM trucks with 42 and 56CA chassis configurations. Enables seamless electrical integration between chassis and aftermarket equipment installations.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,60
-KNP-KNP35394496,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,18
-KNP-KNP77008282,OVERCAB MAT RACK REG CAB,"Racks, bulkheads & sides",platform,overcab-rack,18
-KNP-KNP77008332,"RACK, 96"" BODY, X-CAB 28""","Racks, bulkheads & sides","service, kuv",service-racks,21
-KNP-KNP80021970,MOUNT KI GM,Mounting & installation kits,service,sb-install,18
-KNP-KNP80035570,HITCH,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
-KNP-KNP80041100,UNDERBODY TOOLBOX MOUNTING BRA,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,37
-KNP-KNP80049080,HITCH,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,57
-KNP-KNPBHG4094,"BULKHEAD, REINFORCED 40X94","Racks, bulkheads & sides",platform,bulkhead,18
-KNP-KNPBHG4894,"BULKHEAD, 94 SERIES W/GUSSETS","Racks, bulkheads & sides",platform,bulkhead,18
-KNP-KNPBHR5694,BULKHEAD,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-KNPBHRT4094,Reinforced tapered headboard that mounts behind the truck cab to protect against shifting cargo. Features a tapered design that follows truck cab contours for improved aerodynamics and professional appearance.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-KNPPRK4094-12,*CITY STAKE RACKS,"Racks, bulkheads & sides","platform, gooseneck",stake,32
-KNP-KNPRNG15-910,"SIDE BOARDS 15"" PGTB-910","Racks, bulkheads & sides",gooseneck,pgt-pgn+sides,14
-KNP-KP943140,"Straight-sided truck body pack designed for commercial applications requiring maximum cargo space. Features vertical side walls that maximize interior volume for hauling equipment, tools, and materials.",Toolboxes & storage,"dump, platform, landscape",body-pack,22
-KNP-PGTZSIDES-894,"SIDES, 4"" High Z Shaped","Racks, bulkheads & sides",gooseneck,pgt-pgn+sides,14
-KNP-R40-4,Heavy-duty 40-inch height cargo rack system with 4-foot length for flatbed applications. Provides vertical cargo containment and organization for commercial hauling operations.,"Racks, bulkheads & sides",platform,r40-rack,18
-KNP-R40-4-6,"RACK 40"" 4'6""","Racks, bulkheads & sides",platform,r40-rack,18
-KNP-R40-5,"RACK 40"" 5'","Racks, bulkheads & sides",platform,r40-rack,18
-KNP-R40-6,Replacement 40-inch height cargo rack system with 6-foot length for extended cargo management. Designed as a direct replacement part for existing Knapheide flatbed systems.,"Racks, bulkheads & sides",platform,r40-rack,18
-KNP-RV40-4,"RACK 40"" 4'","Racks, bulkheads & sides",platform,r40-rack,18
-KNP-RV40-5,"Specialized 40-inch height, 5-foot length cargo rack designed exclusively for 9-foot and 11-foot flatbed configurations. Provides optimal cargo containment for mid-size flatbed applications.","Racks, bulkheads & sides",platform,r40-rack,18
-KNP-RV4096F,Front-mounted 40-inch by 96-inch cargo rack system designed for headboard and front cargo containment. Provides essential forward cargo barrier for safe transportation of materials.,"Racks, bulkheads & sides",platform,bulkhead,18
-KNP-TBU3018,Compact underbody tool box with 5.1 cubic feet of secure storage capacity. Features weather-resistant black finish and lockable design for protecting tools and equipment underneath the truck bed.,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,37
-KNP-TBU3618,Mid-size underbody tool box offering 6.1 cubic feet of secure equipment storage. Features durable black finish and weather-sealed construction for reliable protection of tools and supplies.,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,37
-KNP-TBU4818,BOX UNDERBODY 48L X 18H X 18D,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,37
+KNP-KNP20048435,"ALUMINUM FUEL FILL, RAM",Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,27
+KNP-KNP20074060,ALUMINUM SHELF DIVIDERS (5),Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,43
+KNP-KNP20089940,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP20089950,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP20095500,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP20095520,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP20095530,Service body mounting kit specifically engineered for 2017+ Ford trucks with 60 & 84 CA wheelbase configurations. Features new-style design for improved installation and load distribution.,Mounting & installation kits,service,sb-install,23
+KNP-KNP20095540,Supplemental mounting system for 2014+ RAM trucks with 60-84 inch cab-to-axle configurations. Features new-style design for enhanced service body support and stability.,Mounting & installation kits,service,sb-install,23
+KNP-KNP20103280,"BUMPER, AYGLVGRP 78",Bumpers & hitches,"service, kuv",sb-bumper,26
+KNP-KNP20128850,LED SURFACE MNT STOP/TAIL/TURN,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-KNP20188540,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP20192605,"DRAWER, UNIT CTECH",Toolboxes & storage,"service, kuv, mechanics, gooseneck",interior,43
+KNP-KNP20226040,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP26104596,"FUEL FILL KIT, GM DIESEL 2011+",Fuel fill & hydraulics,"service, kuv, mechanics",fuel-fill,27
+KNP-KNP26259929,"KIT,REP NXG 2PTRRLTCH KY016","Doors, latches & locks","service, kuv, mechanics, gooseneck",latches,43
+KNP-KNP26266163,Specialized mounting bracket designed for Turbo Beam light systems. Provides secure and adjustable positioning for high-performance LED light bars on truck equipment installations.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-KNP33456590,INSTALLATION KIT FOR STEEL,Mounting & installation kits,service,sb-install,23
+KNP-KNP33911903,18K HITCH FOR 9'/11' PGT BODY,Bumpers & hitches,gooseneck,pgt-pgn+receiver-hitch,16
+KNP-KNP33931798,"CLASS V 21,000LB HITCH/ICC",Bumpers & hitches,"platform, dump",icc,25
+KNP-KNP33957161,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP33966834,HITCH KIT,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
+KNP-KNP34312869,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP34879956,"Universal bolt-on 21,000 lb capacity receiver hitch assembly compatible with Ford, RAM, and GM chassis with 35-series frames. Engineered for heavy-duty commercial towing applications.",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-KNP35154118,"CLASS V 16,000 LB RECEIVER HIT",Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch-named,68
+KNP-KNP35217729,Supplemental mounting bracket designed for 2014+ RAM trucks with 56CA chassis configuration. Provides additional structural support for service body installations with new-style mounting requirements.,Mounting & installation kits,service,sb-install,23
+KNP-KNP35362071,Specialized 6-circuit wiring harness adapter for 2023+ GM trucks with 42 and 56CA chassis configurations. Enables seamless electrical integration between chassis and aftermarket equipment installations.,Lighting & wiring,"service, kuv, platform, gooseneck, landscape, dump, forestry, saw, mechanics",lighting,71
+KNP-KNP35394496,"INSTALL KIT, 6"" UNDERSTRUCTURE",Mounting & installation kits,service,sb-install,23
+KNP-KNP77008282,OVERCAB MAT RACK REG CAB,"Racks, bulkheads & sides",platform,overcab-rack,22
+KNP-KNP77008332,"RACK, 96"" BODY, X-CAB 28""","Racks, bulkheads & sides","service, kuv",service-racks,26
+KNP-KNP80021970,MOUNT KI GM,Mounting & installation kits,service,sb-install,23
+KNP-KNP80035570,HITCH,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
+KNP-KNP80041100,UNDERBODY TOOLBOX MOUNTING BRA,Mounting & installation kits,"platform, dump, landscape, gooseneck, forestry",toolbox-mount,43
+KNP-KNP80049080,HITCH,Bumpers & hitches,"service, kuv, platform, dump, landscape, gooseneck",receiver-hitch,68
+KNP-KNPBHG4094,"BULKHEAD, REINFORCED 40X94","Racks, bulkheads & sides",platform,bulkhead,22
+KNP-KNPBHG4894,"BULKHEAD, 94 SERIES W/GUSSETS","Racks, bulkheads & sides",platform,bulkhead,22
+KNP-KNPBHR5694,BULKHEAD,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-KNPBHRT4094,Reinforced tapered headboard that mounts behind the truck cab to protect against shifting cargo. Features a tapered design that follows truck cab contours for improved aerodynamics and professional appearance.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-KNPPRK4094-12,*CITY STAKE RACKS,"Racks, bulkheads & sides","platform, gooseneck",stake,38
+KNP-KNPRNG15-910,"SIDE BOARDS 15"" PGTB-910","Racks, bulkheads & sides",gooseneck,pgt-pgn+sides,16
+KNP-KP943140,"Straight-sided truck body pack designed for commercial applications requiring maximum cargo space. Features vertical side walls that maximize interior volume for hauling equipment, tools, and materials.",Toolboxes & storage,"dump, platform, landscape",body-pack,26
+KNP-PGTZSIDES-894,"SIDES, 4"" High Z Shaped","Racks, bulkheads & sides",gooseneck,pgt-pgn+sides,16
+KNP-R40-4,Heavy-duty 40-inch height cargo rack system with 4-foot length for flatbed applications. Provides vertical cargo containment and organization for commercial hauling operations.,"Racks, bulkheads & sides",platform,r40-rack,22
+KNP-R40-4-6,"RACK 40"" 4'6""","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-R40-5,"RACK 40"" 5'","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-R40-6,Replacement 40-inch height cargo rack system with 6-foot length for extended cargo management. Designed as a direct replacement part for existing Knapheide flatbed systems.,"Racks, bulkheads & sides",platform,r40-rack,22
+KNP-REP4096-12,REFUSE SIDES 12' PUNCHED BLK,"Racks, bulkheads & sides","platform, gooseneck",sides,38
+KNP-RK4094LW,"RACK 40"" LEFT REAR WING","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-RK4094RW,"RACK 40"" RIGHT REAR WING","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-RV40-4,"RACK 40"" 4'","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-RV40-5,"Specialized 40-inch height, 5-foot length cargo rack designed exclusively for 9-foot and 11-foot flatbed configurations. Provides optimal cargo containment for mid-size flatbed applications.","Racks, bulkheads & sides",platform,r40-rack,22
+KNP-RV4096F,Front-mounted 40-inch by 96-inch cargo rack system designed for headboard and front cargo containment. Provides essential forward cargo barrier for safe transportation of materials.,"Racks, bulkheads & sides",platform,bulkhead,22
+KNP-TBU3018,Compact underbody tool box with 5.1 cubic feet of secure storage capacity. Features weather-resistant black finish and lockable design for protecting tools and equipment underneath the truck bed.,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,43
+KNP-TBU3618,Mid-size underbody tool box offering 6.1 cubic feet of secure equipment storage. Features durable black finish and weather-sealed construction for reliable protection of tools and supplies.,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,43
+KNP-TBU4818,BOX UNDERBODY 48L X 18H X 18D,Toolboxes & storage,"platform, dump, landscape, gooseneck, forestry",underbody-box,43
