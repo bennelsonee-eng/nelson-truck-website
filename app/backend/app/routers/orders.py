@@ -28,6 +28,7 @@ from app.dependencies import (
     resolve_effective_customer_id,
 )
 from app.models import (
+    Brand,
     Cart,
     CartLine,
     Customer,
@@ -49,6 +50,7 @@ from app.services.email_service import (
 from app.services.facs_pusher import PushOutcome, push_csv, push_csvs
 from app.services.ims315 import GeneratedCSV
 from app.services.fulfillment_service import build_csvs_from_plan, plan_fulfillment
+from app.services.part_number import part_label
 from app.services.tax_service import estimate_sales_tax
 
 
@@ -112,6 +114,17 @@ class FulfillmentOut(BaseModel):
     line_count: int
 
 
+async def _brand_by_product(db: AsyncSession, lines) -> dict[int, str]:
+    """product_id -> brand name for an order's lines (for shopper-facing part numbers)."""
+    ids = {l.product_id for l in lines if l.product_id}
+    if not ids:
+        return {}
+    rows = await db.execute(
+        select(Product.id, Brand.name).join(Brand, Brand.id == Product.brand_id).where(Product.id.in_(ids))
+    )
+    return {pid: name for pid, name in rows.all()}
+
+
 class OrderLineOut(BaseModel):
     line_number: int
     sku: str
@@ -124,6 +137,8 @@ class OrderLineOut(BaseModel):
     is_freight: bool
     is_discount: bool
     is_handling: bool
+    # Shopper-facing "Brand: mfr part #" (the SKU's AAIA prefix is internal)
+    part_label: str | None = None
 
 
 class OrderOut(BaseModel):
@@ -473,7 +488,8 @@ async def checkout(
             .where(Order.id == order.id)
             .options(selectinload(Order.lines), selectinload(Order.fulfillments))
         )).scalar_one()
-        email_data = order_for_email(order_full, order_full.lines, order_full.fulfillments, ship_to_str)
+        email_data = order_for_email(order_full, order_full.lines, order_full.fulfillments, ship_to_str,
+                                     await _brand_by_product(db, order_full.lines))
         composed = compose_order_confirmation(email_data)
         send_email(composed)
     except Exception:
@@ -779,10 +795,12 @@ async def _serialize_order(db: AsyncSession, order: Order) -> OrderOut:
         wh = wh_by_id.get(l.warehouse_id)
         return wh.facs_route_label if wh else None
 
+    brands = await _brand_by_product(db, order.lines)
     lines_out = [
         OrderLineOut(
             line_number=l.line_number,
             sku=l.sku,
+            part_label=part_label(l.sku, brands.get(l.product_id)),
             description=l.description,
             quantity=l.quantity,
             backorder_quantity=l.backorder_quantity,

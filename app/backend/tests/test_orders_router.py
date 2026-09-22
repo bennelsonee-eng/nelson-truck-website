@@ -301,8 +301,8 @@ class TestCheckout:
     async def test_web_order_number_format(self, world):
         db, w = world
         result = await checkout(body=_checkout_body(), user=w["user"], db=db, request=anon_request())
-        assert result.web_order_number.startswith("TTW")
-        assert len(result.web_order_number) == 10  # TTW + 7 digits
+        assert result.web_order_number.startswith("NTW")
+        assert len(result.web_order_number) == 10  # NTW + 7 digits
 
     @pytest.mark.asyncio
     async def test_facs_push_failure_marks_fulfillment_failed(self, world, monkeypatch):

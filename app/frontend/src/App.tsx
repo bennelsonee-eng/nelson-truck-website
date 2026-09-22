@@ -36,10 +36,16 @@ const DivisionPage = lazy(() => import('./pages/DivisionPage'))
  * "WeatherTech: 110001". When brand isn't available, falls back to the
  * raw SKU so we never render an empty or weird value.
  */
+// Shopper-facing part number. Website SKUs are "{AAIA brand code}-{mfr part #}"
+// (HWZD-9751-3-01 for Weatherguard); the AAIA prefix is only the cross-reference
+// to the ERP's internal product code (KNK) and a search key, so shoppers see
+// "Weatherguard: 9751-3-01", or just the manufacturer's number when the brand
+// isn't known. Mirrored server-side in services/part_number.py.
 function formatPartNumber(sku: string | null | undefined, brand: string | null | undefined): string {
   if (!sku) return ''
   const idx = sku.indexOf('-')
-  if (idx < 0 || !brand) return sku
+  if (idx < 0) return sku
+  if (!brand) return idx < 6 ? sku.substring(idx + 1) : sku
   return `${brand}: ${sku.substring(idx + 1)}`
 }
 
@@ -338,6 +344,7 @@ interface OrderLineOut {
   is_freight: boolean
   is_discount: boolean
   is_handling: boolean
+  part_label?: string | null
 }
 
 interface OrderOut {
@@ -5357,6 +5364,7 @@ function ProductDetail() {
     '@type': 'Product',
     name: data.name,
     sku: data.sku,
+    mpn: formatPartNumber(data.sku, null),
     brand: { '@type': 'Brand', name: data.brand?.name || 'Nelson Truck Equipment' },
     url: absoluteUrl(`/product/${data.sku}`),
   }
@@ -6281,7 +6289,7 @@ function ShowroomReceiptPage() {
           <tbody>
             {r.lines.map((l, i) => (
               <tr key={i} className="border-b border-gray-100">
-                <td className="py-1.5"><div className="font-medium text-gray-800">{l.name}</div><div className="text-[11px] text-gray-400">{l.sku}</div></td>
+                <td className="py-1.5"><div className="font-medium text-gray-800">{l.name}</div><div className="text-[11px] text-gray-400">{formatPartNumber(l.sku, null)}</div></td>
                 <td className="text-center">{l.qty}</td>
                 <td className="text-right">${l.unit.toFixed(2)}</td>
                 <td className="text-right font-semibold">${l.total.toFixed(2)}</td>
@@ -7152,7 +7160,7 @@ function OrderDetailPage() {
           <thead className="bg-gray-100 text-xs uppercase tracking-wide text-gray-600">
             <tr>
               <th className="text-left px-3 py-2 w-10">#</th>
-              <th className="text-left px-3 py-2">SKU</th>
+              <th className="text-left px-3 py-2">Part #</th>
               <th className="text-left px-3 py-2">Description</th>
               <th className="text-left px-3 py-2">Routing</th>
               <th className="text-right px-3 py-2">Ship</th>
@@ -7165,7 +7173,7 @@ function OrderDetailPage() {
             {order.lines.map((l) => (
               <tr key={l.line_number} className="border-t">
                 <td className="px-3 py-2">{l.line_number}</td>
-                <td className="px-3 py-2 font-mono">{l.sku}</td>
+                <td className="px-3 py-2 font-mono">{l.part_label || formatPartNumber(l.sku, null)}</td>
                 <td className="px-3 py-2">{l.description}</td>
                 <td className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500">{l.routing}</td>
                 <td className="px-3 py-2 text-right">{l.quantity}</td>
@@ -11342,7 +11350,7 @@ function SnowTopSellerCard({ item, rank }: { item: SnowTopSeller; rank: number }
             <span className="text-[10px] uppercase tracking-wider text-gray-500 font-bold">{item.brand}</span>
             <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-[9px] uppercase tracking-wider rounded font-bold">{item.category_label}</span>
           </div>
-          <div className="font-mono text-xs text-gray-500">{item.sku}</div>
+          <div className="font-mono text-xs text-gray-500">{formatPartNumber(item.sku, item.brand)}</div>
           <div className="text-sm font-medium text-gray-900 mt-0.5 leading-tight line-clamp-2">{item.description}</div>
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-green-700 font-bold">{item.units_last_12mo} sold last 12 mo</span>
@@ -14740,7 +14748,7 @@ function ResellerProductBlock({ p }: { p: ResellerProductCard }) {
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] uppercase tracking-wider text-gray-500">{p.brand}</div>
-        <Link to={`/product/${p.sku}`} className="font-mono text-xs text-red-700 hover:underline">{p.sku}</Link>
+        <Link to={`/product/${p.sku}`} className="font-mono text-xs text-red-700 hover:underline">{formatPartNumber(p.sku, p.brand)}</Link>
         <div className="text-xs text-gray-900 line-clamp-3 mt-0.5 leading-snug">{p.name}</div>
         <div className="text-xs text-gray-700 mt-1 font-semibold">{p.retail_price != null ? `$${p.retail_price.toFixed(2)}` : '—'}{p.cost != null ? <span className="text-gray-400 font-normal ml-2">cost ${p.cost.toFixed(2)}</span> : null}</div>
       </div>

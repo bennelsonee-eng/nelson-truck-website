@@ -159,7 +159,7 @@ def compose_order_confirmation(order: _OrderForEmail) -> ComposedEmail:
     subject = f"Nelson Truck order {order.web_order_number} confirmed"
 
     lines_text = "\n".join(
-        f"  {l.quantity + l.backorder_quantity:>3} x {l.sku:<20} {l.description[:40]:<40} "
+        f"  {l.quantity + l.backorder_quantity:>3} x {l.sku:<28} {l.description[:40]:<40} "
         f"{l.unit_price:>10}  {l.line_total:>10}"
         + (f"  [BACK-ORDER]" if l.backorder_quantity > 0 else "")
         for l in order.lines
@@ -206,8 +206,14 @@ shipment notification once tracking is available.  Reply to this email or call
     )
 
 
-def order_for_email(order, lines: Iterable, fulfillments: Iterable, ship_to_str: str) -> _OrderForEmail:
-    """Convert an SQLAlchemy Order + its lines/fulfillments into the email-friendly shape."""
+def order_for_email(order, lines: Iterable, fulfillments: Iterable, ship_to_str: str,
+                    brand_by_product: dict[int, str] | None = None) -> _OrderForEmail:
+    """Convert an SQLAlchemy Order + its lines/fulfillments into the email-friendly shape.
+
+    Lines show the brand + manufacturer part number ("Weatherguard: 9751-3-01"),
+    never the internal AAIA-prefixed SKU (see services/part_number.py)."""
+    from app.services.part_number import part_label
+    brands = brand_by_product or {}
     return _OrderForEmail(
         web_order_number=order.web_order_number,
         contact_email=order.contact_email or "",
@@ -223,7 +229,7 @@ def order_for_email(order, lines: Iterable, fulfillments: Iterable, ship_to_str:
         payment_type=order.payment_type.value if hasattr(order.payment_type, "value") else str(order.payment_type),
         lines=[
             _OrderLineForEmail(
-                sku=l.sku,
+                sku=part_label(l.sku, brands.get(l.product_id)),
                 description=l.description or "",
                 quantity=l.quantity,
                 backorder_quantity=l.backorder_quantity,
