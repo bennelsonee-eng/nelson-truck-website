@@ -527,6 +527,50 @@ systemd service files for backend will be in `app/scripts/deploy/`.
 
 ---
 
+### Truck-body manufacturer content — ported from Titan, live on nelson-prod 2026-09-22
+
+Knapheide, CM Truck Beds, Rugby and Dur-A-Lift images, specs, standard features (FEA), optional
+equipment (OPT, shown as "Available Options -- not included"), spec tables and literature PDFs for the
+77 bodies/lifts, the Knapheide-based Truck Bodies category tree, and the parts listed under the body
+they fit. Code and data came from Titan commits `8faca8f` + `7160739`; Titan's own write-up is its
+OPERATIONS_NOTES section 17. The 77 products have the same ids on nelson_web and titan_web (checked
+2026-09-21), so the model maps in `discovery/manufacturer_data/` are shared as-is.
+
+**Rules (Ben, 2026-09-20):** everything on these pages is served from our own server (no hotlinked
+images/PDFs, no YouTube/Vimeo players) and no manufacturer customer stories.
+`check_manufacturer_content_local.py` counts nelsontruck.com / nelsontruckequipment.com as ours and
+titantruck.com as off-site.
+
+Nelson-specific differences from Titan:
+- The two migrations (`b6t0u4v8w2x6` product_spec_table, `c7u1v5w9x3y7` product_accessory) are
+  re-parented onto Nelson's `m2p5q9r3s7t1`. If Titan's intermediate migrations are ever ported, put
+  them before these two.
+- `app/backend/static/` is git-ignored here and `static/category-images` is a symlink on the box, so
+  the category tiles live in `discovery/manufacturer_data/truck_body_tiles/` and are copied by hand.
+- Nelson has no post-merge hook: every step below is manual. No nightly reindex timer either.
+- `/products/{sku}/accessories` counts stock with Nelson's `on_hand_map` (total on hand).
+
+As run on nelson-prod 2026-09-22 (from `app/backend/`, after `git pull`):
+1. Backup first: `pg_dump nelson_web | gzip > /home/titan/backup-nelson_web-pre-truck-bodies-<ts>.sql.gz`.
+2. `.venv/bin/python -m alembic upgrade head`, then `sudo systemctl restart nelson-backend.service`.
+3. `cp -n ../../discovery/manufacturer_data/truck_body_tiles/* static/category-images/truck-bodies/`
+4. `.venv/bin/python ../scripts/restructure_truck_body_categories.py --apply` (dry run first).
+5. `.venv/bin/python ../scripts/import_manufacturer_body_images.py --brand <b> --apply` for
+   knapheide, cm, rugby, duralift (downloads from the manufacturers; resized into static/product-images).
+6. `.venv/bin/python ../scripts/import_manufacturer_body_content.py --brand <b> --apply`, same four
+   brands, AFTER step 5. PDFs land in static/product-resources/<source>/.
+7. `.venv/bin/python ../scripts/link_truck_body_parts.py --apply` (8,145 links; KNP-33670260 unmatched).
+8. `.venv/bin/python ../scripts/check_manufacturer_content_local.py` must print OK. On 2026-09-22 it
+   flagged 36 Dur-A-Lift YouTube rows (`source='duralift_harvest_2026_07'`), removed with a JSON backup
+   in `discovery/manufacturer_data/product_resource_backup_duralift_youtube_20260922.json` (on the box).
+9. Reindex from `app/` so settings read `app/.env`: `backend/.venv/bin/python scripts/reindex_typesense.py`.
+10. `cd ../frontend && npm run build`, then `sudo systemctl restart nelson-prerender.service`.
+
+Per-run backups (images, content, categories, accessory links) are written to
+`discovery/manufacturer_data/*_backup_*.json` on the box; they are git-ignored.
+
+---
+
 ## 18. Credentials inventory
 
 ⚠️ **Never commit credentials to git.** Stored in `.env` on each environment (gitignored). Master copies kept in a password manager (1Password / Bitwarden / similar).
