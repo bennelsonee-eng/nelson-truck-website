@@ -2363,7 +2363,7 @@ async def category_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict
     if own_count == 0 and len(children_payload) == 0:
         raise HTTPException(
             status_code=404,
-            detail=f"Category '{cat.full_path}' has no products in the Titan catalog",
+            detail=f"Category '{cat.full_path}' has no products",
         )
 
     return {

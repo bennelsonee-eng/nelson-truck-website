@@ -12293,11 +12293,17 @@ function CategoryLandingPage() {
       .then(setCat)
       .catch((e) => setError(String(e.message || e)))
   }, [slug])
+  // Tell the prerenderer this is a 404 (it used to answer 200 with this
+  // "not available" text -- a soft 404 for search engines). 2026-09-22.
+  if (error) {
+    ;(window as unknown as { prerenderStatus?: number }).prerenderStatus = 404
+  }
   if (error) return (
     <div className="p-8 max-w-2xl mx-auto text-center">
+      <Seo title="Category not available | Nelson Truck Equipment" noindex />
       <div className="text-4xl mb-3">🔍</div>
       <h1 className="text-2xl font-bold text-gray-900 mb-2">Category not available</h1>
-      <p className="text-sm text-gray-600 mb-6">{error}</p>
+      <p className="text-sm text-gray-600 mb-6">This category has nothing in it right now. Try the full catalog, or call either counter and we&rsquo;ll find what you need.</p>
       <div className="flex justify-center gap-2 flex-wrap">
         <Link to="/catalog" className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white text-sm font-semibold rounded">Browse all products</Link>
         <Link to="/" className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm rounded">Back to home</Link>

@@ -141,7 +141,7 @@ async def llms_txt() -> Response:
     b = get_settings().canonical_base_url.rstrip("/")
     body = f"""# Nelson Truck Equipment
 
-> Pacific Northwest commercial truck-equipment dealer and upfitter, serving the region since 1937, with locations in Portland, OR and Kent, WA. Divisions: snow & ice (plows and spreaders), truck bodies (service, dump, flatbed, stake), tow trucks (wreckers, rollbacks, rotators, recovery, and tow-truck parts), aerial & bucket trucks, Landoll trailers and parts, liftgates and cranes, and truck & van accessories. We also stock steel by the pound and cut small jobs at the counter. B2B and retail, with wholesale pricing for trade accounts.
+> Pacific Northwest commercial truck-equipment dealer and upfitter, serving the region since 1937, with locations in Portland, OR and Kent, WA. Divisions: snow & ice (plows and spreaders), truck bodies (service, platform, dump, landscape, gooseneck, van/box), tow trucks (Jerr-Dan wreckers and rollbacks, recovery gear, and tow-truck parts), aerial & bucket trucks, Landoll trailers and parts, liftgates and cranes, and truck & van accessories. We also stock steel by the pound and cut small jobs at the counter. B2B and retail, with wholesale pricing for trade accounts.
 
 ## What sets Nelson apart
 - Pick it up today: parts are on the shelf in Portland and Kent — no waiting on shipping.
@@ -153,6 +153,10 @@ async def llms_txt() -> Response:
 - [Product catalog]({b}/catalog): Faceted search across the full truck & van catalog — accessories, equipment, snow plows, and more.
 - [Snow plows & spreaders]({b}/snow-plows): Western, Meyer, Buyers SnowDogg and other commercial snow & ice equipment.
 - [Aerial & bucket trucks]({b}/aerial-lifts): Dur-A-Lift bucket trucks and aerial lifts.
+- [Tow trucks]({b}/tow-trucks): Jerr-Dan wreckers and rollbacks built to order, recovery equipment, tow truck parts.
+- [Landoll trailers]({b}/trailers): Landoll traveling-axle, detach gooseneck and sliding-axle trailers, and Landoll parts.
+- [Steel & aluminum]({b}/steel): bar, tube, angle, plate and sheet sold by the pound at the counter; small cuts while you wait.
+- [Contact]({b}/contact): addresses, hours, phone numbers and a quote/contact form.
 - [Shop by vehicle]({b}/catalog): Fitment-aware search — find parts that fit a specific year/make/model truck or van.
 - [Brands]({b}/brands): Products organized by manufacturer.
 
@@ -166,7 +170,8 @@ async def llms_txt() -> Response:
 - Email: sales@nelsontruck.com
 - Portland, OR: (503) 548-9300
 - Kent, WA: (253) 395-3825
-- Locations: Portland, OR and Kent, WA — serving the Pacific Northwest.
+- Portland: 6309 NE Columbia Blvd, Portland, OR 97218 — Mon–Fri 8am–5pm
+- Kent: 20063 84th Ave S, Kent, WA 98032 — Mon–Fri 8am–5pm
 """
     return Response(content=body, media_type="text/plain")
 
@@ -208,10 +213,27 @@ async def sitemap_static() -> Response:
 @router.get("/sitemap-categories.xml")
 async def sitemap_categories(db: AsyncSession = Depends(get_db)) -> Response:
     rows = (await db.execute(
-        select(Category.slug, Category.updated_at)
+        select(Category.slug, Category.full_path, Category.updated_at)
         .where(Category.is_active.is_(True))
         .order_by(Category.id)
     )).all()
+    # Only categories that hold (directly or below them) a product a retail
+    # visitor can see. Empty ones render a 404 page, and listing them told
+    # search engines about dead URLs (launch audit 2026-09-22).
+    from sqlalchemy import text
+    live_paths = {r[0] for r in (await db.execute(text(
+        "SELECT DISTINCT c.full_path FROM product_category pc "
+        "JOIN category c ON c.id = pc.category_id "
+        "JOIN product p ON p.id = pc.product_id "
+        "WHERE p.is_hidden_retail = false AND p.is_for_sale = true"
+    ))).all() if r[0]}
+    live: set[str] = set()
+    for fp in live_paths:
+        parts = [x.strip() for x in fp.split(">")]
+        for i in range(1, len(parts) + 1):
+            live.add(" > ".join(parts[:i]))
+    rows = [(slug, updated) for slug, full_path, updated in rows
+            if full_path and " > ".join(x.strip() for x in full_path.split(">")) in live]
     entries = [
         _url(
             _abs(f"/categories/{quote(slug, safe='')}"),
