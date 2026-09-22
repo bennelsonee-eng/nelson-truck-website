@@ -2170,7 +2170,11 @@ async def category_attributes(
     return result
 
 
-@router.get("/category/{slug}")
+# `:path` because sub-category slugs contain a slash ("exterior/fender-flares");
+# with a plain {slug} every sub-category landing page 404ed here and the page
+# showed "Category not available" -- 337 of the 436 sitemap category URLs
+# (launch audit 2026-09-22).
+@router.get("/category/{slug:path}")
 async def category_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     """Look up a category by leaf slug for landing pages.  Returns the category
     + immediate children + breadcrumb (parent chain) + image_url per node.

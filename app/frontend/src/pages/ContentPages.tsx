@@ -27,79 +27,132 @@ export interface ContentDefault {
 }
 
 export const CONTENT_DEFAULTS: Record<string, ContentDefault> = {
+  // Rewritten 2026-09-22 (launch audit) to match how the site actually works
+  // today: online orders are for linked trade/fleet accounts on purchase
+  // order; everyone else gets a quote or buys at the counter; web orders don't
+  // price freight at checkout. Revisit the ordering/payment answers when card
+  // checkout goes live. [CONFIRM: …] notes are hidden from the public page.
   faq: {
     title: 'Frequently Asked Questions',
-    subtitle: 'Ordering, shipping, fitment, returns, and more.',
-    description: 'Answers to common questions about ordering, payment, shipping, fitment, returns, warranty, and service at Nelson Truck Equipment.',
+    subtitle: 'Ordering, pickup, shipping, fitment, returns, and installation.',
+    description: 'Answers to common questions about ordering, pickup, shipping, fitment, returns, warranty and installation at Nelson Truck Equipment in Portland, OR and Kent, WA.',
     sections: [
       { heading: 'Ordering & accounts', items: [
-        { q: 'How do I place an order?', a: 'Browse or search the catalog, add items to your cart, and check out online. Commercial and municipal customers can also order by purchase order — email sales@nelsontruck.com or call us and we’ll help you get the right parts.' },
-        { q: 'Do I need an account to order?', a: 'No — you can shop and order as a guest. Creating an account lets you track orders, reorder quickly, and (for trade customers) see your wholesale pricing.' },
-        { q: 'How do I set up a wholesale or trade account?', a: 'We offer wholesale pricing to qualified trade, fleet, and municipal accounts. Contact sales@nelsontruck.com to apply; once approved, your account pricing shows automatically when you’re signed in. [CONFIRM: any application requirements]' },
+        { q: 'How do I place an order?', a: 'Trade, fleet and municipal customers with a linked Nelson account can order online on purchase order. Anyone can request a quote from any product page, send us a message from the [Contact page](/contact), or call either counter — Portland 503-548-9300, Kent 253-395-3825 — and we’ll price it and have it ready for pickup or shipping.' },
+        { q: 'Do I need an account?', a: 'You can browse, check stock at each branch and request quotes without one. Online checkout is for approved trade accounts; open one from the Open B2B account link and our sales team will link it to your Nelson customer record.' },
+        { q: 'How do I set up a wholesale or trade account?', a: 'We offer account pricing to qualified trade, fleet and municipal customers. Use Open B2B account or email sales@nelsontruck.com; once your account is linked, your pricing shows automatically when you’re signed in. [CONFIRM: any application requirements]' },
       ]},
       { heading: 'Payment', items: [
-        { q: 'What payment methods do you accept?', a: 'We accept major credit cards at checkout. Approved trade, fleet, and government accounts may also order on purchase order with terms. [CONFIRM: accepted cards + PO terms]' },
+        { q: 'How do I pay?', a: 'Approved accounts order on purchase order with their usual terms. For card or cash, pay at the counter when you pick up, or call either branch. [CONFIRM: phone card payments + any card surcharge]' },
       ]},
-      { heading: 'Shipping', items: [
-        { q: 'Where do you ship?', a: 'We ship throughout the Pacific Northwest and beyond, from our Portland, OR headquarters and Kent, WA location. [CONFIRM: nationwide vs. regional shipping]' },
-        { q: 'How much does shipping cost?', a: 'Shipping is calculated at checkout based on the items, weight, and destination. Oversized items ship by freight. [CONFIRM: free-shipping threshold, if any]' },
-        { q: 'How are large items like snow plows shipped?', a: 'Heavy or oversized equipment — snow plows, spreaders, service bodies — ships by freight carrier. We’ll quote freight and coordinate delivery; some large equipment is also available for pickup or installation at our locations.' },
-        { q: 'How soon will my order ship?', a: 'In-stock items typically ship within [CONFIRM: e.g. 1–2 business days]. Special-order items ship once they arrive from the manufacturer — lead times are shown on the product page and we’ll keep you updated.' },
+      { heading: 'Pickup & shipping', items: [
+        { q: 'Can I pick it up today?', a: 'Yes — items marked In stock at Portland or Kent can be picked up at that counter, Monday to Friday, 8am to 5pm. Each product page shows the stock at each branch.' },
+        { q: 'Do you ship?', a: 'Yes. Parts ship by parcel carrier and large equipment ships by freight. We’re a Pacific Northwest business and most of our shipments go to Oregon and Washington. [CONFIRM: shipping regions]' },
+        { q: 'How much does shipping cost?', a: 'The shipping charge is based on weight, size and destination and is added to your invoice when the order ships. For large or heavy items, ask us for a freight quote before you order.' },
+        { q: 'How are large items like snow plows and truck bodies handled?', a: 'Plows, spreaders, truck bodies, liftgates and aerial equipment are usually mounted in our Portland or Kent shop, so you drive in and drive out. We can also quote freight delivery.' },
       ]},
       { heading: 'Fitment & products', items: [
-        { q: 'How do I know a part fits my truck?', a: 'Use “Shop your vehicle” to filter the catalog to parts that fit your year, make, and model, or check the fitment listed on each product. Not sure? Email or call us with your vehicle details and we’ll confirm the right part before you buy.' },
-        { q: 'What if an item is out of stock or special order?', a: 'Many items are available as special orders even when not in stock — the product page shows the status and estimated lead time. When something is unavailable, we’ll often suggest an in-stock alternative, or you can contact us and we’ll source it.' },
+        { q: 'How do I know a part fits my truck?', a: 'Use “Shop your vehicle” to filter the catalog to your year, make and model, or check the fitment on each product page. Not sure? Call either counter or send a message with your vehicle details and we’ll confirm the right part before you buy.' },
+        { q: 'What if an item isn’t in stock?', a: 'Many items can be special ordered even when they aren’t on our shelves — the product page shows the status. We’ll often suggest an in-stock alternative, or we’ll source it for you.' },
       ]},
-      { heading: 'Returns, warranty & service', items: [
-        { q: 'What is your return policy?', a: 'Unused items in original, resalable packaging may be returned. Contact sales@nelsontruck.com to start a return and we’ll walk you through it. Special-order and installed items may not be returnable. [CONFIRM: return window + any restocking fee]' },
-        { q: 'How do warranty claims work?', a: 'We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and we handle warranty work in-house. If you have an issue, contact us with your order details and we’ll help you resolve it through the manufacturer’s warranty.' },
-        { q: 'Do you install equipment?', a: 'Yes — we install snow and ice equipment and truck upfits at our Portland and Kent locations. [CONFIRM: install scheduling / which locations]' },
+      { heading: 'Returns, warranty & installation', items: [
+        { q: 'What is your return policy?', a: 'Unused items in original, resalable packaging may be returned. Contact us with your order or invoice number to start a return. Special-order and installed items may not be returnable. See [Returns & Warranty](/returns). [CONFIRM: return window + any restocking fee]' },
+        { q: 'How do warranty claims work?', a: 'We handle warranty work in-house for the brands we sell and install. Contact us with your invoice number and a description of the problem, and we’ll work the claim through the manufacturer’s warranty.' },
+        { q: 'Do you install equipment?', a: 'Yes — we install everything we sell, at our Portland and Kent shops: plows and spreaders, truck bodies, liftgates, lighting, van shelving and more. We also build custom — tell us about your project from the [Contact page](/contact).' },
       ]},
       { heading: 'Contact & locations', items: [
-        { q: 'Where are you located?', a: 'Nelson Truck Equipment is headquartered in Portland, OR, with a location in Kent, WA, serving the Pacific Northwest. Family-owned since 1937. [CONFIRM: addresses + hours]' },
-        { q: 'How do I contact you?', a: 'Email sales@nelsontruck.com or call us [CONFIRM: phone number]. We’re happy to help with fitment, quotes, freight, and orders.' },
+        { q: 'Where are you located?', a: 'Portland: 6309 NE Columbia Blvd, Portland, OR 97218. Kent: 20063 84th Ave S, Kent, WA 98032. Both are open Monday to Friday, 8am to 5pm. Family-owned since 1937.' },
+        { q: 'How do I contact you?', a: 'Call Portland at 503-548-9300 or Kent at 253-395-3825, email sales@nelsontruck.com, or send a message from the [Contact page](/contact).' },
       ]},
     ],
   },
   about: {
     title: 'About Nelson Truck Equipment',
     subtitle: 'Family-owned and outfitting Pacific Northwest trucks since 1937.',
-    description: 'Nelson Truck Equipment — family-owned since 1937, outfitting commercial trucks and vans across the Pacific Northwest from Portland, OR and Kent, WA.',
-    body: `Nelson Truck Equipment has been outfitting commercial trucks and vans across the Pacific Northwest since 1937. Family-owned and operated, we supply and install snow and ice equipment, truck accessories, and work-ready upfits for contractors, fleets, municipalities, and everyday drivers.
+    description: 'Nelson Truck Equipment — family-owned since 1937: snow plows, truck bodies, tow trucks, aerial lifts, Landoll trailers, van upfits and accessories, installed in Portland, OR and Kent, WA.',
+    body: `Nelson Truck Equipment has been outfitting work trucks and vans across the Pacific Northwest since 1937. We’re family-owned, and we still work the way we started: the right equipment, on the shelf when you need it, installed by people who know it.
 
-We’re a direct dealer for the brands the region relies on — including Western, Meyer, SnowDogg, and Buyers/SaltDogg — and we back what we sell with in-house service and warranty work. With locations in **Portland, OR** (headquarters) and **Kent, WA**, we combine a deep parts catalog with real fitment expertise, so you get the right equipment the first time.
+## What we do
 
-Whether you’re plowing snow, building out a service van, or equipping a fleet, our team is here to help. [Get in touch](mailto:sales@nelsontruck.com) or [browse the catalog](/catalog).
+We sell, install and service commercial truck equipment from two shops — **Portland, OR** and **Kent, WA**. That covers snow and ice equipment from Western, Meyer and SnowDogg; truck bodies from Knapheide, CM, Rugby and others; Jerr-Dan tow trucks and tow truck parts; Dur-A-Lift bucket trucks and aerial lifts; Landoll trailers and Landoll parts; Tommy Gate liftgates; Weather Guard and Kargo Master van shelving; and the lighting, hitches, toolboxes and accessories that finish a truck. We also sell steel and aluminum by the pound at the counter.
 
-[CONFIRM: company history details, ownership/team, addresses & hours]`,
+## Why customers come to us
+
+**Pick it up today.** Thousands of parts sit on our shelves in Portland and Kent. Every product page shows what’s in stock at each branch, so you can grab it off the shelf instead of waiting on a shipment.
+
+**We install everything we sell.** Plows mounted and wired, bodies set on the chassis, liftgates and lighting installed — drive in, drive out.
+
+**Talk to a real expert.** Not sure it fits? Our counter team sorts out fitment and shows you in-stock alternatives on the spot.
+
+**We build custom, too.** Service bodies, racks, one-off fabrication and special upfits — if you can spec it, our shops can build it.
+
+## Who we work with
+
+Contractors, fleets, municipalities, tow operators, utilities and everyday truck owners. Trade and fleet customers can open an account for account pricing and online ordering.
+
+## Visit us
+
+**Portland:** 6309 NE Columbia Blvd, Portland, OR 97218 · 503-548-9300 · Mon–Fri 8am–5pm
+
+**Kent:** 20063 84th Ave S, Kent, WA 98032 · 253-395-3825 · Mon–Fri 8am–5pm
+
+[Contact us](/contact) or [browse the catalog](/catalog).
+
+[CONFIRM: add company history, ownership and team details]`,
   },
   returns: {
     title: 'Returns & Warranty',
     subtitle: 'How returns and warranty claims work.',
-    description: 'Nelson Truck Equipment returns and warranty policy — how to return unused items and how manufacturer warranty claims are handled.',
+    description: 'Nelson Truck Equipment returns and warranty policy — how to return unused items, what can’t be returned, and how manufacturer warranty claims are handled in Portland, OR and Kent, WA.',
     body: `## Returns
 
-Unused items in their original, resalable packaging may be returned. To start a return, email [sales@nelsontruck.com](mailto:sales@nelsontruck.com) with your order number and we’ll guide you through the process. Please note that special-order items and items that have been installed may not be eligible for return.
+Unused items in their original, resalable packaging may be returned. To start a return, contact us with your order or invoice number — call Portland at 503-548-9300 or Kent at 253-395-3825, email [sales@nelsontruck.com](mailto:sales@nelsontruck.com), or use the [Contact page](/contact). We’ll tell you where to bring or send the item.
+
+The quickest way is to bring the item and your invoice to the counter it came from.
 
 [CONFIRM: return window (e.g. 30 days), restocking fee, who pays return shipping]
 
+## What can’t be returned
+
+Special-order items that we ordered in for you (unless they arrived damaged or wrong), items that have been installed, used or modified, and built-to-order equipment such as truck bodies, tow truck bodies and aerial units. [CONFIRM: electrical returns]
+
+## Damaged or wrong items
+
+If something arrives damaged, or isn’t what you ordered, tell us as soon as you can and keep the packaging. Freight damage should be noted on the delivery receipt before you sign. We’ll make it right.
+
 ## Warranty
 
-We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and we perform warranty work in-house. If you have a warranty issue, contact us with your order details and we’ll help you resolve it under the manufacturer’s warranty.
+We sell and install equipment from manufacturers such as Western, Meyer, SnowDogg, Knapheide, Jerr-Dan, Dur-A-Lift and Tommy Gate, and we handle warranty work in-house. If you have a problem with something you bought from us, contact us with your invoice number and a description of the issue. We’ll inspect it and work the claim through the manufacturer’s warranty. Warranty terms are set by each manufacturer; product pages link to the manufacturer’s warranty documents where we have them.
 
-[CONFIRM: warranty terms / any Nelson-specific guarantees]`,
+[CONFIRM: any Nelson workmanship guarantee on installation]`,
   },
   shipping: {
-    title: 'Shipping Policy',
-    subtitle: 'How and where we ship.',
-    description: 'Nelson Truck Equipment shipping policy — shipping costs, freight for oversized equipment, lead times, and service area across the Pacific Northwest.',
-    body: `Orders ship from our Portland, OR and Kent, WA locations. Shipping cost is calculated at checkout based on the items, weight, and destination.
+    title: 'Pickup & Shipping',
+    subtitle: 'Pick it up today, or we’ll ship it.',
+    description: 'Nelson Truck Equipment pickup and shipping policy — same-day pickup in Portland, OR and Kent, WA, parcel and freight shipping, and how shipping is charged.',
+    body: `## Pick it up today
 
-**Oversized equipment** — snow plows, spreaders, and service bodies — ships by freight carrier. We’ll quote freight and coordinate delivery, and many large items are also available for pickup or installation at our locations.
+Items shown **In stock** at Portland or Kent can be picked up at that counter, Monday to Friday, 8am to 5pm. Each product page shows stock at each branch. Call ahead if you need a lot of something and we’ll set it aside.
 
-**Lead times:** in-stock items typically ship within a couple of business days; special-order items ship once they arrive from the manufacturer, with estimated lead times shown on the product page.
+**Portland:** 6309 NE Columbia Blvd, Portland, OR 97218 · 503-548-9300
 
-[CONFIRM: shipping regions (regional vs nationwide), free-shipping threshold, carrier(s), in-stock ship window, pickup details]`,
+**Kent:** 20063 84th Ave S, Kent, WA 98032 · 253-395-3825
+
+## Shipping
+
+Parts ship by parcel carrier from whichever branch has them in stock. Large or heavy items — plows, spreaders, bodies, liftgates — ship by freight, or we install them in our shop.
+
+**How shipping is charged:** the shipping charge depends on weight, size and destination and is added to your invoice when the order ships. For large or heavy items, ask us for a freight quote before you order.
+
+[CONFIRM: shipping regions, carriers, any free-shipping threshold]
+
+## Lead times
+
+In-stock items are usually ready the same day for pickup. Special-order items ship once they arrive from the manufacturer; the product page shows when an item is special order, and we’ll keep you posted.
+
+## Installation
+
+Most equipment we sell can be installed at our Portland or Kent shop. Tell us your truck and what you need, and we’ll schedule it — [request a quote](/contact?topic=quote).`,
   },
   privacy: {
     title: 'Privacy & Terms',
@@ -108,7 +161,7 @@ We’re a direct dealer for Western, Meyer, SnowDogg, and Buyers/SaltDogg, and w
     noindex: true,
     body: `## Privacy
 
-We collect only the information needed to process your orders, provide support, and improve your experience — such as your name, contact details, shipping address, and order history. We do not sell your personal information. Payment details are handled securely by our payment processor and are not stored on our servers.
+We collect only the information needed to process your orders, provide support, and improve your experience — such as your name, contact details, shipping address, and order history. We do not sell your personal information. If you pay by card, payment details are handled by the card processor and are not stored on our servers.
 
 ## Terms of use
 
@@ -210,7 +263,7 @@ export function FaqPage() {
     mainEntity: sections.flatMap((s) => s.items).map((f) => ({
       '@type': 'Question',
       name: f.q,
-      acceptedAnswer: { '@type': 'Answer', text: stripConfirm(f.a).trim() },
+      acceptedAnswer: { '@type': 'Answer', text: stripConfirm(f.a).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim() },
     })),
   }
   return (
@@ -226,7 +279,7 @@ export function FaqPage() {
                   <span>{f.q}</span>
                   <span className="ml-4 text-gray-400 group-open:rotate-45 transition-transform">+</span>
                 </summary>
-                <p className="mt-2 text-gray-600">{stripConfirm(f.a).trim()}</p>
+                <p className="mt-2 text-gray-600">{renderInline(stripConfirm(f.a).trim(), `faq-${f.q}`)}</p>
               </details>
             ))}
           </div>
