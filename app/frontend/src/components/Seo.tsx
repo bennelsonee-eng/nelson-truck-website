@@ -39,7 +39,7 @@ export const ORGANIZATION_JSONLD = {
   // TODO: add `sameAs` (Google Business Profile + social) once confirmed.
 }
 
-/** Per-branch LocalBusiness JSON-LD (home page). TODO: add streetAddress + geo. */
+/** Per-branch LocalBusiness JSON-LD (home page and /contact). */
 export const LOCALBUSINESS_JSONLD = [
   {
     '@context': 'https://schema.org',
@@ -49,7 +49,9 @@ export const LOCALBUSINESS_JSONLD = [
     telephone: '+1-503-548-9300',
     foundingDate: '1937',
     parentOrganization: { '@type': 'Organization', name: SITE_NAME, url: CANONICAL_BASE_URL },
-    address: { '@type': 'PostalAddress', addressLocality: 'Portland', addressRegion: 'OR', addressCountry: 'US' },
+    // Street address + hours as published on nelsontruck.com (checked 2026-09-22).
+    address: { '@type': 'PostalAddress', streetAddress: '6309 NE Columbia Blvd', addressLocality: 'Portland', addressRegion: 'OR', postalCode: '97218', addressCountry: 'US' },
+    openingHours: 'Mo-Fr 08:00-17:00',
     areaServed: ['Oregon', 'Washington', 'Pacific Northwest'],
   },
   {
@@ -60,7 +62,8 @@ export const LOCALBUSINESS_JSONLD = [
     telephone: '+1-253-395-3825',
     foundingDate: '1937',
     parentOrganization: { '@type': 'Organization', name: SITE_NAME, url: CANONICAL_BASE_URL },
-    address: { '@type': 'PostalAddress', addressLocality: 'Kent', addressRegion: 'WA', addressCountry: 'US' },
+    address: { '@type': 'PostalAddress', streetAddress: '20063 84th Ave S', addressLocality: 'Kent', addressRegion: 'WA', postalCode: '98032', addressCountry: 'US' },
+    openingHours: 'Mo-Fr 08:00-17:00',
     areaServed: ['Washington', 'Oregon', 'Pacific Northwest'],
   },
 ]

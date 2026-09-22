@@ -18,6 +18,10 @@ const ShippingPage = lazy(() => import('./pages/ContentPages').then((m) => ({ de
 const PrivacyPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.PrivacyPage })))
 const AdminContentPage = lazy(() => import('./pages/AdminContent').then((m) => ({ default: m.AdminContentPage })))
 import { Seo, absoluteUrl, clamp, ORGANIZATION_JSONLD, WEBSITE_JSONLD, LOCALBUSINESS_JSONLD, CANONICAL_BASE_URL } from './components/Seo'
+import { BRANCHES, InquiryModalHost, openInquiry } from './components/Inquiry'
+const ContactPage = lazy(() => import('./pages/ContactPage'))
+const AdminInquiriesPage = lazy(() => import('./pages/AdminInquiries'))
+const DivisionPage = lazy(() => import('./pages/DivisionPage'))
 
 // ============================================================================
 // Display helpers
@@ -1557,8 +1561,8 @@ function Header() {
               : <span className="text-xl md:text-2xl font-extrabold tracking-tight text-gray-900">{user?.showroom_display_name || 'Online Catalog'}</span>
           ) : (
             <span className="flex items-center gap-2.5">
-              <img src="/brand/nelson-badge.png" alt="" className="h-11 md:h-14 w-auto" />
-              <img src="/brand/nelson-wordmark.png" alt="Nelson Truck Equipment" className="h-6 md:h-8 w-auto" />
+              <img src="/brand/nelson-badge.svg" alt="" className="h-11 md:h-14 w-auto" />
+              <img src="/brand/nelson-wordmark.svg" alt="Nelson Truck Equipment" className="h-6 md:h-8 w-auto" />
             </span>
           )}
         </Link>
@@ -1678,14 +1682,14 @@ const MEGA_SECTIONS: MegaSection[] = [
   {
     label: "Tow Trucks",
     slug: "tow-trucks",
-    view_all_route: "/catalog",
+    view_all_route: "/tow-trucks",
+    // /tow-trucks is the division page (built-to-order Jerr-Dan units + a quote
+    // form); Recovery Equipment is the real in-stock category (In The Ditch).
     sub_sections: [
-      { name: "Wreckers", route: "/catalog" },
-      { name: "Rollbacks & Carriers", route: "/catalog" },
-      { name: "Rotators", route: "/catalog" },
-      { name: "Wheel Lifts", route: "/catalog" },
-      { name: "Recovery Equipment", route: "/catalog" },
-      { name: "Tow Truck Parts", route: "/catalog" },
+      { name: "Wreckers & Rollbacks", route: "/tow-trucks#wreckers" },
+      { name: "Recovery Equipment", category_path: "Truck Equipment > Towing & Recovery" },
+      { name: "Tow Truck Parts", route: "/tow-trucks#parts" },
+      { name: "Request a Tow Truck Quote", route: "/tow-trucks#quote" },
     ],
   },
   {
@@ -1693,22 +1697,22 @@ const MEGA_SECTIONS: MegaSection[] = [
     slug: "aerial-bucket",
     view_all_route: "/aerial-lifts",
     sub_sections: [
-      { name: "Bucket Trucks", route: "/aerial-lifts" },
-      { name: "Aerial Lifts", route: "/aerial-lifts" },
-      { name: "Digger Derricks", route: "/aerial-lifts" },
-      { name: "Parts & Service", route: "/aerial-lifts" },
+      { name: "Telescopic Bucket Trucks", route: "/aerial-lifts/telescopic-trucks" },
+      { name: "Articulated Aerial Lifts", route: "/aerial-lifts/articulated" },
+      { name: "Bucket Vans", route: "/aerial-lifts/bucket-vans" },
+      { name: "Tracked Lifts", route: "/aerial-lifts/tracked" },
+      { name: "Parts & Service", route: "/contact?topic=quote" },
     ],
   },
   {
     label: "Trailers",
     slug: "trailers",
-    view_all_route: "/catalog",
+    view_all_route: "/trailers",
     sub_sections: [
-      { name: "Landoll Traveling Axle", route: "/catalog" },
-      { name: "Detach Gooseneck", route: "/catalog" },
-      { name: "Sliding Axle", route: "/catalog" },
-      { name: "Trailer Parts", route: "/catalog" },
-      { name: "Landoll Parts", route: "/catalog" },
+      { name: "Landoll Traveling Axle", route: "/trailers#traveling-axle" },
+      { name: "Detach Gooseneck", route: "/trailers#detach" },
+      { name: "Sliding Axle", route: "/trailers#sliding-axle" },
+      { name: "Trailer & Landoll Parts", route: "/trailers#parts" },
     ],
   },
   {
@@ -1742,14 +1746,14 @@ const MEGA_SECTIONS: MegaSection[] = [
   {
     label: "Metal & Hardware",
     slug: "metal-hardware",
-    view_all_route: "/catalog",
+    view_all_route: "/steel",
+    // Counter-sale only (Ben, v16): advertise, no online per-lb sales, no
+    // shipping cut metal. Every link lands on the /steel info page.
     sub_sections: [
-      { name: "Steel Stock (per lb)", route: "/catalog" },
-      { name: "Aluminum Stock (per lb)", route: "/catalog" },
-      { name: "Bar · Tube · Angle", route: "/catalog" },
-      { name: "Plate & Sheet", route: "/catalog" },
-      { name: "Nuts, Bolts & Fasteners", route: "/catalog" },
-      { name: "Cut-to-Size Service", route: "/catalog" },
+      { name: "Steel & Aluminum Stock", route: "/steel#steel-stock" },
+      { name: "Bar · Tube · Angle · Plate & Sheet", route: "/steel#shapes" },
+      { name: "Nuts, Bolts & Fasteners", route: "/steel#fasteners" },
+      { name: "Cut-to-Size Service", route: "/steel#cutting" },
     ],
   },
 ]
@@ -2278,9 +2282,9 @@ function ScrollRow({ children, className = '' }: { children: ReactNode; classNam
 // --- Nelson Bold Red Garage homepage ---------------------------------------
 const NELSON_SLIDES = [
   { ey: 'Snow & Ice · Ready before the storm', h1a: "Winter’s coming.", h1b: 'Get plow-ready.', copy: 'Western, SnowDogg & Meyer plows and spreaders — in stock, and mounted & wired in our Portland & Kent shops.', cta: 'Shop snow & ice', to: '/snow-plows', bto: false, card: { brand: 'Western · SnowDogg · Meyer', name: 'Straight-blade & V-plows', price: 'In stock & installed', imgs: ['/static/brand_images/WEST/WEST69500/00_bing_1d7776106e6d.jpg', '/static/product-images/92/92d1cd8fdb9fd85b_1280.jpg', '/static/product-images/dc/dc36845ac71cf80f_1280.jpg'] } },
-  { ey: 'Tow Trucks · Towing & Recovery', h1a: 'Built to', h1b: 'bring it back.', copy: "Wreckers, rollbacks, and rotators from Jerr-Dan and Century — plus the Northwest’s deepest inventory of tow truck parts.", cta: 'Explore tow trucks', to: '/catalog', bto: true, card: { brand: 'Jerr-Dan', name: 'MPL-NGS Steel Rollback Carrier', price: 'Built to order' } },
-  { ey: 'Aerial & Bucket Division', h1a: 'Reach', h1b: 'higher.', copy: 'Bucket trucks, aerial lifts, and digger derricks from Dur-A-Lift — sales, upfit, and service.', cta: 'Explore aerial & bucket', to: '/catalog', bto: true, card: { brand: 'Dur-A-Lift', name: 'DPM2-42 Insulated Aerial Bucket', price: 'Built to order' } },
-  { ey: 'Trailers · Landoll Dealer', h1a: 'Haul the', h1b: 'heavy stuff.', copy: 'Landoll traveling-axle, detach, and sliding-axle trailers — plus a full line of Landoll parts, sold and serviced here.', cta: 'Explore trailers', to: '/catalog', bto: true, card: { brand: 'Landoll', name: '440 Series Traveling Axle Trailer', price: 'Built to order' } },
+  { ey: 'Tow Trucks · Towing & Recovery', h1a: 'Built to', h1b: 'bring it back.', copy: 'Jerr-Dan wreckers and rollback carriers, built to order — plus tow truck parts and recovery gear at our Portland & Kent counters.', cta: 'Explore tow trucks', to: '/tow-trucks', bto: true, card: { brand: 'Jerr-Dan', name: 'Rollback Carriers', price: 'Built to order', img: '/banner/tow-rollback.jpg' } },
+  { ey: 'Aerial & Bucket Division', h1a: 'Reach', h1b: 'higher.', copy: 'Bucket trucks and aerial lifts from Dur-A-Lift — sales, upfit, and service.', cta: 'Explore aerial & bucket', to: '/aerial-lifts', bto: true, card: { brand: 'Dur-A-Lift', name: 'DLT2 Series Bucket Truck', price: 'Built to order', img: '/static/product-images/64/64a02e1eaa439632_1280.jpg' } },
+  { ey: 'Trailers · Landoll Dealer', h1a: 'Haul the', h1b: 'heavy stuff.', copy: 'Landoll traveling-axle, detach, and sliding-axle trailers — plus a full line of Landoll parts, sold and serviced here.', cta: 'Explore trailers', to: '/trailers', bto: true, card: { brand: 'Landoll', name: '440B Traveling Axle Trailer', price: 'Built to order', img: '/banner/landoll-trailer.jpg' } },
   { ey: 'Truck & Van Accessories', h1a: 'Cover your bed', h1b: 'in seconds.', copy: 'Hard roll-up and folding tonneau covers from BAK, Retrax, and Extang — fitment-matched to your truck.', cta: 'Shop tonneau covers', to: '/catalog?category_top=Truck+Bed+Covers', bto: false, card: { brand: 'BAK Industries', name: 'Revolver X4 Hard Roll-Up Cover', price: '$1,099.00', img: '/static/product-images/49/498d2a7bdf17730b_1280.jpg' } },
 ]
 
@@ -2384,7 +2388,7 @@ function NelsonHome() {
           <h3 className="font-cond text-2xl text-white">We build <span className="text-amber-400">custom</span>, too.</h3>
           <p className="mt-1 max-w-[70ch] text-sm text-[#9a917f]">Service bodies, racks, one-off fabrication, special upfits — if you can spec it, our shops can build it. We&rsquo;d love to hear about your project.</p>
         </div>
-        <a href="mailto:sales@nelsontruck.com?subject=Custom%20project" className="rounded-lg bg-amber-400 px-6 py-3 font-cond text-sm uppercase text-amber-950 hover:bg-amber-300">Tell us about your project →</a>
+        <Link to="/contact?topic=project" className="rounded-lg bg-amber-400 px-6 py-3 font-cond text-sm uppercase text-amber-950 hover:bg-amber-300">Tell us about your project →</Link>
       </div>
 
       {/* Steel / metal — advertise, counter-only */}
@@ -2394,7 +2398,7 @@ function NelsonHome() {
           <h3 className="mt-1 font-cond text-2xl text-white">Yes — we sell <span className="text-[#c3ccd3]">steel.</span></h3>
           <p className="mt-1 max-w-[78ch] text-sm text-[#9a917f]">Bar, tube, angle, plate, and sheet in stock at both shops. Buy it by the pound at the counter, and we&rsquo;ll cut small jobs while you wait — come see us.</p>
         </div>
-        <Link to="/catalog" className="rounded-lg bg-[#d7dde1] px-6 py-3 font-cond text-sm uppercase text-[#1a1d20] hover:bg-white">What we stock →</Link>
+        <Link to="/steel" className="rounded-lg bg-[#d7dde1] px-6 py-3 font-cond text-sm uppercase text-[#1a1d20] hover:bg-white">What we stock →</Link>
       </div>
 
       {/* Product grid */}
@@ -2435,6 +2439,13 @@ function NelsonHome() {
 }
 
 void Home  // legacy Nelson-style homepage, kept for reference; live route uses NelsonHome
+// Design mockups and the Titan-era competitor scorecard: routes removed from the
+// public site in the launch audit (2026-09-22); code kept for reference.
+void CompetitiveLandscapePage
+void L1FamilyMockupsPreview
+void LightTacticalMockupsPreview
+void PageMockupsPreview
+void WizardMockupsPreview
 function Home() {
   const { user, showroom } = useApp()
   const showroomActive = showroom && (user?.customer_tier === 'jobber' || user?.customer_tier === 'dealer')
@@ -4566,8 +4577,32 @@ function CatalogBrowse() {
     </>
   )
 
+  // <title>/description/canonical (launch audit 2026-09-22: /catalog had none).
+  // Category views are indexable under their category URL; search results and
+  // extra filter combinations are noindex so they don't compete with them.
+  const seoCatPath = params.get('category_path') || ''
+  const seoCatTop = params.get('category_top') || ''
+  const seoQ = params.get('q') || ''
+  const seoName = (seoCatPath ? seoCatPath.split('>').pop() : seoCatTop)?.trim() || ''
+  const seoTitle = seoQ
+    ? `Search: ${seoQ} | Nelson Truck Equipment`
+    : seoName ? `${seoName} | Nelson Truck Equipment` : 'Shop All Truck Equipment & Accessories | Nelson Truck Equipment'
+  const seoPath = seoName
+    ? `/catalog?${new URLSearchParams({ ...(seoCatTop ? { category_top: seoCatTop } : {}), ...(seoCatPath ? { category_path: seoCatPath } : {}) }).toString()}`
+    : '/catalog'
+  const seoExtraFilters = [...params.keys()].some((k) => !['category_top', 'category_path', 'page'].includes(k))
   return (
     <div className="px-4 sm:px-6 lg:px-8 pt-3 pb-6 max-w-[1600px] mx-auto">
+      {/* Rendered once results arrive: <Seo> is also the prerenderer's "ready"
+          signal, and a bot snapshot taken before the grid loads would be empty. */}
+      {data && <Seo
+        title={seoTitle}
+        description={seoName
+          ? `${seoName} in stock at Nelson Truck Equipment — pick up today in Portland, OR or Kent, WA, or we ship. We install everything we sell.`
+          : 'Truck equipment, snow plows, truck bodies and accessories in stock in Portland, OR and Kent, WA. Pick it up today; we install everything we sell.'}
+        path={seoPath}
+        noindex={!!seoQ || seoExtraFilters}
+      />}
       <MobileFilterDrawer
         open={filtersOpen}
         onClose={() => setFiltersOpen(false)}
@@ -4654,7 +4689,8 @@ function CatalogBrowse() {
                 onChange={(e) => updateParam('sort', e.target.value || null)}
                 className="border border-gray-300 rounded px-2 py-1 text-xs bg-white"
               >
-                <option value="">Name (A → Z)</option>
+                <option value="">Best match</option>
+                <option value="name_asc">Name (A → Z)</option>
                 <option value="name_desc">Name (Z → A)</option>
                 <option value="price_asc">Price (low → high)</option>
                 <option value="price_desc">Price (high → low)</option>
@@ -5427,12 +5463,12 @@ function ProductDetail() {
 
           <div className="mt-6">
             <div className="text-sm font-semibold mb-2">Stock by warehouse</div>
-            <WarehouseStockTable sku={sku!} />
+            <WarehouseStockTable sku={sku!} builtToOrder={data.cta_mode === 'quote_shipping'} />
           </div>
 
           {/* Retail shipping labels — Truck Freight / Will Call / flat-rate.
               Retail-only: B2B tiers use a separate freight program. */}
-          {isRetail && (() => {
+          {isRetail && data.cta_mode !== 'quote_shipping' && (() => {
             const mode = data.shipping_mode
             const flat = data.flat_ship_amount
             const branches = [...new Set((data.inventory || []).filter((w) => w.on_hand > 0).map((w) => w.warehouse_name))]
@@ -5514,8 +5550,12 @@ function ProductDetail() {
             </div>
           )}
           {data.cta_mode === 'quote_shipping' && (
-            <button className="mt-6 w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded">
-              Get Shipping Quote (form coming Week 2)
+            <button
+              type="button"
+              onClick={() => openInquiry({ kind: 'quote', product_sku: data.sku, product_name: data.name })}
+              className="mt-6 w-full py-3 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded"
+            >
+              Request a Quote
             </button>
           )}
           {data.cta_mode === 'browse_only' && (
@@ -6044,7 +6084,7 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
         </div>
       )}
 
-      {tab === 'stock' && <WarehouseStockTable sku={sku} />}
+      {tab === 'stock' && <WarehouseStockTable sku={sku} builtToOrder={data.cta_mode === 'quote_shipping'} />}
 
       {tab === 'fitment' && <ProductFitmentTab sku={sku} ymm={ymm} />}
     </div>
@@ -6497,6 +6537,7 @@ function AccountPage() {
 
   type AdminTool = { icon: string; title: string; desc: string; to?: string; href?: string; onClick?: () => void; newTab?: boolean }
   const adminTools: AdminTool[] = [
+    { icon: '📨', title: 'Inquiries', desc: 'Quote requests and contact-form messages from the website (also emailed)', to: '/admin/inquiries' },
     { icon: '🖼️', title: 'Banner Manager', desc: 'Homepage rotating banner — audience-scoped & schedulable slides', to: '/admin/banners' },
     { icon: '📝', title: 'Content pages', desc: 'Edit the FAQ and trust pages (About, Returns, Shipping, Privacy)', to: '/admin/content' },
     { icon: '📜', title: 'Audit Log', desc: 'Every admin action, per user — who changed what, and when', to: '/admin/audit-log' },
@@ -11395,6 +11436,9 @@ function AerialLiftsLanding() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
+      <Seo title="Aerial Lifts & Bucket Trucks — Dur-A-Lift | Nelson Truck Equipment"
+           description="Dur-A-Lift bucket trucks, articulated and telescopic aerial lifts, bucket vans and tracked lifts — sales, upfit and service from Nelson Truck Equipment in Portland, OR and Kent, WA."
+           path={subcatSlug ? `/aerial-lifts/${subcatSlug}` : '/aerial-lifts'} />
 
       {/* HERO SECTION */}
       <section className="bg-white border-b">
@@ -11613,6 +11657,9 @@ function SnowPlowsLanding() {
 
   return (
     <div className="bg-gray-50">
+      <Seo title="Snow Plows & Spreaders — Western, Meyer, SnowDogg | Nelson Truck Equipment"
+           description="Western, Meyer and SnowDogg snow plows, salt spreaders and plow parts — in stock, mounted and wired at our Portland, OR and Kent, WA shops. Find the right plow for your truck."
+           path="/snow-plows" />
       {/* Seasonal order banner — primary conversion lever for /snow-plows.
           Pre-season (Apr-Sep): "lock in fall plow now".  In-season (Oct-Mar):
           "what's still in stock + call us".  See isPreSeasonWindow() */}
@@ -12050,6 +12097,9 @@ function BrandsIndexPage() {
   }, [])
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      <Seo title="Shop by Brand — Truck Equipment Manufacturers A–Z | Nelson Truck Equipment"
+           description="Every manufacturer Nelson Truck Equipment stocks, A to Z — snow plows, truck bodies, liftgates, lighting, hitches and accessories. Portland, OR and Kent, WA."
+           path="/brands" />
       <h1 className="text-3xl font-bold mb-2">Shop by brand</h1>
       <p className="text-sm text-gray-500 mb-6">Every manufacturer Nelson stocks, A→Z. Click a brand to browse their full lineup.</p>
       {!data ? (
@@ -12522,14 +12572,19 @@ function ProductFitmentTab({ sku, ymm }: { sku: string; ymm: YMM | null }) {
   )
 }
 
-function WarehouseStockTable({ sku }: { sku: string }) {
+function WarehouseStockTable({ sku, builtToOrder = false }: { sku: string; builtToOrder?: boolean }) {
   const [data, setData] = useState<WarehouseStock | null>(null)
   useEffect(() => {
     fetch(`/api/catalog/products/${sku}/warehouse-stock`).then((r) => r.json()).then(setData).catch(() => setData(null))
   }, [sku])
   if (!data) return null
   if (data.locations.length === 0) {
-    return <div className="text-sm text-gray-500">Drop-shipped from manufacturer (no Nelson warehouse stock)</div>
+    // Launch audit 2026-09-22: this used to say "Drop-shipped from manufacturer"
+    // for everything with no stock row -- wrong for bodies and lifts, which we
+    // mount in our own shops, and wrong for ordinary special-order parts too.
+    return builtToOrder
+      ? <div className="text-sm text-gray-600">Built to order — mounted and installed at our Portland or Kent shop. We&rsquo;ll quote your build and lead time.</div>
+      : <div className="text-sm text-gray-600">Not on our shelves right now — special order. Call either counter for the lead time.</div>
   }
   return (
     <div className="border rounded overflow-hidden text-sm">
@@ -12710,13 +12765,27 @@ function NewsletterSignup() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!/^\S+@\S+\.\S+$/.test(email)) { setError('Enter a valid email'); return }
     setError(null)
-    // Phase 1.5 will POST to /api/marketing/newsletter — for now, accept locally
-    try { localStorage.setItem('titan_newsletter_email', email) } catch {}
-    setSubmitted(true)
+    // Stored server-side (newsletter_subscriber) since 2026-09-22; it used to
+    // live only in the visitor's own localStorage.
+    try {
+      const r = await fetch('/api/newsletter', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, source: 'footer' }),
+      })
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}))
+        setError(typeof d?.detail === 'string' ? d.detail : 'Could not sign you up — please try again.')
+        return
+      }
+      setSubmitted(true)
+    } catch {
+      setError('Could not sign you up — please try again.')
+    }
   }
   if (submitted) {
     return <p className="text-xs text-green-400">✓ Thanks — you're on the list. We'll send seasonal promos and rebate alerts.</p>
@@ -12757,13 +12826,18 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2">
           <span className="mb-3 flex items-center gap-2.5">
-            <img src="/brand/nelson-badge.png" alt="" className="h-12 w-auto" />
-            <img src="/brand/nelson-wordmark.png" alt="Nelson Truck Equipment" className="h-6 w-auto [filter:brightness(0)_invert(1)]" />
+            <img src="/brand/nelson-badge.svg" alt="" className="h-12 w-auto" />
+            <img src="/brand/nelson-wordmark.svg" alt="Nelson Truck Equipment" className="h-6 w-auto [filter:brightness(0)_invert(1)]" />
           </span>
           <p className="text-sm text-gray-400 mb-3">The Pacific Northwest&rsquo;s commercial truck-equipment source since 1937 — snow &amp; ice, truck bodies, tow trucks, aerial &amp; bucket, Landoll trailers, and accessories. We install everything we sell, and we build custom. In stock in Portland, OR and Kent, WA — pick it up today.</p>
-          <div className="text-xs space-y-1">
-            <div><span className="text-gray-500">Portland, OR:</span> 503-548-9300</div>
-            <div><span className="text-gray-500">Kent, WA:</span> 253-395-3825</div>
+          <div className="grid gap-3 text-xs sm:grid-cols-2">
+            {BRANCHES.map((b) => (
+              <address key={b.key} className="not-italic leading-relaxed">
+                <span className="font-semibold text-gray-200">{b.name}</span><br />
+                {b.street}<br />{b.cityLine}<br />
+                <a href={`tel:${b.tel}`} className="hover:text-white">{b.phone}</a> · <span className="text-gray-500">{b.hours}</span>
+              </address>
+            ))}
           </div>
         </div>
         <div>
@@ -12792,7 +12866,7 @@ function Footer() {
         <div>
           <div className="text-xs uppercase tracking-wider font-semibold text-white mb-3">Company</div>
           <ul className="text-sm space-y-1.5">
-            <li><a href="mailto:sales@nelsontruck.com" className="hover:text-white">Contact sales</a></li>
+            <li><Link to="/contact" className="hover:text-white">Contact us</Link></li>
             <li><Link to="/about" className="hover:text-white">About us</Link></li>
             <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
             <li><Link to="/returns" className="hover:text-white">Returns &amp; warranty</Link></li>
@@ -12804,7 +12878,7 @@ function Footer() {
       <div className="border-t border-gray-800">
         <div className="max-w-7xl mx-auto px-6 py-4 text-xs text-gray-500 flex flex-wrap justify-between gap-2">
           <div>© {new Date().getFullYear()} Nelson Truck Equipment. All rights reserved.</div>
-          <div className="text-gray-600">Built on FastAPI + React. Phase 1 Working Draft.</div>
+          
         </div>
       </div>
     </footer>
@@ -13238,6 +13312,9 @@ function VansLandingPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6">
+      <Seo title="Van Equipment — Shelving, Partitions, Racks & Packages | Nelson Truck Equipment"
+           description="Weather Guard and Kargo Master van shelving, cab partitions, ladder racks and complete van packages — installed at our Portland, OR and Kent, WA shops."
+           path="/vans" />
       <nav className="text-sm text-gray-500 mb-4">
         <Link to="/" className="hover:text-red-700">Home</Link> / Vans
       </nav>
@@ -15230,6 +15307,28 @@ function ImpersonationHost() {
 // "anonymous"). Only admins get the Reports queue tab (canViewList), so
 // customers/testers can record + file but can't browse or resolve others'
 // reports.
+/** Catch-all for unknown addresses (launch audit 2026-09-22): they used to
+ *  render an empty page with HTTP 200. Tells the prerenderer to answer 404 and
+ *  keeps the page out of search indexes. */
+function NotFoundPage() {
+  useEffect(() => {
+    ;(window as unknown as { prerenderStatus?: number }).prerenderStatus = 404
+  }, [])
+  return (
+    <div className="mx-auto max-w-2xl px-6 py-20 text-center">
+      <Seo title="Page not found | Nelson Truck Equipment" noindex />
+      <div className="text-5xl" aria-hidden>🔍</div>
+      <h1 className="mt-4 text-3xl font-bold text-gray-900">Page not found</h1>
+      <p className="mt-2 text-gray-600">That page doesn&rsquo;t exist or has moved. Try searching for the part number, or call the counter and we&rsquo;ll find it.</p>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Link to="/catalog" className="rounded bg-red-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-red-800">Browse the catalog</Link>
+        <Link to="/contact" className="rounded border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-50">Contact us</Link>
+      </div>
+      <p className="mt-6 text-sm text-gray-500">Portland <a className="underline" href="tel:+15035489300">503-548-9300</a> · Kent <a className="underline" href="tel:+12533953825">253-395-3825</a></p>
+    </div>
+  )
+}
+
 function ErrorReporterHost() {
   const { user } = useApp()
   const isAdmin = user?.role === 'admin'
@@ -16893,15 +16992,10 @@ export default function App() {
           <Route path="/snow-plows" element={<SnowPlowsLanding />} />
           <Route path="/snow-plows/compare" element={<PlowComparePage />} />
           <Route path="/snow-plows/configurator" element={<PlowConfigurator />} />
-          <Route path="/snow-plows/wizard-preview" element={<WizardMockupsPreview />} />
-          <Route path="/snow-plows/page-mockups" element={<PageMockupsPreview />} />
-          <Route path="/snow-plows/page-mockups-light" element={<LightTacticalMockupsPreview />} />
-          <Route path="/snow-plows/page-mockups-l1" element={<L1FamilyMockupsPreview />} />
           <Route path="/aerial-lifts" element={<AerialLiftsLanding />} />
           <Route path="/aerial-lifts/:subcatSlug" element={<AerialLiftsLanding />} />
           <Route path="/snow-alerts/confirm" element={<WinterWatchConfirmPage />} />
           <Route path="/snow-alerts/unsubscribe" element={<WinterWatchUnsubscribePage />} />
-          <Route path="/insights/competitive" element={<CompetitiveLandscapePage />} />
           <Route path="/product/:sku" element={<ProductDetail />} />
           <Route path="/cart" element={<CartPage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -16932,6 +17026,12 @@ export default function App() {
           <Route path="/vans" element={<VansLandingPage />} />
           <Route path="/compare" element={<ComparePage />} />
           <Route path="/health" element={<Health />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/tow-trucks" element={<DivisionPage slug="tow-trucks" />} />
+          <Route path="/trailers" element={<DivisionPage slug="trailers" />} />
+          <Route path="/steel" element={<DivisionPage slug="steel" />} />
+          <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>
       </main>
@@ -16940,6 +17040,7 @@ export default function App() {
       <ImpersonationHost />
       <CompareBar />
       <ErrorReporterHost />
+      <InquiryModalHost />
       <PreviewBanner />
     </AppProvider>
   )

@@ -144,19 +144,66 @@ async def featured_pickup(
     # Per-customer-channel visibility (parity with /browse + hot-products): a
     # product hidden from this viewer's channel drops off the pickup showcase.
     channel = await _viewer_channel(db, user, request)
+    # Launch audit 2026-09-22: the grid was 12 small, high-count parts (install
+    # kits, circuit breakers), two of them duplicates, five named with a full
+    # marketing sentence. Rank by displayed retail price instead of shelf count
+    # so the showcase leads with real equipment, then filter the pool below.
+    price_sq = (
+        select(
+            ProductPrice.product_id.label("pid"),
+            func.coalesce(ProductPrice.resolved_retail_price, ProductPrice.retail_price).label("price"),
+        )
+        .subquery()
+    )
     rows = (await db.execute(
         select(Product, pickup_stock_sq.c.qty, has_image)
         .options(selectinload(Product.brand), selectinload(Product.images))
         .join(Brand, Brand.id == Product.brand_id)
         .join(pickup_stock_sq, pickup_stock_sq.c.pid == Product.id)
+        .outerjoin(price_sq, price_sq.c.pid == Product.id)
         .where(
             visible_to_channel_clause(channel),
             Product.is_for_sale == True,  # noqa: E712
             Brand.is_active == True,  # noqa: E712
         )
-        .order_by(has_image.desc(), pickup_stock_sq.c.qty.desc(), Product.name.asc())
-        .limit(limit)
+        .order_by(has_image.desc(), price_sq.c.price.desc().nulls_last(), pickup_stock_sq.c.qty.desc(), Product.name.asc())
+        .limit(limit * 12)
     )).all()
+
+    def _showcase_name(name: str | None) -> bool:
+        """A name that reads like a product, not a sentence or raw ERP text."""
+        n = (name or "").strip()
+        if not n or len(n) > 70 or n.endswith(".") or ". " in n:
+            return False
+        letters = [c for c in n if c.isalpha()]
+        if letters and sum(c.isupper() for c in letters) / len(letters) > 0.8 and len(letters) > 6:
+            return False  # all-caps ERP description
+        return not n.startswith("*")
+
+    picked = []
+    seen_names: set[str] = set()
+    per_brand: dict[str, int] = {}
+    for row in rows:
+        product = row[0]
+        key = (product.name or "").strip().lower()
+        brand_key = product.brand.name if product.brand else ""
+        if not _showcase_name(product.name) or key in seen_names or per_brand.get(brand_key, 0) >= 2:
+            continue
+        seen_names.add(key)
+        per_brand[brand_key] = per_brand.get(brand_key, 0) + 1
+        picked.append(row)
+        if len(picked) >= limit:
+            break
+    if len(picked) < limit:  # thin pool: fall back to the plain ranking, still de-duplicated
+        for row in rows:
+            key = (row[0].name or "").strip().lower()
+            if row in picked or key in seen_names:
+                continue
+            seen_names.add(key)
+            picked.append(row)
+            if len(picked) >= limit:
+                break
+    rows = picked
 
     def _usable(url: str | None) -> bool:
         return bool(url) and "photocomingsoon" not in url.lower()
@@ -797,8 +844,13 @@ async def _browse_via_pace(
         # column is a boolean (on_hand > 0) so all in-stock products
         # tie at the top; the secondary name asc gives them a stable
         # display order within the in-stock group, and again within OOS.
+        # Launch audit 2026-09-22: within each stock group, products WITH a
+        # photo come first -- a category page used to open on a screen of
+        # "No image" fittings sorted A-Z ("#40 chain master link" ...).
+        has_image = select(ProductImage.id).where(ProductImage.product_id == Product.id).exists()
         sorted_q = sorted_q.order_by(
             (func.coalesce(stock_sort_sq.c.on_hand_total, 0) > 0).desc(),
+            has_image.desc(),
             Product.name.asc(),
         )
     rows = (await db.execute(
@@ -3059,28 +3111,28 @@ async def snow_plows_landing(
     # Phase 1.5 (need to license / fetch from each manufacturer).
     descriptors = {
         "Western Snow Plows": {
-            "rank": "#1 by sales — $1.5M last year",
-            "tagline": "The undisputed Titan favorite.  Outsells the next snow brand 10:1.",
+            "rank": "Straight blades · V-plows · Wings",
+            "tagline": "Contractor-grade Western plows, mounted and wired in our Portland & Kent shops.",
             "lineup": "Pro-Plus · MVP3 · Wideout · HTS · Defender",
             "image": None,
             "color": "from-red-700 to-red-900",
         },
         "Buyers Snow Dogg": {
-            "rank": "#2 by sales — $270K last year",
-            "tagline": "All-stainless construction, factory-direct support, our fastest-growing brand.",
+            "rank": "Stainless & steel plows",
+            "tagline": "All-stainless construction and factory-direct support.",
             "lineup": "VX · MD · EX · HD · XP series",
             "image": None,
             "color": "from-emerald-700 to-emerald-900",
         },
         "Buyer Products": {
-            "rank": "#3 by sales — $200K last year",
+            "rank": "Spreaders & plow parts",
             "tagline": "SaltDogg spreaders, plow harnesses, cutting edges, controllers — the parts shop that keeps your route running.",
             "lineup": "SaltDogg spreaders · Plow parts · Harnesses",
             "image": None,
             "color": "from-blue-700 to-blue-900",
         },
         "Meyer Products": {
-            "rank": "#4 — Parts & smaller-truck coverage",
+            "rank": "Plows & parts",
             "tagline": "Drive Pro, Super V2, EZ Plus.  Strong mid-size truck coverage and a deep parts catalog.",
             "lineup": "Super V2 · Lot Pro · XLS · Drive Pro · EZ Plus",
             "image": None,

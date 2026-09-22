@@ -1,13 +1,14 @@
 """Internal insights endpoints — competitive landscape, etc.
 
-These are admin-leaning informational endpoints, not customer-facing.
-Phase 1.5 will gate behind `require_admin` once the admin role is fully
-wired (currently the route is open since there's no PII).
+These are internal endpoints, not customer-facing. The competitor scorecard
+is Titan-era internal analysis, so it is admin-only (2026-09-22, launch audit).
 """
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+
+from app.dependencies import require_admin
 
 from app.services.competitor_audit import (
     average_score,
@@ -17,7 +18,7 @@ from app.services.competitor_audit import (
 )
 
 
-router = APIRouter(prefix="/api/insights", tags=["insights"])
+router = APIRouter(prefix="/api/insights", tags=["insights"], dependencies=[Depends(require_admin)])
 
 
 @router.get("/competitors")

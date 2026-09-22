@@ -161,8 +161,10 @@ def _doc_for_product(
         "in_stock": in_stock,
         "stock_total": int(stock_total),
         # stock_score: in-stock items get a baseline of 100; OOS get 0.
-        # Within the same status, more stock = slightly higher score.
-        "stock_score": 100.0 + min(50.0, stock_total * 0.5) if in_stock else 0.0,
+        # Within the same status, more stock = slightly higher score, and a
+        # product with a photo outranks one without (+60, larger than the
+        # 0-50 stock spread) -- launch audit 2026-09-22.
+        "stock_score": (100.0 + min(50.0, stock_total * 0.5) if in_stock else 0.0) + (60.0 if image_url else 0.0),
         "is_hidden": bool(p.is_hidden),
         "is_for_sale": bool(p.is_for_sale),
         "cta_mode": str(p.cta_mode.value) if hasattr(p.cta_mode, "value") else str(p.cta_mode),

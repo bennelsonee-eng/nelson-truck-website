@@ -163,13 +163,15 @@ class OrderSummary(BaseModel):
 
 
 async def _next_web_order_number(db: AsyncSession) -> str:
-    """Generate a unique web order number: TTW + zero-padded sequence.
+    """Generate a unique web order number: NTW + zero-padded sequence.
 
     Uses MAX(id)+1 over the order table — fine for Phase 1 throughput. Once
     we're posting >1 order per second we'll switch to a Postgres sequence.
     """
     last_id = (await db.execute(select(func.max(Order.id)))).scalar() or 0
-    return f"TTW{(last_id + 1):07d}"
+    # NTW = Nelson Truck Web. The clone kept Titan's "TTW" until 2026-09-22;
+    # no Nelson web orders existed yet, so nothing needed renumbering.
+    return f"NTW{(last_id + 1):07d}"
 
 
 def _addr_or_default(addr: AddressIn | None, fallback: AddressIn) -> AddressIn:

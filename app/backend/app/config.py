@@ -152,6 +152,12 @@ class Settings(BaseSettings):
     error_report_smtp_password: str = ""
     error_report_smtp_from: str = ""
 
+    # --- Customer inquiries (quote requests, contact form) --------------
+    # Where "a customer asked for a quote / contacted us" emails go. Sent on the
+    # issue-alert SMTP channel above when it's configured. Pre-launch this is the
+    # admin inbox; at launch set INQUIRY_ALERT_EMAIL=sales@nelsontruck.com.
+    inquiry_alert_email: str = "admin@nelsontruck.com"
+
     # --- Anonymous-retail customer sentinel for FACS (per addendum 003) ---
     facs_anonymous_retail_customer_id: str = "106415"
 
