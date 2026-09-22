@@ -11769,7 +11769,7 @@ function SnowPlowsLanding() {
         <div className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Shop by brand</h2>
-            <p className="text-sm text-gray-500">Ranked by Nelson's actual last-12-months snow plow sales</p>
+            <p className="text-sm text-gray-500">The plow lines we sell, mount and service in Portland and Kent</p>
           </div>
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -11862,8 +11862,11 @@ function SnowPlowsLanding() {
       <section className="max-w-7xl mx-auto px-6 py-12">
         <div className="flex items-end justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Top sellers — last 12 months</h2>
-            <p className="text-sm text-gray-500">What contractors actually bought from Nelson, ranked by units sold</p>
+            {/* The list behind this section is still the Titan-era snow top-sellers
+                (tte_rcv390), so the copy makes no sales claim until it's rebuilt
+                from Nelson's own sales. */}
+            <h2 className="text-2xl font-bold text-gray-900">Popular plows &amp; parts</h2>
+            <p className="text-sm text-gray-500">Ready for the season — pick up in Portland or Kent</p>
           </div>
           <Link to="/catalog?category_top=Truck+Equipment&category_path=Truck+Equipment%3ESnow+Plows%2FSpreaders" className="text-sm text-red-700 hover:underline">All snow products →</Link>
         </div>
