@@ -148,3 +148,7 @@ discovery/manufacturer_data/html/
 discovery/manufacturer_data/dal_candidates/
 discovery/manufacturer_data/rugby_candidates/
 discovery/manufacturer_data/*_backup_*.json
+
+# Hand-made backups of the secrets file (e.g. app/.env.bak.202609201745) -- never commit
+.env.bak*
+*.env.bak*
