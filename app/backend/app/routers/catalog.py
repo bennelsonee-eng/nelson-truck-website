@@ -167,7 +167,7 @@ async def featured_pickup(
             Brand.is_active == True,  # noqa: E712
         )
         .order_by(has_image.desc(), price_sq.c.price.desc().nulls_last(), pickup_stock_sq.c.qty.desc(), Product.name.asc())
-        .limit(limit * 12)
+        .limit(limit * 30)
     )).all()
 
     def _showcase_name(name: str | None) -> bool:
@@ -194,10 +194,14 @@ async def featured_pickup(
         picked.append(row)
         if len(picked) >= limit:
             break
-    if len(picked) < limit:  # thin pool: fall back to the plain ranking, still de-duplicated
+    # Thin pool: first drop the per-brand cap (names still have to read well),
+    # and only then fall back to anything not already shown.
+    for strict in (True, False):
+        if len(picked) >= limit:
+            break
         for row in rows:
             key = (row[0].name or "").strip().lower()
-            if row in picked or key in seen_names:
+            if row in picked or key in seen_names or (strict and not _showcase_name(row[0].name)):
                 continue
             seen_names.add(key)
             picked.append(row)
