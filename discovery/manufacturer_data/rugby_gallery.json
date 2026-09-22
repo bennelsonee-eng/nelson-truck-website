@@ -1,0 +1,86 @@
+{
+ "https://www.rugbymfg.com/products/eliminator/": [],
+ "https://www.rugbymfg.com/products/eliminator-medium-duty/ + https://www.rugbymfg.com/products/titan-dump-bodies/ + https://www.rugbymfg.com/products/contractor-dump-bodies/": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated-2.png",
+   "w": 2560,
+   "h": 1708
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated-3.png",
+   "w": 2560,
+   "h": 1920
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/titan-bodies-rugby.jpg",
+   "w": 600,
+   "h": 330
+  }
+ ],
+ "https://www.rugbymfg.com/products/rancher-bodies/": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-1.jpeg",
+   "w": 1333,
+   "h": 1000
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-3.jpeg",
+   "w": 1778,
+   "h": 1000
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-4.jpeg",
+   "w": 1778,
+   "h": 1000
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-5.jpeg",
+   "w": 1333,
+   "h": 1000
+  }
+ ],
+ "https://www.rugbymfg.com/products/landscape-uni-body/": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/2.png",
+   "w": 2400,
+   "h": 1800
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/5.png",
+   "w": 2400,
+   "h": 1800
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/6.png",
+   "w": 2400,
+   "h": 1800
+  }
+ ],
+ "https://www.rugbymfg.com/products/new-vari-class-platform-line/": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Solid-1-scaled.jpg",
+   "w": 2560,
+   "h": 1706
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Solid-5-scaled.jpg",
+   "w": 2560,
+   "h": 1707
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Stake-4-scaled.jpg",
+   "w": 2560,
+   "h": 1630
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Vented-5-scaled.jpg",
+   "w": 2560,
+   "h": 1707
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Vented-8-scaled.jpg",
+   "w": 2560,
+   "h": 1704
+  }
+ ]
+}

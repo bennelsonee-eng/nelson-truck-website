@@ -1,0 +1,275 @@
+{
+ "eliminator": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Advanced-NW-Eliminator.jpg",
+   "w": 1390,
+   "h": 1181,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__Advanced-NW-Eliminator.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-LP_Green.jpg",
+   "w": 2352,
+   "h": 1568,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__Eliminator-LP_Green.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated.png",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGBA",
+   "file": "rugby_candidates/eliminator__Eliminator-Medium-Duty-Isolated.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated-2.png",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGBA",
+   "file": "rugby_candidates/eliminator__Eliminator-Medium-Duty-Isolated-2.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated-3.png",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGBA",
+   "file": "rugby_candidates/eliminator__Eliminator-Medium-Duty-Isolated-3.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/MDI-Red-Eliminator-2-scaled.jpg",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__MDI-Red-Eliminator-2-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/North-Central-Bus-SS-3-scaled.jpg",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__North-Central-Bus-SS-3-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/North-Central-Snow-_-Ice-2-scaled.jpg",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__North-Central-Snow-_-Ice-2-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Stahl-SS-Eliminator.jpg",
+   "w": 640,
+   "h": 480,
+   "mode": "RGB",
+   "file": "rugby_candidates/eliminator__Stahl-SS-Eliminator.jpg"
+  }
+ ],
+ "eliminator_medium_duty": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/10/Eliminator-Medium-Duty-Isolated-resized.png",
+   "w": 600,
+   "h": 330,
+   "mode": "RGBA",
+   "file": "rugby_candidates/eliminator_medium_duty__Eliminator-Medium-Duty-Isolated-resized.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/10/Eliminator-Medium-Duty-Isolated-2-e1663339401394-resized.png",
+   "w": 600,
+   "h": 400,
+   "mode": "RGBA",
+   "file": "rugby_candidates/eliminator_medium_duty__Eliminator-Medium-Duty-Isolated-2-e1663339401394-resized.png"
+  }
+ ],
+ "titan_dump_bodies": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Dejana-UPfit-for-Auto-Saver-Ford-Titan-10_-5-7-YD.jpg",
+   "w": 1280,
+   "h": 960,
+   "mode": "RGB",
+   "file": "rugby_candidates/titan_dump_bodies__Dejana-UPfit-for-Auto-Saver-Ford-Titan-10_-5-7-YD.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Rugby-Titan-10_-Dejana-3-scaled.jpg",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGB",
+   "file": "rugby_candidates/titan_dump_bodies__Rugby-Titan-10_-Dejana-3-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/titan-bodies-rugby.jpg",
+   "w": 600,
+   "h": 330,
+   "mode": "RGB",
+   "file": "rugby_candidates/titan_dump_bodies__titan-bodies-rugby.jpg"
+  }
+ ],
+ "contractor_dump_bodies": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Main-Photo-scaled.jpeg",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGB",
+   "file": "rugby_candidates/contractor_dump_bodies__Main-Photo-scaled.jpeg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/North-Central-Bus-Rugby-Contractor-2-scaled.jpeg",
+   "w": 2560,
+   "h": 1920,
+   "mode": "RGB",
+   "file": "rugby_candidates/contractor_dump_bodies__North-Central-Bus-Rugby-Contractor-2-scaled.jpeg"
+  }
+ ],
+ "rancher_bodies": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-1.jpeg",
+   "w": 1333,
+   "h": 1000,
+   "mode": "RGB",
+   "file": "rugby_candidates/rancher_bodies__Rancher-Photo-1.jpeg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-2.jpeg",
+   "w": 1333,
+   "h": 1000,
+   "mode": "RGB",
+   "file": "rugby_candidates/rancher_bodies__Rancher-Photo-2.jpeg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-3.jpeg",
+   "w": 1778,
+   "h": 1000,
+   "mode": "RGB",
+   "file": "rugby_candidates/rancher_bodies__Rancher-Photo-3.jpeg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-4.jpeg",
+   "w": 1778,
+   "h": 1000,
+   "mode": "RGB",
+   "file": "rugby_candidates/rancher_bodies__Rancher-Photo-4.jpeg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-5.jpeg",
+   "w": 1333,
+   "h": 1000,
+   "mode": "RGB",
+   "file": "rugby_candidates/rancher_bodies__Rancher-Photo-5.jpeg"
+  }
+ ],
+ "landscape_uni_body": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/2.png",
+   "w": 2400,
+   "h": 1800,
+   "mode": "P",
+   "file": "rugby_candidates/landscape_uni_body__2.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/5.png",
+   "w": 2400,
+   "h": 1800,
+   "mode": "P",
+   "file": "rugby_candidates/landscape_uni_body__5.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/6.png",
+   "w": 2400,
+   "h": 1800,
+   "mode": "P",
+   "file": "rugby_candidates/landscape_uni_body__6.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/DT190521-32-scaled.jpg",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGB",
+   "file": "rugby_candidates/landscape_uni_body__DT190521-32-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/DT190708-59-scaled.jpg",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGB",
+   "file": "rugby_candidates/landscape_uni_body__DT190708-59-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/DT191308-36-scaled.jpg",
+   "w": 2560,
+   "h": 1708,
+   "mode": "RGB",
+   "file": "rugby_candidates/landscape_uni_body__DT191308-36-scaled.jpg"
+  }
+ ],
+ "new_vari_class_platform_line": [
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/5.png",
+   "w": 615,
+   "h": 337,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__5.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/6.png",
+   "w": 615,
+   "h": 337,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__6.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/8.png",
+   "w": 615,
+   "h": 337,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__8.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/9.png",
+   "w": 615,
+   "h": 337,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__9.png"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Solid-1-scaled.jpg",
+   "w": 2560,
+   "h": 1706,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Solid-1-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Solid-5-scaled.jpg",
+   "w": 2560,
+   "h": 1707,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Solid-5-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Stake-2-scaled.jpg",
+   "w": 2560,
+   "h": 1707,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Stake-2-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Stake-4-scaled.jpg",
+   "w": 2560,
+   "h": 1630,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Stake-4-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Vented-5-scaled.jpg",
+   "w": 2560,
+   "h": 1707,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Vented-5-scaled.jpg"
+  },
+  {
+   "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Vented-8-scaled.jpg",
+   "w": 2560,
+   "h": 1704,
+   "mode": "RGB",
+   "file": "rugby_candidates/new_vari_class_platform_line__Vented-8-scaled.jpg"
+  }
+ ]
+}

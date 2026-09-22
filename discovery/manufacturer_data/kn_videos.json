@@ -1,0 +1,107 @@
+{
+ "_about": "Knapheide walkaround videos for our truck bodies. Each lives on Knapheide's official YouTube channel only (none are self-hosted on knapheide.com); `youtube_id` is provenance, never a link. The site serves `file` from app/backend/static/product-videos/knapheide.com/. Customer-story videos are deliberately absent (Ben 2026-09-20: no customer stories on our site). Mechanic's Bodies has no video: Knapheide's mechanics tours are aluminum KMT1/KMS16 trucks, ours is the steel KMT1.",
+ "videos": [
+  {
+   "file": "knapheide-steel-service-body-walkaround.mp4",
+   "title": "Steel Service Body walkaround",
+   "youtube_id": "FRdehAzoqhM",
+   "youtube_title": "Knapheide Steel Service Body",
+   "post": "https://www.knapheide.com/blog/knapheide-steel-service-truck-walkaround-video/",
+   "products": [
+    296467,
+    296436,
+    296492
+   ]
+  },
+  {
+   "file": "knapheide-11ft-steel-service-body-walkaround.mp4",
+   "title": "11 ft Steel Service Body walkaround",
+   "youtube_id": "2P3HVsNuHew",
+   "youtube_title": "11 Foot Steel Service Body - 2023",
+   "post": "https://www.knapheide.com/blog/knapheide-steel-service-truck-walkaround-video/",
+   "products": [
+    296467,
+    296436,
+    296492
+   ]
+  },
+  {
+   "file": "knapheide-aluminum-service-body-walkaround.mp4",
+   "title": "Aluminum Service Body walkaround",
+   "youtube_id": "PRhdh78VZ2A",
+   "youtube_title": "Knapheide Aluminum Service Body",
+   "post": "https://www.knapheide.com/blog/knapheide-aluminum-service-truck-walkaround-video/",
+   "products": [
+    296437,
+    296469,
+    296491
+   ]
+  },
+  {
+   "file": "knapheide-aluminum-service-body-walkaround-2026.mp4",
+   "title": "Aluminum Service Body walkaround (2026)",
+   "youtube_id": "btt7W0zurVU",
+   "youtube_title": "Aluminum Service Body Product Walk Around: NTEA 2026",
+   "post": "https://www.knapheide.com/blog/aluminum-service-truck-tour-2026/",
+   "products": [
+    296437,
+    296469,
+    296491
+   ]
+  },
+  {
+   "file": "knapheide-aluminum-service-body-telescopic-roof.mp4",
+   "title": "Aluminum Service Body with telescopic sliding roof",
+   "youtube_id": "me_9BpKqjbs",
+   "youtube_title": "Knapheide Aluminum Service Body with Telescopic Sliding Roof",
+   "post": "https://www.knapheide.com/blog/knapheide-aluminum-service-truck-walkaround-video/",
+   "products": [
+    296437,
+    296469,
+    296491
+   ]
+  },
+  {
+   "file": "knapheide-aluminum-tall-body-walkaround.mp4",
+   "title": "Aluminum Tall Body walkaround",
+   "youtube_id": "pyVfm2boOPY",
+   "youtube_title": "Knapheide Aluminum Tall Body",
+   "post": "https://www.knapheide.com/blog/knapheide-aluminum-service-truck-walkaround-video/",
+   "products": [
+    296437,
+    296469,
+    296491
+   ]
+  },
+  {
+   "file": "knapheide-steel-kuv-walkaround.mp4",
+   "title": "Steel KUV walkaround",
+   "youtube_id": "gIY6cCrUr_M",
+   "youtube_title": "Knapheide Steel KUV",
+   "post": "https://www.knapheide.com/blog/knapheide-steel-kuv-van-walkaround-video/",
+   "products": [
+    296471
+   ]
+  },
+  {
+   "file": "knapheide-pgtd-gooseneck-body-walkaround.mp4",
+   "title": "PGTD Gooseneck Body walkaround",
+   "youtube_id": "Jkam4WHEMXY",
+   "youtube_title": "Knapheide  PGTD Gooseneck Body",
+   "post": "https://www.knapheide.com/blog/knapheide-steel-pgtd-gooseneck-truck-walkaround-video/",
+   "products": [
+    296472
+   ]
+  },
+  {
+   "file": "knapheide-pgtd-gooseneck-walkaround-2.mp4",
+   "title": "PGTD Gooseneck walkaround",
+   "youtube_id": "z9zmWvAgAiU",
+   "youtube_title": "Knapheide PGTD Gooseneck",
+   "post": "https://www.knapheide.com/blog/knapheide-steel-pgtd-gooseneck-truck-walkaround-video/",
+   "products": [
+    296472
+   ]
+  }
+ ]
+}

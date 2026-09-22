@@ -141,3 +141,10 @@ app/backend/static/
 *.log
 *.err
 *.out
+
+# Manufacturer truck-body harvest (ported from Titan 2026-09-21): cached HTML and
+# candidate images are re-fetchable; per-run DB backups stay on the machine that ran them
+discovery/manufacturer_data/html/
+discovery/manufacturer_data/dal_candidates/
+discovery/manufacturer_data/rugby_candidates/
+discovery/manufacturer_data/*_backup_*.json

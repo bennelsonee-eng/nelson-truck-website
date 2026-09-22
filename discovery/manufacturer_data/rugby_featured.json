@@ -1,0 +1,27 @@
+{
+ "https://www.rugbymfg.com/products/eliminator/": {
+  "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-LP_Green.jpg",
+  "w": 2352,
+  "h": 1568
+ },
+ "https://www.rugbymfg.com/products/eliminator-medium-duty/ + https://www.rugbymfg.com/products/titan-dump-bodies/ + https://www.rugbymfg.com/products/contractor-dump-bodies/": {
+  "url": "https://www.rugbymfg.com/wp-content/uploads/2021/03/Eliminator-Medium-Duty-Isolated.png",
+  "w": 2560,
+  "h": 1708
+ },
+ "https://www.rugbymfg.com/products/rancher-bodies/": {
+  "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Rancher-Photo-2.jpeg",
+  "w": 1333,
+  "h": 1000
+ },
+ "https://www.rugbymfg.com/products/landscape-uni-body/": {
+  "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/DT191308-36-scaled.jpg",
+  "w": 2560,
+  "h": 1708
+ },
+ "https://www.rugbymfg.com/products/new-vari-class-platform-line/": {
+  "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/Stake-2-scaled.jpg",
+  "w": 2560,
+  "h": 1707
+ }
+}

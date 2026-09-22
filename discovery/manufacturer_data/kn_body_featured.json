@@ -1,0 +1,322 @@
+{
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgte/": {
+  "title": "Steel PGTE Gooseneck Body",
+  "featured_media": 49696,
+  "url": "https://www.knapheide.com/wp-content/uploads/2025/05/pgte-gooseneck-body-v1.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "pgte-gooseneck-body-v1"
+ },
+ "https://www.knapheide.com/mechanics-trucks/aluminum-kmt1/": {
+  "title": "Aluminum KMT1 Mechanics Truck",
+  "featured_media": 25274,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kmt1-mechanics-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kmt1-mechanics-truck"
+ },
+ "https://www.knapheide.com/mechanics-trucks/aluminum-kms16/": {
+  "title": "Aluminum KMS16 Mechanics Service Truck",
+  "featured_media": 25272,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kms16-mechanics-service-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kms16-mechanics-service-truck"
+ },
+ "https://www.knapheide.com/kuv-vans/aluminum/": {
+  "title": "Aluminum KUV Van",
+  "featured_media": 25295,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/aluminum-kuvcc-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-kuvcc-body"
+ },
+ "https://www.knapheide.com/platform-bodies/aluminum-landscaper/": {
+  "title": "Aluminum Landscaper Platform Body",
+  "featured_media": 26787,
+  "url": "https://www.knapheide.com/wp-content/uploads/2021/02/aluminum-landscaper-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-landscaper-platform-body"
+ },
+ "https://www.knapheide.com/service-bodies/steel/": {
+  "title": "Steel Service Body",
+  "featured_media": 26588,
+  "url": "https://www.knapheide.com/wp-content/uploads/2024/02/steel-service-body-v2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "steel-service-body-v2"
+ },
+ "https://www.knapheide.com/service-bodies/aluminum/": {
+  "title": "Aluminum Service Body",
+  "featured_media": 26589,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/aluminum-service-body-v2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-service-body-v2"
+ },
+ "https://www.knapheide.com/service-bodies/combo/": {
+  "title": "Combo Body",
+  "featured_media": 25262,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/combo-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "combo-body-2"
+ },
+ "https://www.knapheide.com/kuv-vans/steel/": {
+  "title": "Steel KUV Van",
+  "featured_media": 26591,
+  "url": "https://www.knapheide.com/wp-content/uploads/2024/02/steel-kuv-body-v2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "steel-kuv-body-v2"
+ },
+ "https://www.knapheide.com/enclosed-service-bodies/steel-kuvcc/": {
+  "title": "Steel KUVcc Enclosed Service Body",
+  "featured_media": 25284,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/steel-kuvcc-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "steel-kuvcc-body"
+ },
+ "https://www.knapheide.com/enclosed-service-bodies/aluminum-kuvcc/": {
+  "title": "Aluminum KUVcc Enclosed Service Body",
+  "featured_media": 25295,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/aluminum-kuvcc-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-kuvcc-body"
+ },
+ "https://www.knapheide.com/platform-bodies/aluminum/": {
+  "title": "Aluminum Platform Body",
+  "featured_media": 25257,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/aluminum-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/value-master-x/": {
+  "title": "Value-Master X Platform Body",
+  "featured_media": 25287,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/value-master-x-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "value-master-x-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/heavy-hauler-junior/": {
+  "title": "Heavy-Hauler Junior Platform Body",
+  "featured_media": 25269,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/heavy-hauler-junior-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "heavy-hauler-junior-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/cargo-hauler/": {
+  "title": "Cargo-Hauler Platform Body",
+  "featured_media": 25261,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/cargo-hauler-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "cargo-hauler-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/heavy-hauler/": {
+  "title": "Heavy-Hauler Platform Body",
+  "featured_media": 25270,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/heavy-hauler-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "heavy-hauler-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/steel-landscaper/": {
+  "title": "Steel Landscaper Platform Body",
+  "featured_media": 25285,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/steel-landscaper-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "steel-landscaper-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/contractor/": {
+  "title": "Contractor Platform Body",
+  "featured_media": 25296,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/contractor-platform-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "contractor-platform-body"
+ },
+ "https://www.knapheide.com/platform-bodies/concrete/": {
+  "title": "Concrete Platform Body",
+  "featured_media": 26592,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/concrete-platform-body-v2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "concrete-platform-body-v2"
+ },
+ "https://www.knapheide.com/gooseneck-bodies/aluminum-pgtb/": {
+  "title": "Aluminum PGTB Gooseneck Body",
+  "featured_media": 25258,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/aluminum-ptgb-gooseneck-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "aluminum-ptgb-gooseneck-body"
+ },
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtb/": {
+  "title": "Steel PGTB Gooseneck Body",
+  "featured_media": 25279,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/pgtb-gooseneck-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "pgtb-gooseneck-body"
+ },
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtc/": {
+  "title": "Steel PGTC Gooseneck Body",
+  "featured_media": 25280,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/pgtc-gooseneck-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "pgtc-gooseneck-body"
+ },
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtd/": {
+  "title": "Steel PGTD Gooseneck Body",
+  "featured_media": 25281,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/pgtd-gooseneck-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "pgtd-gooseneck-body"
+ },
+ "https://www.knapheide.com/dump-bodies/drop-side/": {
+  "title": "Drop Side Dump Body",
+  "featured_media": 25265,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/drop-side-dump-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "drop-side-dump-body"
+ },
+ "https://www.knapheide.com/dump-bodies/fixed-side/": {
+  "title": "Fixed Side Dump Body",
+  "featured_media": 25266,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/fixed-side-dump-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "fixed-side-dump-body"
+ },
+ "https://www.knapheide.com/dump-bodies/heavy-drop-side-contractor/": {
+  "title": "Heavy Drop Side Contractor Dump Body",
+  "featured_media": 26590,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/heavy-drop-side-contractor-dump-body-v2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "heavy-drop-side-contractor-dump-body-v2"
+ },
+ "https://www.knapheide.com/saw-trucks/": {
+  "title": "Saw Trucks",
+  "featured_media": 25282,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/saw-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "saw-body"
+ },
+ "https://www.knapheide.com/service-bodies/crane/": {
+  "title": "Crane Service Body",
+  "featured_media": 25264,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/crane-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "crane-body"
+ },
+ "https://www.knapheide.com/mechanics-trucks/steel-kmt1/": {
+  "title": "Steel KMT1 Mechanics Truck",
+  "featured_media": 25274,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kmt1-mechanics-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kmt1-mechanics-truck"
+ },
+ "https://www.knapheide.com/mechanics-trucks/steel-kmt2/": {
+  "title": "Steel KMT2 Mechanics Truck",
+  "featured_media": 25275,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kmt2-mechanics-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kmt2-mechanics-truck"
+ },
+ "https://www.knapheide.com/mechanics-trucks/steel-kmt3/": {
+  "title": "Steel KMT3 Mechanics Truck",
+  "featured_media": 25276,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kmt3-mechanics-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kmt3-mechanics-truck"
+ },
+ "https://www.knapheide.com/mechanics-trucks/steel-kms16/": {
+  "title": "Steel KMS16 Mechanics Service Truck",
+  "featured_media": 25272,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kms16-mechanics-service-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kms16-mechanics-service-truck"
+ },
+ "https://www.knapheide.com/mechanics-trucks/steel-kms30/": {
+  "title": "Steel KMS30 Mechanics Service Truck",
+  "featured_media": 25273,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/kms30-mechanics-service-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kms30-mechanics-service-truck"
+ },
+ "https://www.knapheide.com/fuel-lube-trucks/klt/": {
+  "title": "KLT Lube Truck",
+  "featured_media": 27288,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/klt-lube-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "klt-lube-body"
+ },
+ "https://www.knapheide.com/fuel-lube-trucks/kflt1/": {
+  "title": "KFLT1 Fuel Lube Truck",
+  "featured_media": 27290,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/kflt1-fuel-lube-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kflt1-fuel-lube-truck-3"
+ },
+ "https://www.knapheide.com/fuel-lube-trucks/kflt2/": {
+  "title": "KFLT2 Fuel Lube Truck",
+  "featured_media": 27289,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/11/kflt2-fuel-lube-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kflt2-fuel-lube-body"
+ },
+ "https://www.knapheide.com/water-trucks/kwt2/": {
+  "title": "KWT2 Water Truck",
+  "featured_media": 27293,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/10/kwt2-water-truck.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kwt2-water-truck-2"
+ },
+ "https://www.knapheide.com/water-trucks/kwt4/": {
+  "title": "KWT4 Water Truck",
+  "featured_media": 27294,
+  "url": "https://www.knapheide.com/wp-content/uploads/2019/10/kwt4-water-truck-2.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "kwt4-water-truck-2"
+ },
+ "https://www.knapheide.com/forestry-bodies/": {
+  "title": "Forestry Bodies",
+  "featured_media": 25267,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/forestry-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "forestry-body-2"
+ },
+ "https://www.knapheide.com/service-bodies/line/": {
+  "title": "Line Service Body",
+  "featured_media": 25278,
+  "url": "https://www.knapheide.com/wp-content/uploads/2023/12/line-body.jpg",
+  "w": 2000,
+  "h": 1500,
+  "slug": "line-body-2"
+ }
+}

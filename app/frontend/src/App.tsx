@@ -369,6 +369,18 @@ interface OrderSummary {
   fulfillment_count: number
 }
 
+// One manufacturer spec table. A "group" row is a full-width heading such as
+// `56" CA, Dual Wheel - 2017 or later Ford` that the model rows below it belong to.
+type SpecTableRow =
+  | { type: 'row'; cells: string[] }
+  | { type: 'group'; label: string }
+interface SpecTable {
+  title: string | null
+  headers: string[]
+  rows: SpecTableRow[]
+  note: string | null
+}
+
 interface ProductDetail {
   id: number
   sku: string
@@ -402,6 +414,10 @@ interface ProductDetail {
   attributes: { key: string; value: string | null; uom: string | null }[]
   // Downloadable resources (install guides, datasheets, parts sheets).
   resources?: { kind: string; url: string; title: string | null }[]
+  // Manufacturer spec matrices (Knapheide truck bodies: model x length x
+  // height x width, grouped under cab-to-axle headings). Rendered as real
+  // tables on the Specs tab because key/value can't express them.
+  spec_tables?: SpecTable[]
   // Kit / package bill-of-materials (WeatherGuard van packages). Each
   // component links to its own PDP when `sku` resolves to a catalog product.
   kit?: {
@@ -1641,12 +1657,21 @@ const MEGA_SECTIONS: MegaSection[] = [
     label: "Truck Bodies",
     slug: "truck-bodies",
     sub_sections: [
+      // Body types follow Knapheide's category list, rebuilt 2026-09-21 by
+      // restructure_truck_body_categories.py (ported from Titan): Service /
+      // Utility became Service Bodies, Flatbeds became Platform Bodies, Stake
+      // Bodies was retired, Landscape and Gooseneck got their own. The rarer
+      // types (KUV, Forestry, Saw) show as tiles on the All Truck Bodies page.
       { name: "All Truck Bodies", category_path: "Truck Equipment > Truck Bodies" },
-      { name: "Service / Utility Bodies", category_path: "Truck Equipment > Truck Bodies > Service / Utility Bodies" },
+      { name: "Service Bodies", category_path: "Truck Equipment > Truck Bodies > Service Bodies" },
+      { name: "Platform Bodies", category_path: "Truck Equipment > Truck Bodies > Platform Bodies" },
       { name: "Dump Bodies", category_path: "Truck Equipment > Truck Bodies > Dump Bodies" },
-      { name: "Flatbeds", category_path: "Truck Equipment > Truck Bodies > Flatbeds" },
-      { name: "Stake Bodies", category_path: "Truck Equipment > Truck Bodies > Stake Bodies" },
+      { name: "Landscape Bodies", category_path: "Truck Equipment > Truck Bodies > Landscape Bodies" },
+      { name: "Gooseneck Bodies", category_path: "Truck Equipment > Truck Bodies > Gooseneck Bodies" },
+      { name: "Enclosed Service Bodies", category_path: "Truck Equipment > Truck Bodies > Enclosed Service Bodies" },
+      { name: "Mechanics Trucks", category_path: "Truck Equipment > Truck Bodies > Mechanics Trucks" },
       { name: "Van / Box Bodies", category_path: "Truck Equipment > Truck Bodies > Van / Box Bodies" },
+      { name: "Body Parts & Accessories", category_path: "Truck Equipment > Truck Bodies > Parts & Accessories" },
       { name: "Dump Beds & Hoists", category_path: "Utility Truck Equipment > Truck Dump Beds and Accessories" },
     ],
   },
@@ -2913,6 +2938,105 @@ function LikeProductsRail({ sku, sourceOOS = false }: { sku: string; sourceOOS?:
                 </div>
               </div>
             </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+
+type BodyPartItem = {
+  sku: string
+  name: string
+  brand: string | null
+  image_url: string | null
+  in_stock: boolean
+  stock_total: number
+  price: number | null
+}
+type BodyPartGroup = { name: string; items: BodyPartItem[] }
+
+// Groups open on arrival: the ones a buyer of this body looks for first.
+// Lighting, glass, fuel fill and hardware start folded -- 30-odd bulbs and
+// whiz nuts would otherwise bury the bumpers and install kits.
+const BODY_PART_GROUPS_OPEN = new Set([
+  'Sizes & configurations', 'Bumpers & hitches', 'Mounting & installation kits', 'Racks, bulkheads & sides',
+])
+
+/** "Sizes & parts for this body" on a truck-body page. Owner ask 2026-09-21:
+ *  the Knapheide parts that were filed on Truck Bodies are listed underneath
+ *  the body they fit, and the sizes we stock under the model they belong to.
+ *  Prices show for retail only (see the endpoint); other channels get the
+ *  part page, which carries their own price. */
+function BodyPartsAndOptions({ sku }: { sku: string }) {
+  const [groups, setGroups] = useState<BodyPartGroup[]>([])
+  const [showPrices, setShowPrices] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetch(`/api/catalog/products/${encodeURIComponent(sku)}/accessories`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive) return
+        setGroups(d?.groups || [])
+        setShowPrices(!!d?.show_prices)
+      })
+      .catch(() => alive && setGroups([]))
+    return () => { alive = false }
+  }, [sku])
+  if (groups.length === 0) return null
+  const total = groups.reduce((n, g) => n + g.items.length, 0)
+  return (
+    <section className="border-t" aria-labelledby="body-parts-heading">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h2 id="body-parts-heading" className="text-lg font-bold text-gray-900">Sizes &amp; parts for this body</h2>
+        <p className="text-xs text-gray-500 mt-1 mb-4">
+          {total} items that fit this body. {showPrices ? '' : 'Open a part to see your price.'}
+        </p>
+        <div className="space-y-3">
+          {groups.map((g) => (
+            <details key={g.name} open={BODY_PART_GROUPS_OPEN.has(g.name)} className="group rounded border border-gray-200 bg-white">
+              <summary className="cursor-pointer list-none flex items-center justify-between px-4 py-3 hover:bg-gray-50">
+                <span className="flex items-center gap-2 font-semibold text-gray-900">
+                  <span aria-hidden className="text-gray-400 transition group-open:rotate-90">▸</span>
+                  {g.name}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {g.items.length} · {g.items.filter((i) => i.in_stock).length} in stock
+                </span>
+              </summary>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 px-4 pb-4">
+                {g.items.map((it) => (
+                  <Link
+                    key={it.sku}
+                    to={`/product/${it.sku}`}
+                    className="flex flex-col bg-white rounded border border-gray-100 overflow-hidden hover:shadow-[0_4px_10px_rgba(0,0,0,0.1)] transition-shadow"
+                  >
+                    <div className="aspect-square bg-white flex items-center justify-center overflow-hidden">
+                      {it.image_url ? (
+                        <img src={it.image_url} alt="" loading="lazy" style={{ mixBlendMode: 'multiply' }} className="w-[82%] h-[82%] object-contain" />
+                      ) : (
+                        <div className="text-[10px] uppercase text-gray-300">No image</div>
+                      )}
+                    </div>
+                    <div className="p-2 border-t border-gray-100 flex-1 flex flex-col">
+                      <div className="font-mono text-[10px] text-gray-500 truncate">{formatPartNumber(it.sku, it.brand)}</div>
+                      <div className="text-xs text-gray-900 mt-0.5 line-clamp-2 leading-snug">{it.name}</div>
+                      <div className="mt-auto pt-1.5 flex items-center justify-between text-[11px]">
+                        {it.in_stock ? (
+                          <span className="text-green-700 font-semibold">{it.stock_total} in stock</span>
+                        ) : (
+                          <span className="text-gray-500">Special order</span>
+                        )}
+                        {showPrices && it.price != null && (
+                          <span className="text-gray-900 font-bold">${it.price.toFixed(2)}</span>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </details>
           ))}
         </div>
       </div>
@@ -5416,6 +5540,10 @@ function ProductDetail() {
       {/* PDP info tabs */}
       <ProductDetailTabs data={data} sku={sku!} />
 
+      {/* Truck bodies: the stocked sizes of this model and the parts that fit it
+          (product_accessory). Renders nothing for products with none. */}
+      <BodyPartsAndOptions sku={sku!} />
+
       {/* Like-products rail — "Other parts for your truck" when YMM is set,
           "Like this part" when not. When the source is OOS, the rail headline
           pivots to "Available now" so the customer's first signal on the page
@@ -5437,7 +5565,9 @@ function ProductDetail() {
 // ============================================================================
 
 type ParsedVideo = {
-  provider: 'youtube' | 'vimeo'
+  // 'file' = a video we host ourselves under /static/product-videos/, played
+  // with the browser's own <video> element -- no third-party player at all.
+  provider: 'youtube' | 'vimeo' | 'file'
   id: string
   /** Poster image URL, or null when the provider has no key-free still. */
   thumb: string | null
@@ -5459,6 +5589,12 @@ type ParsedVideo = {
 function parseVideoUrl(raw: string | null | undefined): ParsedVideo | null {
   if (!raw) return null
   const url = raw.trim()
+
+  // Self-hosted: the importer stores a poster frame beside each file with the
+  // same name and a .jpg extension (clip.mp4 -> clip.jpg).
+  if (/^\/static\/product-videos\/.+\.(?:mp4|webm)$/i.test(url)) {
+    return { provider: 'file', id: url, thumb: url.replace(/\.(?:mp4|webm)$/i, '.jpg'), embed: url }
+  }
 
   if (/^https?:\/\/(?:[\w-]+\.)*(?:youtube(?:-nocookie)?\.com|youtu\.be)\//i.test(url)) {
     const m =
@@ -5511,7 +5647,17 @@ function VideoFacade({ video, title }: { video: ParsedVideo; title: string }) {
   return (
     <figure className="m-0">
       <div className="relative aspect-video bg-gray-900 border rounded overflow-hidden">
-        {playing ? (
+        {playing && video.provider === 'file' ? (
+          <video
+            src={video.embed}
+            poster={video.thumb ?? undefined}
+            title={title}
+            className="absolute inset-0 w-full h-full bg-black"
+            controls
+            autoPlay
+            playsInline
+          />
+        ) : playing ? (
           <iframe
             src={video.embed}
             title={title}
@@ -5638,6 +5784,14 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
     const src = fea.length ? fea : all.filter((d) => d.code === 'FAB' && d.text?.trim())
     return src.sort((a, b) => a.sequence - b.sequence)
   })()
+  // OPT rows = optional equipment from the manufacturer's page (truck bodies).
+  // Kept out of `features` on purpose: under a "Features" heading a customer
+  // reads every line as included, and a flip-top compartment or a ladder rack
+  // is something they would be quoted for, not something that comes with it.
+  const options = (data.descriptions ?? [])
+    .filter((d) => d.code === 'OPT' && d.text?.trim())
+    .sort((a, b) => a.sequence - b.sequence)
+  const specTables = data.spec_tables ?? []
   const splitFeature = (text: string): { heading: string | null; body: string } => {
     const parts = text.split(/\n\n+/)
     if (parts.length >= 2) {
@@ -5652,10 +5806,11 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
     dims.height_in !== null ||
     data.freight_class ||
     data.prod_code ||
-    (data.attributes ?? []).length > 0
+    (data.attributes ?? []).length > 0 ||
+    specTables.length > 0
   )
   const hasDescContent = (
-    !!data.description || !!data.extended_description || features.length > 0
+    !!data.description || !!data.extended_description || features.length > 0 || options.length > 0
   )
   // Videos get their own section (click-to-load embeds, see ProductVideos);
   // everything else stays in Documents & Downloads. Before this split a video
@@ -5705,6 +5860,30 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
                   )
                 })}
               </ul>
+            </div>
+          )}
+          {options.length > 0 && (
+            <div className="mt-6 not-prose">
+              <h4 className="font-semibold text-gray-900 mb-1">Available Options</h4>
+              <p className="text-xs text-gray-500 mb-3">
+                Optional equipment — not included with the base body. Ask us about adding any of these.
+              </p>
+              <div className="grid gap-x-6 sm:grid-cols-2">
+                {options.map((o, i) => {
+                  const { heading, body } = splitFeature(o.text)
+                  return heading ? (
+                    <details key={i} className="group border-b border-gray-100 py-2 text-sm">
+                      <summary className="cursor-pointer list-none flex items-start gap-2 text-gray-900 hover:text-red-700">
+                        <span className="mt-0.5 text-gray-400 transition group-open:rotate-90" aria-hidden>▸</span>
+                        <span className="font-medium">{heading}</span>
+                      </summary>
+                      <p className="mt-1 pl-5 text-gray-600 whitespace-pre-line">{body}</p>
+                    </details>
+                  ) : (
+                    <div key={i} className="border-b border-gray-100 py-2 pl-5 text-sm font-medium text-gray-900">{body}</div>
+                  )
+                })}
+              </div>
             </div>
           )}
           {videoResources.length > 0 && <ProductVideos resources={videoResources} />}
@@ -5759,6 +5938,51 @@ function ProductDetailTabs({ data, sku }: { data: ProductDetail; sku: string }) 
                   </dl>
                 </>
               )}
+              {specTables.map((t, ti) => (
+                <div key={ti} className="mt-6">
+                  <h4 className="mb-2 font-semibold text-gray-900">{t.title || 'Models & Dimensions'}</h4>
+                  {/* Wide matrices (up to 11 columns) scroll sideways on a phone
+                      rather than crushing every cell into an unreadable column. */}
+                  <div className="overflow-x-auto rounded border border-gray-200">
+                    <table className="min-w-full text-xs">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          {t.headers.map((h, hi) => (
+                            <th key={hi} scope="col"
+                                className="whitespace-nowrap px-3 py-2 text-left font-semibold text-gray-700">
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {t.rows.map((r, ri) =>
+                          r.type === 'group' ? (
+                            <tr key={ri} className="bg-red-50/60">
+                              <th scope="colgroup" colSpan={t.headers.length}
+                                  className="px-3 py-2 text-left font-semibold text-gray-900">
+                                {r.label}
+                              </th>
+                            </tr>
+                          ) : (
+                            <tr key={ri} className="hover:bg-gray-50">
+                              {t.headers.map((_, ci) => {
+                                const v = r.cells[ci] ?? ''
+                                return (
+                                  <td key={ci} className="whitespace-nowrap px-3 py-1.5 text-gray-800">
+                                    {v || <span className="text-gray-300" aria-label="not offered">—</span>}
+                                  </td>
+                                )
+                              })}
+                            </tr>
+                          ),
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  {t.note && <p className="mt-2 text-xs text-gray-500">{t.note}</p>}
+                </div>
+              ))}
             </>
           ) : (
             <p className="text-gray-500 italic">No specifications on file.</p>

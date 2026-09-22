@@ -50,6 +50,8 @@ from app.models.customer_signals import (
 from app.models.weather_alert import WeatherAlertSubscriber
 from app.models.product_match import ProductMatch, ProductMatchStatus, ProductMatchSource
 from app.models.product_resource import ProductResource, ResourceKind
+from app.models.product_spec_table import ProductSpecTable
+from app.models.product_accessory import ProductAccessory
 from app.models.kit import Kit, KitComponent
 from app.models.catalog_visibility import CatalogOverride, OVERRIDABLE_FIELDS
 from app.models.admin_message import AdminMessage
@@ -161,6 +163,10 @@ __all__ = [
     # Scraped supplementary files (PDFs, videos, manuals, etc.)
     "ProductResource",
     "ResourceKind",
+    # Manufacturer spec matrices (Knapheide model x length x height x width)
+    "ProductSpecTable",
+    # Parts + sized bodies listed underneath a truck body
+    "ProductAccessory",
     # Kit / package bill-of-materials (WeatherGuard van packages)
     "Kit",
     "KitComponent",

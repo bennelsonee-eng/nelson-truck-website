@@ -1,0 +1,412 @@
+{
+ "https://www.rugbymfg.com/products/eliminator-medium-duty/ + https://www.rugbymfg.com/products/titan-dump-bodies/ + https://www.rugbymfg.com/products/contractor-dump-bodies/": {
+  "title": "Eliminator Medium Duty / Titan Dump Bodies / Contractor Dump Bodies",
+  "intro": [
+   "Eliminator Medium Duty: Maximize your payload by matching a Rugby Eliminator Medium Duty dump body with your powerful new cab chassis. The Eliminator Medium Duty has been engineered to haul more when paired with a 22,000 GVWR chassis. Built with a versatile cabshield option, the Eliminator Medium Duty can adapt to fit on any major OEM’s medium duty chassis. Featuring the innvoations and top quality you expect from Rugby, this steel dump body is ready to work for you. These carbon steel units are available in 9′ – 12′ lengths with 20″ side height and 26″ tailgate height.",
+   "Titan Dump Bodies: Rugby® customers have come to expect the high quality and durability with which our bodies are built, and Rugby looks forward to the challenges of producing bodies that meet the needs and high demands of our customers. As a result, we now present our heavy-duty Titan. Featuring a dirt-shedding top rail, 10-degree sloped tailgate, and radius front corner posts, the Titan has a sleek yet strong new look.",
+   "Contractor Dump Bodies: Rugby’s Contractor Bodies offer a sleek style and the high quality and durability that you expect. Rugby’s Contractor Body has convenient fold-down sides for easy loading and un-loading of material and is available in lengths of 12′, 14′ and 16′ with volume capacities ranging from 4-6 cubic yards."
+  ],
+  "features": [
+   {
+    "heading": "Contractor Dump Bodies",
+    "body": "Independently operated double door sides with removable center post\nSingle pin release system to quickly remove center post\nCentrally located quick-release level for fold-down sides\nFully boxed dirt shedding top rails"
+   }
+  ],
+  "options": [
+   {
+    "name": "Titan Dump Bodies: 4-way tailgate with optional coal chute",
+    "description": null
+   },
+   {
+    "name": "Titan Dump Bodies: Optional air tailgate",
+    "description": null
+   }
+  ],
+  "spec_kv": [],
+  "spec_tables": [
+   {
+    "title": "Titan Dump Bodies",
+    "headers": [
+     "Specification",
+     "Titan Dump Bodies"
+    ],
+    "rows": [
+     {
+      "type": "row",
+      "cells": [
+       "Materials",
+       "10 ga Sides; 7 ga Flooring; Also available in stainless steel"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Lengths",
+       "10′ or 12′"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Capacity",
+       "4 – 8 yd3"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Side Heights",
+       "24″ or 30″"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Weight",
+       "1875 – 2500 lbs"
+      ]
+     }
+    ],
+    "note": null
+   },
+   {
+    "title": "Contractor Dump Bodies",
+    "headers": [
+     "Specification",
+     "Contractor Dump Bodies"
+    ],
+    "rows": [
+     {
+      "type": "row",
+      "cells": [
+       "Materials",
+       "12 ga grade 50 steel sides; 10 gauge floor standard on 12’ body length; 7 gauge floor standard on 14’ & 16’ body lengths"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Lengths",
+       "12’3″, 14’3″, 16’3″"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Side heights",
+       "17″"
+      ]
+     },
+     {
+      "type": "row",
+      "cells": [
+       "Weight",
+       "2217-2780 lbs"
+      ]
+     }
+    ],
+    "note": null
+   }
+  ],
+  "spec_note": null,
+  "literature": [
+   {
+    "title": "Eliminator Medium Duty Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2024/06/Eliminator-Medium-Duty_2020_Web-1.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Titan Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/11/Rugby-Titan-Literature-Final.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Titan Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/titan-bodies-rugby-manual.pdf",
+    "kind": "manual"
+   },
+   {
+    "title": "Contractor Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/11/Rugby-Contractor-Literature.pdf",
+    "kind": "brochure"
+   }
+  ],
+  "drawings": []
+ },
+ "https://www.rugbymfg.com/products/eliminator/": {
+  "title": "Eliminator",
+  "og_image": "https://www.rugbymfg.com/wp-content/uploads/2021/03/elimlp-feature2.jpg",
+  "intro": [
+   "Rugby Manufacturing’s Eliminator LP Dump Body is the industry leader in Class 3-5. Featuring a sleek, streamlined style and designed for maximum durability, these units are available in 9′ to 12′ lengths with 12″ and 17″ side height options. The Eliminator LP is available in carbon steel, stainless steel, and aluminum. All models are available with rigid or fold-down sides.",
+   "The Eliminator LP is built with a one-piece floor, dirt shedding sides, a centrally located quick release lever (fold down side models only), and the patented EZ-LATCH™ system designed for easy tailgate operation and maximum safety. This body is designed to provide years of service.",
+   "Stainless steel dump bodies from Rugby are corrosion resistant and more durable than high tensile steel. Aluminum Eliminator LP bodies weigh up to 50% less than traditional carbon steel and provide an exceptional strength to weight ratio! This means increased payload, improved fuel efficiency, and corrosion resistance in addition to lower maintenance costs including lower tire and brake costs."
+  ],
+  "spec_kv": [
+   [
+    "Materials",
+    "10 ga inner side / 12 ga outer side; 10 gauge (interlaced and crossmemberless understructures); 7 ga floor (crossmemberless understructure); Stainless Steel available; Aluminum available"
+   ],
+   [
+    "Lengths",
+    "9’6″ or 11’6″"
+   ],
+   [
+    "Side heights",
+    "12″ or 17″"
+   ],
+   [
+    "Weight",
+    "1,450 – 1,805 lbs"
+   ]
+  ],
+  "features": [
+   {
+    "heading": "",
+    "body": "Rigid or folding sides"
+   },
+   {
+    "heading": "",
+    "body": "Interlaced Understructure Standard for carbon steel, stainless steel, and aluminum bodies"
+   },
+   {
+    "heading": "",
+    "body": "Patented EZ-Latch"
+   },
+   {
+    "heading": "",
+    "body": "Fully boxed dirt-shedding top rail"
+   },
+   {
+    "heading": "",
+    "body": "Full height corner posts"
+   }
+  ],
+  "options": [
+   {
+    "name": "Crossmemberless Understructure optional for carbon steel and stainless steel bodies",
+    "description": null
+   },
+   {
+    "name": "Cabshield options",
+    "description": null
+   },
+   {
+    "name": "Electric operated tailgate release optional",
+    "description": null
+   }
+  ],
+  "spec_tables": [],
+  "spec_note": null,
+  "drawings": [],
+  "literature": [
+   {
+    "title": "Eliminator Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/09/Rugby-E4-Literature-1.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Eliminator Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/10/2626037A-3.pdf",
+    "kind": "manual"
+   }
+  ]
+ },
+ "https://www.rugbymfg.com/products/landscape-uni-body/": {
+  "title": "Landscape Uni-Body",
+  "og_image": "https://www.rugbymfg.com/wp-content/uploads/2022/01/uni-feature2.jpg",
+  "intro": [
+   "Rugby’s Landscape Uni-Body is a fully welded, premium stakeless body with centered horizontal formed rib, offered with either the traditional 2-piece uni-punched barn door over a drop down tailgate or with a 2-piece full height, double rear swing out doors."
+  ],
+  "spec_kv": [
+   [
+    "Materials",
+    "10 ga throughout"
+   ],
+   [
+    "Lengths",
+    "9′, 12′, or 14′"
+   ],
+   [
+    "Side heights",
+    "48″"
+   ],
+   [
+    "Weight",
+    "1585-2710 lbs"
+   ]
+  ],
+  "features": [
+   {
+    "heading": "",
+    "body": "Stakeless sides"
+   },
+   {
+    "heading": "",
+    "body": "2-piece floor"
+   },
+   {
+    "heading": "",
+    "body": "2-piece barn doors over drop tailagate or 2-piece swing out doors"
+   },
+   {
+    "heading": "",
+    "body": "Tailgate features heavy-duty 1 1/4″ top and 1″ bottom hinge pins"
+   },
+   {
+    "heading": "",
+    "body": "Patented EZ-LATCH upper release mechanism to allow easy opening of tailgate"
+   }
+  ],
+  "options": [],
+  "spec_tables": [],
+  "spec_note": null,
+  "drawings": [],
+  "literature": [
+   {
+    "title": "Landscape Bodies Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/Rugby-Carbon-Landscape-Literature-4.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Chipper Cover Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/chipper-cover-rugby-manual.pdf",
+    "kind": "manual"
+   },
+   {
+    "title": "Stakeless Landscaper Body Assembly Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2022/01/stakeless-landscaper-055177c-2015-rugby-manual.pdf",
+    "kind": "manual"
+   },
+   {
+    "title": "Landscape Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/10/2650396A-1.pdf",
+    "kind": "manual"
+   }
+  ]
+ },
+ "https://www.rugbymfg.com/products/new-vari-class-platform-line/": {
+  "title": "NEW! Vari-Class™ Platform Line",
+  "og_image": "https://www.rugbymfg.com/wp-content/uploads/2022/01/vari-feature2.jpg",
+  "intro": [
+   "1 VERSATILE PLATFORM BASE + 3 VARI-ABLE SIDE OPTIONS = 4 RUGGED TRUCK BODIES.",
+   "The all-new Vari-Class™ Platform Line from Rugby Mfg. is a modular solution that turns one simple platform into a multitude of possibilities. This is not just a product, it’s a system. The Vari Flat platform base, formerly Series 2000, has been redesigned with standardized side pockets that fit all Vari Side options. The Vari Sides, made of galvannealed steel , can be interchanged to fit the needs of the user, whether hauling pallets, landscaping supplies, equipment, or more. Find your fit with the Rugby Vari-Class™ Platform Line."
+  ],
+  "spec_kv": [
+   [
+    "Materials",
+    "Vari Flat: Carbon Steel; Vari Sides: Galvanealed Steel"
+   ],
+   [
+    "Lengths",
+    "9′, 10′ – 24′ in 2′ increments"
+   ],
+   [
+    "Side heights",
+    "42″"
+   ]
+  ],
+  "features": [
+   {
+    "heading": "",
+    "body": "Powder Coated Black"
+   },
+   {
+    "heading": "",
+    "body": "Spring-loaded latching system"
+   }
+  ],
+  "options": [
+   {
+    "name": "Available in Standard Duty, Heavy Duty, and Super Heavy Duty styles (available lengths change dependent on duty style selection)",
+    "description": null
+   },
+   {
+    "name": "5 bulkhead styles available",
+    "description": null
+   }
+  ],
+  "spec_tables": [],
+  "spec_note": null,
+  "drawings": [],
+  "literature": [
+   {
+    "title": "Vari-Class™ Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2026/05/Rugby-VariClass-Literature-2.pdf",
+    "kind": "brochure"
+   }
+  ]
+ },
+ "https://www.rugbymfg.com/products/rancher-bodies/": {
+  "title": "Rancher Bodies",
+  "og_image": "https://www.rugbymfg.com/wp-content/uploads/2022/01/rancher-feature2.jpg",
+  "intro": [
+   "The Rancher body by Rugby has been redesigned and is full of functional features! Rugby has engineered the Rancher with user-driven upgrades and a contemporary style. With an innovative adjustable bulkhead, the Rancher is ready to be mounted on a variety of chassis models and cab styles. The sleek look of the tubular bulkhead combined with major towing capability makes the Rancher your choice for serious hauling in style. The Rancher is available in Standard Duty and Heavy Duty models."
+  ],
+  "spec_kv": [
+   [
+    "Materials",
+    "SD Flooring: 12 ga tread plate; SD Crossmembers: 10 ga formed; HD Flooring: 3/16 tread plate; HD Crossmembers: 7 ga"
+   ],
+   [
+    "Lengths",
+    "7′, 8′, 9′, 11′, 12′"
+   ]
+  ],
+  "features": [
+   {
+    "heading": "",
+    "body": "12 ga. smooth steel rear apron"
+   },
+   {
+    "heading": "",
+    "body": "B&W Turnoverball™ Gooseneck Hitch, 30,000# rated, standard 2 5/16″ ball included"
+   },
+   {
+    "heading": "",
+    "body": "20,000# rated receiver hitch with 2.5″ receiver tube"
+   },
+   {
+    "heading": "",
+    "body": "Tubular Bulkhead (4″ x 3″ x 1/8″ wall)"
+   },
+   {
+    "heading": "",
+    "body": "Adjustable bulkhead with viewing window"
+   },
+   {
+    "heading": "",
+    "body": "Fuel in-let cut-outs in rubrail (drivers side)"
+   },
+   {
+    "heading": "",
+    "body": "Recessed license plate"
+   }
+  ],
+  "options": [
+   {
+    "name": "Optional mounting kits are now available for Ford and GM box delete truck applications.",
+    "description": null
+   }
+  ],
+  "spec_tables": [],
+  "spec_note": null,
+  "drawings": [],
+  "literature": [
+   {
+    "title": "Rancher Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2024/06/Rancher-2.0-Literature-1.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Aluminum Rancher Literature",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/09/Rugby_Aluminum_Rancher.pdf",
+    "kind": "brochure"
+   },
+   {
+    "title": "Rugby Rancher Manual",
+    "url": "https://www.rugbymfg.com/wp-content/uploads/2025/10/1718903F.pdf",
+    "kind": "manual"
+   }
+  ]
+ }
+}

@@ -28,6 +28,7 @@ from app.models import (
     ProductInventory,
     ProductPrice,
     ProductResource,
+    ProductSpecTable,
     User,
     Warehouse,
 )
@@ -1128,6 +1129,19 @@ async def product_detail(
         for r in res_rows
     ]
 
+    # Manufacturer spec matrices (Knapheide: model x length x height x width,
+    # grouped by cab-to-axle). Key/value attributes can't carry these, so they
+    # travel as tables and render as tables on the Specs tab.
+    spec_rows = (await db.execute(
+        select(ProductSpecTable)
+        .where(ProductSpecTable.product_id == product.id)
+        .order_by(ProductSpecTable.sort_order, ProductSpecTable.id)
+    )).scalars().all()
+    spec_tables = [
+        {"title": t.title, "headers": t.headers, "rows": t.rows, "note": t.note}
+        for t in spec_rows
+    ]
+
     # Kit / package bill-of-materials. Van packages (HWZD-600-8xxx) carry a Kit
     # whose components are the individual WeatherGuard part numbers. Each
     # component links to its own PDP when the part resolves to a catalog product.
@@ -1310,6 +1324,7 @@ async def product_detail(
         "descriptions": descriptions,
         "attributes": attributes,
         "resources": resources,
+        "spec_tables": spec_tables,
         "kit": kit_block,
     }
 
@@ -3500,6 +3515,86 @@ async def product_alternates(
             "cta_mode": p.cta_mode.value if hasattr(p.cta_mode, "value") else str(p.cta_mode),
         })
     return {"sku": sku, "mode": mode, "items": items}
+
+
+@router.get("/products/{sku}/accessories")
+async def product_accessories(
+    sku: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Parts and sized bodies listed underneath a truck body (ported from Titan 2026-09-21).
+
+    Rows come from product_accessory (link_truck_body_parts.py). Same guards as
+    the alternates rail: only parts for sale and visible to the viewer's
+    channel. A price is shown to retail only -- the rail's quick-glance price
+    is the retail one, and showing that to a jobber/dealer/municipality account
+    would quote them the wrong number; their card links to the part page,
+    which carries their price. Stock is the total on hand (Nelson has no
+    per-channel shelf split; Titan's version counts the viewer's own shelf).
+    """
+    from app.models import ProductAccessory
+    from app.services.channels import on_hand_map
+
+    body = (await db.execute(select(Product).where(Product.sku == sku))).scalar_one_or_none()
+    if body is None:
+        raise HTTPException(status_code=404, detail=f"Product not found: {sku}")
+    channel = await _viewer_channel(db, user, request)
+
+    rows = (await db.execute(
+        select(ProductAccessory.group_name, ProductAccessory.sort_order, Product)
+        .join(Product, Product.id == ProductAccessory.part_product_id)
+        .options(selectinload(Product.brand))
+        .where(
+            ProductAccessory.body_product_id == body.id,
+            Product.is_for_sale.is_(True),
+            visible_to_channel_clause(channel),
+        )
+    )).all()
+    if not rows:
+        return {"sku": sku, "groups": [], "show_prices": channel == "retail"}
+
+    ids = [p.id for _, _, p in rows]
+    stock = await on_hand_map(db, ids)
+    img_rows = (await db.execute(
+        select(ProductImage.product_id, ProductImage.url)
+        .where(ProductImage.product_id.in_(ids))
+        .order_by(ProductImage.product_id, ProductImage.is_primary.desc(),
+                  ProductImage.sort_order, ProductImage.id)
+        .distinct(ProductImage.product_id)
+    )).all()
+    # Localized images come in pairs (<hash>_1280.jpg / <hash>_400.jpg); a card
+    # only needs the 400px one.
+    images = {pid: (url.replace("_1280.jpg", "_400.jpg") if url and url.startswith("/static/product-images/")
+                    else url) for pid, url in img_rows}
+    prices: dict[int, Any] = {}
+    if channel == "retail":
+        from app.services.pricing_service import resolve_retail_for_products
+        try:
+            prices = await resolve_retail_for_products(db, [p for _, _, p in rows])
+        except Exception:  # noqa: BLE001 -- a price lookup failure must not hide the list
+            prices = {}
+
+    groups: dict[str, dict[str, Any]] = {}
+    for group, order, p in rows:
+        g = groups.setdefault(group, {"name": group, "order": order, "items": []})
+        price = prices.get(p.id)
+        g["items"].append({
+            "sku": p.sku,
+            "name": p.name,
+            "brand": p.brand.name if p.brand else None,
+            "image_url": images.get(p.id),
+            "in_stock": stock.get(p.id, 0) > 0,
+            "stock_total": stock.get(p.id, 0),
+            "price": float(price) if price is not None and float(price) > 0 else None,
+        })
+    out = sorted(groups.values(), key=lambda g: g["order"])
+    for g in out:
+        # in stock first, then by name, so the part a customer can have today leads each group
+        g["items"].sort(key=lambda i: (not i["in_stock"], (i["name"] or "").lower()))
+        g.pop("order")
+    return {"sku": sku, "groups": out, "show_prices": channel == "retail"}
 
 
 # =====================================================================

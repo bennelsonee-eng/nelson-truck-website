@@ -1,0 +1,952 @@
+{
+ "https://www.knapheide.com/dump-bodies/drop-side/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ford-steel-drop-side-dump-truck-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ford-steel-drop-side-dump-truck-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ford-steel-drop-side-dump-truck-rear-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ford-steel-drop-side-dump-truck-front-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/drop-side-dump-ram-raised-bed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/drop-side-dump-overhead-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/dump-bodies/fixed-side/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2024/03/fixed-side-dump-gm-rear-corner-close-up.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2024/03/fixed-side-dump-gm-bed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2024/03/fixed-side-dump-ford-unloading.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2024/03/fixed-side-dump-ford-loading.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2024/03/fixed-side-dump-ford-cab-protector.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/drop-side-dump-overhead-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/dump-bodies/heavy-drop-side-contractor/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/11/Heavy-Drop-Side-Contactor-Dump-Truck-Body.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/heavy-drop-side-dump-gmc-sides-down.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/heavy-drop-side-dump-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/heavy-drop-side-dump-ford-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/heavy-drop-side-dump-ford-rear-corner.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/heavy-drop-side-dump-ford-front.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/enclosed-service-bodies/aluminum-kuvcc/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/08/Utility-Van-vs-Cargo-Van-Upfit.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/hawkins-water-tech-enclosed-service-truck-field-technician-pulling-pipe-from-cargo-area_3.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/city-of-allentown-paramedics-custom-ems-command-truck-streetside-roll-up-door-compartment_4.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/02/gm-aluminum-kuvcc-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/02/gm-aluminum-kuvcc-truck-compartments-open.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/02/gm-aluminum-kuvcc-truck-2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/enclosed-service-bodies/steel-kuvcc/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/08/Utility-Van-vs-Cargo-Van-Upfit.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/hawkins-water-tech-enclosed-service-truck-field-technician-pulling-pipe-from-cargo-area_3.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/city-of-allentown-paramedics-custom-ems-command-truck-streetside-roll-up-door-compartment_4.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-steel-kuvcc.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-steel-kuvcc.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/gm-steel-kuvcc.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/forestry-bodies/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-forestry-chipper.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-forestry-chipper-ladder-pruner-storage.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-forestry-chipper.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-forestry-chipper-rear-gate-side-latched.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-forestry-chipper-open-doors.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-forestry-chipper-cargo-area.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/gooseneck-bodies/aluminum-pgtb/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-hitch-stowed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-hitch-ready.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-ford-trailer.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-ford-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-pgtb-gooseneck-ford-front.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtb/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-3-of-15.jpg",
+   "w": 3903,
+   "h": 2927,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-pgtb-gooseneck-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/pgtb-gooseneck-vocational.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/pgtb-gooseneck-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/pgtb-gooseneck-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/pgtb-gooseneck-rear-corner.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtc/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-3-of-15.jpg",
+   "w": 3903,
+   "h": 2927,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/11/SteelPGTCGooseneckTruckBody-ProductPage-FeatureImageSlide-2000x1500-pixel.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/pgtc-gooseneck-gm.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/pgtc-gooseneck-gm-front.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/pgtc-gooseneck-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/pgtc-gooseneck-ford-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/gooseneck-bodies/steel-pgtd/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-8-of-15-scaled.jpg",
+   "w": 4096,
+   "h": 3072,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-3-of-15.jpg",
+   "w": 3903,
+   "h": 2927,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-7-of-15.jpg",
+   "w": 3651,
+   "h": 2738,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2022/01/Rear-Mount-Lighting-System_2-scaled-e1643127897355.jpg",
+   "w": 3072,
+   "h": 2304,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2021/09/PGTD-114_Options_239505-5-of-15.jpg",
+   "w": 2043,
+   "h": 1532,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ford-steel-pgtd-gooseneck-truck-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/kuv-vans/steel/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/08/Utility-Van-vs-Cargo-Van-Upfit.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kuv-van.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-steel-kuv-cargo-area-upclose.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/mercedes-benz-steel-kuv.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-steel-kuv.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-steel-kuv-cargo-area.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/mechanics-trucks/steel-kmt1/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-rear-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-rear-curb-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-front-street-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-kmt1-mechanic-truck-curb-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/aluminum/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-no-sides.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-ford-stake-sides.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-drop-down-racks.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-above.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/aluminum-platform-above-2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/cargo-hauler/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/caro-hauler-platform-stakes.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/cargo-hauler-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/cargo-hauler-platform-bed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/cargo-hauler-liftgate-up.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/cargo-hauler-liftgate-down.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/cargo-hauler-bulkhead-latch.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/concrete/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/11/ConcretePlatformTruckBody-ProductPage-FeatureImageSlide-2000x1500-pixel.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/concrete-platform.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/concrete-platform-ram.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/concrete-platform-gm.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/concrete-platform-gm-side.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/08/concrete-platform-gm-rear.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/contractor/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-rear-stake-racks.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-ram.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-material-rack.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-gm.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/contractor-platform-bed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/heavy-hauler-junior/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/chevy-steel-heavy-hauler-junior-flatbed-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/heavy-hauler-rear-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/heavy-hauler-junior-stake-sides.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/heavy-hauler-junior-no-sides.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/heavy-hauler-junior-low-cab-forward.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/heavy-hauler-junior-long-bed.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/heavy-hauler/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/11/HeavyHaulerPlatformTruckBody-ProductPage-FeatureImageSlide-2000x1500-pixel.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2023/12/underbody-sliding-cargo-tie-down-channel.jpg",
+   "w": 1000,
+   "h": 750,
+   "bg": "WHITE"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2023/12/underbody-cargo-tie-down-rails.jpg",
+   "w": 1000,
+   "h": 750,
+   "bg": "NEAR_WHITE"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2023/12/steel-platform-stake-racks.jpg",
+   "w": 1000,
+   "h": 750,
+   "bg": "WHITE"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2023/12/steel-platform-bulkhead-bht.jpg",
+   "w": 1000,
+   "h": 750,
+   "bg": "NEAR_WHITE"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2023/12/steel-platform-bulkhead-bhrt.jpg",
+   "w": 1000,
+   "h": 750,
+   "bg": "WHITE"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/steel-landscaper/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-steel-landscaper-platform.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-steel-landscaper-platform-open-rear-gate.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-steel-landscaper-platform.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-steel-landscaper-platform-side-access-door.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/gm-steel-landscaper-platform.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/gm-steel-landscaper-platform-dumping.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/platform-bodies/value-master-x/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2025/10/ram-steel-pvmx-platform-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/value-master-x-platform-van-chassis.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/value-master-x-platform-ram.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/value-master-x-platform-gm-stake-sides.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/value-master-x-platform-ford.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/value-master-x-platform-ford-lifegate.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/saw-trucks/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ram-concrete-saw.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ram-concrete-saw-open-compartments.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ram-concrete-saw-front-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-concrete-saw.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ford-concrete-saw.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ford-concrete-saw-cargo-area.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/service-bodies/aluminum/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/Male-Worker-Grabbing-Cargo-from-Knapheide-Service-Truck-Compartment-OliverSutro-251029-7543_2-scaled.jpg",
+   "w": 4096,
+   "h": 2732,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/city-of-allentown-paramedics-custom-ems-command-truck-streetside-roll-up-door-compartment_4.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-aluminum-service-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-aluminum-service-truck-2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-a698-service-truck-compartments-upclose.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/international-aluminum-service-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/service-bodies/combo/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-combo-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-combo-truck-tailgate-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-combo-truck-stake-racks-down.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-combo-truck-compartments-closed-upclose.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/gm-combo-body-compartments-upclose.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2020/03/ford-combo-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/service-bodies/line/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/peterbilt-line-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/kenworth-line-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/kenworth-line-truck-rear-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/kenworth-line-truck-compartments-upclose.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/international-line-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/international-line-truck-rear-view.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ],
+ "https://www.knapheide.com/service-bodies/steel/": [
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/Male-Worker-Grabbing-Cargo-from-Knapheide-Service-Truck-Compartment-OliverSutro-251029-7543_2-scaled.jpg",
+   "w": 4096,
+   "h": 2732,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2026/03/city-of-allentown-paramedics-custom-ems-command-truck-streetside-roll-up-door-compartment_4.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-steel-service-truck-2.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ram-2500-steel-service-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/isuzu-steel-service-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  },
+  {
+   "url": "https://www.knapheide.com/wp-content/uploads/2019/12/ford-f450-steel-service-truck.jpg",
+   "w": 2000,
+   "h": 1500,
+   "bg": "scene"
+  }
+ ]
+}

@@ -93,6 +93,26 @@ def paths_for(source_url: str) -> tuple[str, Path, Path, str, str]:
     return h, big_p, thumb_p, big_url, thumb_url
 
 
+def flatten_onto_white(im: Image.Image) -> Image.Image:
+    """Return an RGB copy, compositing any transparency onto white.
+
+    `Image.convert("RGB")` on an RGBA image just drops the alpha channel and
+    keeps whatever RGB sat underneath it. Manufacturer cut-outs are exported
+    with black under the transparent pixels, so the plain convert turned every
+    cut-out into a truck on a black rectangle. Compositing first is what makes
+    a transparent PNG land on white the way it does in a browser.
+    """
+    has_alpha = im.mode in ("RGBA", "LA") or (
+        im.mode == "P" and "transparency" in im.info
+    )
+    if not has_alpha:
+        return im if im.mode == "RGB" else im.convert("RGB")
+    im = im.convert("RGBA")
+    canvas = Image.new("RGB", im.size, (255, 255, 255))
+    canvas.paste(im, mask=im.split()[-1])
+    return canvas
+
+
 def make_sizes(source_url: str, data: bytes) -> None:
     """Resize `data` into the two local JPEGs. Runs in a thread (blocking)."""
     _, big_p, thumb_p, _, _ = paths_for(source_url)
@@ -100,10 +120,7 @@ def make_sizes(source_url: str, data: bytes) -> None:
         return
     big_p.parent.mkdir(parents=True, exist_ok=True)
     im = Image.open(BytesIO(data))
-    if im.mode in ("RGBA", "P", "LA"):
-        im = im.convert("RGB")
-    elif im.mode != "RGB":
-        im = im.convert("RGB")
+    im = flatten_onto_white(im)
     big = im.copy()
     big.thumbnail((SIZE_BIG, SIZE_BIG), Image.LANCZOS)
     big.save(big_p, "JPEG", quality=Q_BIG, optimize=True, progressive=True)
