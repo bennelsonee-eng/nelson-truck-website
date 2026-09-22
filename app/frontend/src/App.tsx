@@ -1654,7 +1654,9 @@ const MEGA_SECTIONS: MegaSection[] = [
       { name: "Snow Plows", category_path: "Truck Equipment > Snow Plows" },
       { name: "Find My Plow (Wizard)", route: "/snow-plows" },
       { name: "Salt Spreaders & Hoppers", category_path: "Truck Equipment > Salt Spreaders and Hoppers" },
-      { name: "Plow Parts & Hydraulics", category_path: "Truck Equipment > Hydraulic Pump Kits" },
+      // Was "Plow Parts & Hydraulics" -> Hydraulic Pump Kits, which is DewEze pump kits,
+      // not plow parts (launch audit 2026-09-22). Plow parts live under Snow Plows.
+      { name: "Plow Parts & Accessories", category_path: "Truck Equipment > Snow Plows" },
     ],
   },
   {
@@ -1676,7 +1678,6 @@ const MEGA_SECTIONS: MegaSection[] = [
       { name: "Mechanics Trucks", category_path: "Truck Equipment > Truck Bodies > Mechanics Trucks" },
       { name: "Van / Box Bodies", category_path: "Truck Equipment > Truck Bodies > Van / Box Bodies" },
       { name: "Body Parts & Accessories", category_path: "Truck Equipment > Truck Bodies > Parts & Accessories" },
-      { name: "Dump Beds & Hoists", category_path: "Utility Truck Equipment > Truck Dump Beds and Accessories" },
     ],
   },
   {
@@ -2281,7 +2282,7 @@ function ScrollRow({ children, className = '' }: { children: ReactNode; classNam
 
 // --- Nelson Bold Red Garage homepage ---------------------------------------
 const NELSON_SLIDES = [
-  { ey: 'Snow & Ice · Ready before the storm', h1a: "Winter’s coming.", h1b: 'Get plow-ready.', copy: 'Western, SnowDogg & Meyer plows and spreaders — in stock, and mounted & wired in our Portland & Kent shops.', cta: 'Shop snow & ice', to: '/snow-plows', bto: false, card: { brand: 'Western · SnowDogg · Meyer', name: 'Straight-blade & V-plows', price: 'In stock & installed', imgs: ['/static/brand_images/WEST/WEST69500/00_bing_1d7776106e6d.jpg', '/static/product-images/92/92d1cd8fdb9fd85b_1280.jpg', '/static/product-images/dc/dc36845ac71cf80f_1280.jpg'] } },
+  { ey: 'Snow & Ice · Ready before the storm', h1a: "Winter’s coming.", h1b: 'Get plow-ready.', copy: 'Western, SnowDogg & Meyer plows and spreaders — in stock, and mounted & wired in our Portland & Kent shops.', cta: 'Shop snow & ice', to: '/snow-plows', bto: false, card: { brand: 'Western · SnowDogg · Meyer', name: 'Straight-blade & V-plows', price: 'In stock & installed', imgs: ['/static/brand_images/MYP/MYP41690/clean.jpg', '/static/product-images/92/92d1cd8fdb9fd85b_1280.jpg', '/static/product-images/dc/dc36845ac71cf80f_1280.jpg'] } },
   { ey: 'Tow Trucks · Towing & Recovery', h1a: 'Built to', h1b: 'bring it back.', copy: 'Jerr-Dan wreckers and rollback carriers, built to order — plus tow truck parts and recovery gear at our Portland & Kent counters.', cta: 'Explore tow trucks', to: '/tow-trucks', bto: true, card: { brand: 'Jerr-Dan', name: 'Rollback Carriers', price: 'Built to order', img: '/banner/tow-rollback.jpg' } },
   { ey: 'Aerial & Bucket Division', h1a: 'Reach', h1b: 'higher.', copy: 'Bucket trucks and aerial lifts from Dur-A-Lift — sales, upfit, and service.', cta: 'Explore aerial & bucket', to: '/aerial-lifts', bto: true, card: { brand: 'Dur-A-Lift', name: 'DLT2 Series Bucket Truck', price: 'Built to order', img: '/static/product-images/64/64a02e1eaa439632_1280.jpg' } },
   { ey: 'Trailers · Landoll Dealer', h1a: 'Haul the', h1b: 'heavy stuff.', copy: 'Landoll traveling-axle, detach, and sliding-axle trailers — plus a full line of Landoll parts, sold and serviced here.', cta: 'Explore trailers', to: '/trailers', bto: true, card: { brand: 'Landoll', name: '440B Traveling Axle Trailer', price: 'Built to order', img: '/banner/landoll-trailer.jpg' } },
