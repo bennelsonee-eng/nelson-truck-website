@@ -11443,7 +11443,8 @@ function AerialLiftsLanding() {
 
       {/* HERO SECTION */}
       <section className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-6 py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-6 py-12 md:py-16 grid gap-8 md:grid-cols-5 items-center">
+          <div className="md:col-span-3">
           <div className="flex items-baseline gap-3 mb-2">
             <span className="text-[11px] uppercase tracking-widest font-bold text-red-700">
               Dur-A-Lift
@@ -11467,6 +11468,22 @@ function AerialLiftsLanding() {
               ))}
             </div>
           )}
+          {/* Nelson's own line + a way to act (launch audit 2026-09-22: the
+              page had Dur-A-Lift's copy only and no photo or call to action). */}
+          <p className="mt-5 text-sm md:text-base font-semibold text-gray-900">
+            Sold, upfit and serviced by Nelson Truck Equipment in Portland and Kent.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button type="button" onClick={() => openInquiry({ kind: 'quote', heading: 'Request an aerial or bucket truck quote' })}
+                    className="rounded bg-red-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-red-800">Request a quote</button>
+            <a href="tel:+15035489300" className="rounded border border-gray-300 px-5 py-2.5 text-sm text-gray-800 hover:bg-gray-50">Portland 503-548-9300</a>
+            <a href="tel:+12533953825" className="rounded border border-gray-300 px-5 py-2.5 text-sm text-gray-800 hover:bg-gray-50">Kent 253-395-3825</a>
+          </div>
+          </div>
+          <div className="md:col-span-2">
+            <img src="/static/product-images/64/64a02e1eaa439632_1280.jpg" alt="Dur-A-Lift DLT2 series bucket truck"
+                 className="w-full h-auto object-contain" />
+          </div>
         </div>
       </section>
 
