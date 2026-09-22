@@ -114,7 +114,9 @@ interface SeoProps {
 
 export function Seo({ title, description, path, image, type = 'website', noindex, jsonLd }: SeoProps) {
   const canonical = path ? absoluteUrl(path) : undefined
-  const img = image ? absoluteUrl(image) : undefined
+  // Every page shares with a picture: its own when it has one, else the
+  // branded default (launch audit 2026-09-22 -- the homepage had none).
+  const img = absoluteUrl(image || '/og-default.jpg')
   const desc = description ? clamp(description, 300) : undefined
   const blocks = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []
 
