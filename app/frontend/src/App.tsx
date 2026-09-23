@@ -16,6 +16,7 @@ const AboutPage = lazy(() => import('./pages/ContentPages').then((m) => ({ defau
 const ReturnsPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.ReturnsPage })))
 const ShippingPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.ShippingPage })))
 const PrivacyPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('./pages/ContentPages').then((m) => ({ default: m.TermsPage })))
 const AdminContentPage = lazy(() => import('./pages/AdminContent').then((m) => ({ default: m.AdminContentPage })))
 import { Seo, absoluteUrl, clamp, ORGANIZATION_JSONLD, WEBSITE_JSONLD, LOCALBUSINESS_JSONLD, CANONICAL_BASE_URL } from './components/Seo'
 import { BRANCHES, InquiryModalHost, openInquiry } from './components/Inquiry'
@@ -12906,7 +12907,8 @@ function Footer() {
             <li><Link to="/faq" className="hover:text-white">FAQ</Link></li>
             <li><Link to="/returns" className="hover:text-white">Returns &amp; warranty</Link></li>
             <li><Link to="/shipping" className="hover:text-white">Shipping policy</Link></li>
-            <li><Link to="/privacy" className="hover:text-white">Privacy &amp; terms</Link></li>
+            <li><Link to="/privacy" className="hover:text-white">Privacy</Link></li>
+            <li><Link to="/terms" className="hover:text-white">Terms of sale &amp; use</Link></li>
           </ul>
         </div>
       </div>
@@ -17023,6 +17025,7 @@ export default function App() {
           <Route path="/returns" element={<ReturnsPage />} />
           <Route path="/shipping" element={<ShippingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/admin/content" element={<AdminContentPage />} />
           <Route path="/snow-plows" element={<SnowPlowsLanding />} />
           <Route path="/snow-plows/compare" element={<PlowComparePage />} />

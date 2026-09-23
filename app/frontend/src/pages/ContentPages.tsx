@@ -155,19 +155,78 @@ In-stock items are usually ready the same day for pickup. Special-order items sh
 Most equipment we sell can be installed at our Portland or Kent shop. Tell us your truck and what you need, and we’ll schedule it — [request a quote](/contact?topic=quote).`,
   },
   privacy: {
-    title: 'Privacy & Terms',
-    subtitle: 'How we handle your information, and the terms of using this site.',
-    description: 'Nelson Truck Equipment privacy policy and terms of use.',
+    title: 'Privacy Policy',
+    subtitle: 'How we handle your information.',
+    description: 'Nelson Truck Equipment privacy policy: what we collect, how we use it, and who we share it with.',
     noindex: true,
-    body: `## Privacy
+    body: `We collect only the information needed to quote, process and support your orders — such as your name, contact details, shipping address, vehicle details and order history. We do not sell your personal information.
 
-We collect only the information needed to process your orders, provide support, and improve your experience — such as your name, contact details, shipping address, and order history. We do not sell your personal information. If you pay by card, payment details are handled by the card processor and are not stored on our servers.
+If you pay by card, your card details are handled by the card processor and are not stored on our servers. We share information with the carriers, manufacturers and installers who need it to fill your order, and with our own staff at the Portland and Kent branches.
 
-## Terms of use
+You can ask us what we hold about you, or ask us to correct or delete it, by emailing sales@nelsontruck.com or calling either branch.
 
-By using this site you agree to use it lawfully and not to misuse or attempt to disrupt it. Product information, pricing, and availability are subject to change without notice. We work to keep listings accurate but are not liable for typographical errors.
+The terms that cover buying from us and using this site are on the [Terms of Sale & Use](/terms) page.
 
-[CONFIRM: this is placeholder copy — have it reviewed by legal before launch; add cookie/analytics disclosure if analytics are added]`,
+[CONFIRM: this is placeholder copy — have it reviewed by legal before launch; add a cookie/analytics disclosure once analytics are added, and a Washington My Health My Data / consumer-rights section if required]`,
+  },
+  terms: {
+    title: 'Terms of Sale & Use',
+    subtitle: 'How buying from us works, and the rules for using this site.',
+    description: 'Nelson Truck Equipment terms of sale and site use: quotes, orders, stock, payment, pickup and freight, installation, returns and warranty.',
+    noindex: true,
+    body: `Nelson Truck Equipment has sold, installed and serviced commercial truck equipment in the Pacific Northwest since 1937, from Portland, OR and Kent, WA. These terms cover buying from us and using this website. Ordering from us, or using this site, means you accept them.
+
+## Prices, availability and product information
+
+Prices, specifications and availability change without notice, and manufacturers change their products. We work to keep this site accurate, but a listing can still be wrong — if a price or a spec is clearly in error we will tell you before we take the order rather than hold you to it.
+
+Photographs and schematics are there to help you identify a part. A photo may show options that are not included, and a schematic is a reference drawing, not a parts list. When it matters, ask us to confirm what is in the box.
+
+Fitment information is a guide. Tell us your year, make, model and how the truck is set up, and we will confirm the right part before you buy or before we install.
+
+## Quotes
+
+Quotes are valid for 30 days unless the quote says otherwise, and they depend on stock and freight costs at the time you order. A quote for equipment includes installation only where it says so. [CONFIRM: quote validity period]
+
+## Orders and stock
+
+Placing an order is an offer to buy. It becomes a sale when we confirm it, or when we ship or hand over the goods.
+
+"In stock" means the item is on the shelf at our Portland or Kent branch when the page loaded. Stock moves during the day, so we confirm availability when we pick the order. Items we do not stock can usually be brought in for you; we will tell you the expected lead time.
+
+We may refuse or cancel an order — for example when an item is mispriced, unavailable, or the order looks fraudulent. If you have already paid for something we cannot supply, we refund it.
+
+## Payment
+
+Trade, fleet and municipal accounts order on purchase order and pay on their agreed terms. Everyone else pays at the counter when they collect, or by arrangement with the branch. [CONFIRM: phone card payments, any card surcharge, and past-due terms]
+
+## Taxes
+
+We charge sales tax as the law requires for the delivery or pickup location. If your business is tax exempt, send us your exemption certificate before you order and we will apply it.
+
+## Pickup, delivery and risk
+
+Pickup is at the Portland or Kent branch, Monday to Friday, 8am to 5pm. Parts ship by parcel carrier and large equipment ships by freight, charged on the invoice. Check freight deliveries before you sign: note any damage on the delivery paperwork and tell us the same day, because carriers will not accept a claim without it. [CONFIRM: when title and risk of loss pass]
+
+## Installation and shop work
+
+We install what we sell, at our own shops. We will tell you what the work involves before we start, and we will contact you before doing anything beyond what you approved. We are not responsible for pre-existing conditions on your vehicle, and we cannot store vehicles indefinitely after the work is done. [CONFIRM: storage terms after completion]
+
+## Returns and warranty
+
+Returns are covered on the [Returns & Warranty](/returns) page. In short: unused items in original, resalable packaging may be returned; special-order and installed items may not be. Products carry their manufacturer's warranty, and we handle warranty claims for the brands we sell. [CONFIRM: legal review of the warranty disclaimer and any limitation of liability]
+
+## Using this site
+
+Use the site lawfully. Do not attempt to disrupt it, scrape it wholesale, or use it to collect information about other customers. If you have an account, keep your sign-in details to yourself; you are responsible for what is ordered with them.
+
+The text, photographs and layout of this site belong to Nelson Truck Equipment or to the manufacturers whose products we sell. Brand names and logos belong to their owners and appear here to identify the products we carry.
+
+## Changes and contact
+
+We may update these terms; the current version always lives on this page. Questions about them: sales@nelsontruck.com, Portland 503-548-9300, Kent 253-395-3825.
+
+[CONFIRM: have legal review this page before launch — governing law and venue (Oregon or Washington), limitation of liability, and whether B2B account terms should be a separate agreement]`,
   },
 }
 
@@ -306,3 +365,4 @@ export function AboutPage() { return <ProsePage slug="about" path="/about" /> }
 export function ReturnsPage() { return <ProsePage slug="returns" path="/returns" /> }
 export function ShippingPage() { return <ProsePage slug="shipping" path="/shipping" /> }
 export function PrivacyPage() { return <ProsePage slug="privacy" path="/privacy" /> }
+export function TermsPage() { return <ProsePage slug="terms" path="/terms" /> }
