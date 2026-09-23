@@ -12129,7 +12129,8 @@ function BrandsIndexPage() {
   }, [])
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <Seo title="Shop by Brand — Truck Equipment Manufacturers A–Z | Nelson Truck Equipment"
+      <Seo ready={!!data}
+        title="Shop by Brand — Truck Equipment Manufacturers A–Z | Nelson Truck Equipment"
            description="Every manufacturer Nelson Truck Equipment stocks, A to Z — snow plows, truck bodies, liftgates, lighting, hitches and accessories. Portland, OR and Kent, WA."
            path="/brands" />
       <h1 className="text-3xl font-bold mb-2">Shop by brand</h1>
