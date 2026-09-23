@@ -5512,7 +5512,7 @@ function ProductDetail() {
                 <div className="p-3 border border-gray-300 bg-gray-50 rounded text-center">
                   <div className="text-gray-700 font-semibold">Special order</div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Not in stock — we'll source it from the manufacturer.
+                    Not on the shelf in Portland or Kent — we'll bring it in for you.
                     {(() => {
                       const lt = formatLeadTime(data.brand.special_order_lead_time_min_days, data.brand.special_order_lead_time_max_days)
                       return lt ? <> Lead time: <span className="font-semibold text-gray-700">{lt}</span>.</> : null
