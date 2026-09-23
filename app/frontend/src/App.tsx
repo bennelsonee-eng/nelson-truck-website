@@ -11446,7 +11446,8 @@ function AerialLiftsLanding() {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      <Seo title="Aerial Lifts & Bucket Trucks — Dur-A-Lift | Nelson Truck Equipment"
+      <Seo ready={!loading}
+        title="Aerial Lifts & Bucket Trucks — Dur-A-Lift | Nelson Truck Equipment"
            description="Dur-A-Lift bucket trucks, articulated and telescopic aerial lifts, bucket vans and tracked lifts — sales, upfit and service from Nelson Truck Equipment in Portland, OR and Kent, WA."
            path={subcatSlug ? `/aerial-lifts/${subcatSlug}` : '/aerial-lifts'} />
 
@@ -11684,7 +11685,8 @@ function SnowPlowsLanding() {
 
   return (
     <div className="bg-gray-50">
-      <Seo title="Snow Plows & Spreaders — Western, Meyer, SnowDogg | Nelson Truck Equipment"
+      <Seo ready={!!data}
+        title="Snow Plows & Spreaders — Western, Meyer, SnowDogg | Nelson Truck Equipment"
            description="Western, Meyer and SnowDogg snow plows, salt spreaders and plow parts — in stock, mounted and wired at our Portland, OR and Kent, WA shops. Find the right plow for your truck."
            path="/snow-plows" />
       {/* Seasonal order banner — primary conversion lever for /snow-plows.

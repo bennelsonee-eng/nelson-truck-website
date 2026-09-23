@@ -110,9 +110,12 @@ interface SeoProps {
   noindex?: boolean
   /** One or more schema.org JSON-LD objects. */
   jsonLd?: object | object[] | null
+  /** False while the page is still fetching the content a crawler should see.
+   *  The head still renders; only the prerenderer's "ready" flag waits. */
+  ready?: boolean
 }
 
-export function Seo({ title, description, path, image, type = 'website', noindex, jsonLd }: SeoProps) {
+export function Seo({ title, description, path, image, type = 'website', noindex, jsonLd, ready = true }: SeoProps) {
   const canonical = path ? absoluteUrl(path) : undefined
   // Every page shares with a picture: its own when it has one, else the
   // branded default (launch audit 2026-09-22 -- the homepage had none).
@@ -123,8 +126,11 @@ export function Seo({ title, description, path, image, type = 'website', noindex
   // Signal the prerenderer that this route's content + head are in the DOM. On
   // product/category pages <Seo> only renders after data loads, so this fires at
   // the right moment; the prerender service waits on this flag before capturing.
+  // Pages that render <Seo> before their data arrives pass ready={false} until
+  // it lands, otherwise the prerenderer captures a "Loading…" page (the aerial
+  // and snow-plow landings did exactly that — caught 2026-09-23).
   useEffect(() => {
-    ;(window as unknown as { prerenderReady?: boolean }).prerenderReady = true
+    if (ready) (window as unknown as { prerenderReady?: boolean }).prerenderReady = true
   })
 
   return (
