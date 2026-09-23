@@ -1404,7 +1404,8 @@ async def list_brands(db: AsyncSession = Depends(get_db)) -> list[dict[str, Any]
 
     counts: dict[str, int] = {}
     try:
-        response = search_products(query=None, per_page=1)
+        # One facet value per brand, so every brand gets its real count.
+        response = search_products(query=None, per_page=1, facet_by="brand_name", max_facet_values=500)
         brand_facet = next(
             (fc for fc in response.get("facet_counts", []) if fc["field_name"] == "brand_name"),
             None,
@@ -1461,7 +1462,8 @@ async def brands_index(db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
 
     counts_by_name: dict[str, int] = {}
     try:
-        response = search_products(query=None, per_page=1)
+        # One facet value per brand, so every brand gets its real count.
+        response = search_products(query=None, per_page=1, facet_by="brand_name", max_facet_values=500)
         brand_facet = next(
             (fc for fc in response.get("facet_counts", []) if fc["field_name"] == "brand_name"),
             None,
@@ -1718,7 +1720,8 @@ async def categories_tree(db: AsyncSession = Depends(get_db)) -> list[dict[str, 
     counts_by_top: dict[str, int] = {}
     if not direct_count:
         try:
-            response = search_products(query=None, per_page=1)
+            # One facet value per top category (Typesense returns 10 by default).
+            response = search_products(query=None, per_page=1, facet_by="category_top", max_facet_values=200)
             top_facet = next(
                 (fc for fc in response.get("facet_counts", []) if fc["field_name"] == "category_top"),
                 None,
