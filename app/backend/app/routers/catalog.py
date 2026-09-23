@@ -15,6 +15,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.services.stock_scope import NELSON_WAREHOUSE_CODES, nelson_stock_only
 from app.database import get_db
 from app.dependencies import get_current_user, resolve_effective_customer_id
 from app.models import (
@@ -58,7 +59,9 @@ router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 # "pick it up today." Portland = warehouse code 1, Kent = code 2. Spokane
 # (code 10) is the parent group's HQ warehouse, NOT a Nelson pickup branch, so
 # its on-hand must never feed the homepage "in stock & ready today" promise.
-PICKUP_WAREHOUSE_CODES = (1, 2)
+# Portland + Kent: the counters a shopper can actually collect from, and the
+# only stock nelsontruck.com counts (Spokane is titantruck.com's).
+PICKUP_WAREHOUSE_CODES = NELSON_WAREHOUSE_CODES
 
 
 def _format_money(d: Decimal | None) -> str | None:
@@ -1248,9 +1251,11 @@ async def product_detail(
         }
 
     # Inventory by warehouse
+    # Nelson's branches only — Spokane stock belongs to titantruck.com, so it
+    # is neither listed nor counted in total_on_hand (services/stock_scope.py).
     inv_stmt = (
         select(ProductInventory)
-        .where(ProductInventory.product_id == product.id)
+        .where(ProductInventory.product_id == product.id, nelson_stock_only())
         .options(selectinload(ProductInventory.warehouse))
     )
     inv_rows = (await db.execute(inv_stmt)).scalars().all()
@@ -2186,7 +2191,9 @@ async def category_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict
     cat = (await db.execute(
         select(Category).where(Category.slug == slug).order_by(Category.depth)
     )).scalars().first()
-    if cat is None:
+    # A retired category (is_active = false) is gone as far as the storefront is
+    # concerned: out of the menu and the sitemap already, and a real 404 here.
+    if cat is None or not cat.is_active:
         raise HTTPException(status_code=404, detail=f"Category not found: {slug}")
 
     children_rows = (await db.execute(
@@ -3301,7 +3308,7 @@ async def warehouse_stock(sku: str, db: AsyncSession = Depends(get_db)) -> dict[
     inv_rows = (await db.execute(
         select(ProductInventory, Warehouse)
         .join(Warehouse, Warehouse.id == ProductInventory.warehouse_id)
-        .where(ProductInventory.product_id == product.id)
+        .where(ProductInventory.product_id == product.id, nelson_stock_only())
         .order_by(Warehouse.code)
     )).all()
     locations = [

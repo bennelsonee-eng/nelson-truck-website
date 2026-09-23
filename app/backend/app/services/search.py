@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.models import Brand, Category, Product, ProductCategory, ProductImage, ProductInventory
+from app.services.stock_scope import nelson_stock_only
 
 
 __all__ = [
@@ -205,10 +206,12 @@ async def reindex_all_products(db: AsyncSession, *, drop_first: bool = False) ->
     # Pre-load brand names + per-product total inventory + primary image + primary category
     log.info("Loading brand names + inventory totals + images + categories…")
     brand_lookup = {b.id: b.name for b in (await db.execute(select(Brand))).scalars().all()}
+    # Stock = Nelson's own branches only (Spokane belongs to titantruck.com) —
+    # see services/stock_scope.py.
     inv_stmt = select(
         ProductInventory.product_id,
         func.sum(ProductInventory.on_hand).label("total"),
-    ).group_by(ProductInventory.product_id)
+    ).where(nelson_stock_only()).group_by(ProductInventory.product_id)
     inv_rows = (await db.execute(inv_stmt)).all()
     stock_lookup = {pid: int(total or 0) for pid, total in inv_rows}
 
@@ -225,7 +228,9 @@ async def reindex_all_products(db: AsyncSession, *, drop_first: bool = False) ->
     cat_stmt = (
         select(ProductCategory.product_id, Category.full_path)
         .join(Category, Category.id == ProductCategory.category_id)
-        .where(ProductCategory.is_primary.is_(True))
+        # Retired categories stay out of the index, so their facet chips and
+        # filters disappear with them.
+        .where(ProductCategory.is_primary.is_(True), Category.is_active.is_(True))
         .order_by(ProductCategory.product_id, ProductCategory.id)
         .distinct(ProductCategory.product_id)
     )
@@ -338,7 +343,7 @@ async def index_products(
     brand_lookup = {b.id: b.name for b in (await db.execute(select(Brand))).scalars().all()}
     inv = (await db.execute(
         select(ProductInventory.product_id, func.sum(ProductInventory.on_hand))
-        .where(ProductInventory.product_id.in_(product_ids))
+        .where(ProductInventory.product_id.in_(product_ids), nelson_stock_only())
         .group_by(ProductInventory.product_id)
     )).all()
     stock_lookup = {pid: int(t or 0) for pid, t in inv}
@@ -352,7 +357,8 @@ async def index_products(
     cats = (await db.execute(
         select(ProductCategory.product_id, Category.full_path)
         .join(Category, Category.id == ProductCategory.category_id)
-        .where(ProductCategory.product_id.in_(product_ids), ProductCategory.is_primary.is_(True))
+        .where(ProductCategory.product_id.in_(product_ids), ProductCategory.is_primary.is_(True),
+               Category.is_active.is_(True))
         .order_by(ProductCategory.product_id, ProductCategory.id)
         .distinct(ProductCategory.product_id)
     )).all()

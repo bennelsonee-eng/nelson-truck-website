@@ -119,20 +119,26 @@ def product_instock_only_for(product, channel: str) -> bool:
 
 
 async def total_on_hand(db: AsyncSession, product_id: int) -> int:
-    """Live total on-hand across warehouses for one product (0 if none)."""
+    """Live on-hand at Nelson's branches for one product (0 if none).
+
+    Portland + Kent only — Spokane stock is titantruck.com's (stock_scope.py)."""
+    from app.services.stock_scope import nelson_stock_only
+
     return int((await db.execute(
         select(func.coalesce(func.sum(ProductInventory.on_hand), 0))
-        .where(ProductInventory.product_id == product_id)
+        .where(ProductInventory.product_id == product_id, nelson_stock_only())
     )).scalar_one() or 0)
 
 
 async def on_hand_map(db: AsyncSession, product_ids) -> dict[int, int]:
-    """Live total on-hand per product for a set of ids (missing → absent)."""
+    """Live on-hand per product at Nelson's branches (missing → absent)."""
+    from app.services.stock_scope import nelson_stock_only
+
     if not product_ids:
         return {}
     rows = (await db.execute(
         select(ProductInventory.product_id, func.coalesce(func.sum(ProductInventory.on_hand), 0))
-        .where(ProductInventory.product_id.in_(list(product_ids)))
+        .where(ProductInventory.product_id.in_(list(product_ids)), nelson_stock_only())
         .group_by(ProductInventory.product_id)
     )).all()
     return {pid: int(t or 0) for pid, t in rows}
