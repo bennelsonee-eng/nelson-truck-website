@@ -448,6 +448,7 @@ def search_products(
     query_by: str | None = None,
     infix: str | None = None,
     facet_by: str | None = None,
+    max_facet_values: int | None = None,
     channel: str | None = None,
     fit_base_vehicle_id: int | None = None,
 ) -> dict[str, Any]:
@@ -515,6 +516,9 @@ def search_products(
         # subcategories like "Automotive Lighting > Emergency and Warning
         # Lighting" in place of bare "Truck Accessories" in suggestions.
         "facet_by": facet_by or "brand_name,in_stock,cta_mode,category_top",
+        # Typesense returns only 10 facet values by default, which left 108 of
+        # the 118 brands reading "0 products" on /brands (caught 2026-09-23).
+        "max_facet_values": max_facet_values or 10,
         "sort_by": sort_by or "stock_score:desc,_text_match:desc",
         "per_page": min(per_page, 250),
         "page": max(page, 1),
