@@ -3168,6 +3168,21 @@ function InlineAddToOrder({ h, variant = 'list' }: { h: BrowseHit; variant?: 'li
   const [added, setAdded] = useState(false)
 
   if (h.cta_mode === 'browse_only') return null
+  // Big equipment (truck bodies and the like): a $16K body in a shopping cart
+  // with no freight cost reads wrong, so the card sends them to the counter.
+  if (h.cta_mode === 'call_to_order') {
+    return (
+      <Link
+        to={`/product/${h.sku}`}
+        onClick={(e) => e.stopPropagation()}
+        className={`block text-center font-semibold rounded ${
+          variant === 'grid' ? 'px-2 py-1.5 text-xs' : 'px-3 py-2 text-sm'
+        } bg-red-700 hover:bg-red-800 text-white`}
+      >
+        Call to Order
+      </Link>
+    )
+  }
   if (h.cta_mode === 'quote_shipping') {
     return (
       <Link
@@ -3665,7 +3680,7 @@ function ProductListRow({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) 
   )
 }
 
-function ProductCard({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) {
+function ProductCard({ h, vehicleId, big }: { h: BrowseHit; vehicleId?: number; big?: boolean }) {
   const { recentSkus, user } = useApp()
   const reordered = recentSkus.has(h.sku)
   // Shipping-mode labels are retail-only (B2B has a separate freight program).
@@ -3690,7 +3705,7 @@ function ProductCard({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) {
           no per-image white square. Card-level shadow does the "lifted"
           look; drop-shadow on the img would create an isolated stacking
           context and trap the blend. Owner ask 2026-05-17. */}
-      <div className="aspect-square flex items-center justify-center overflow-hidden">
+      <div className={`${big ? 'aspect-[4/3]' : 'aspect-square'} flex items-center justify-center overflow-hidden`}>
         {h.image_url ? (
           <img
             src={thumbUrl(h.image_url) || h.image_url}
@@ -3699,7 +3714,7 @@ function ProductCard({ h, vehicleId }: { h: BrowseHit; vehicleId?: number }) {
             alt={h.name}
             loading="lazy"
             style={{ mixBlendMode: 'multiply' }}
-            className="w-[82%] h-[82%] object-contain group-hover:scale-105 transition-transform duration-200"
+            className={`${big ? 'w-[94%] h-[94%]' : 'w-[82%] h-[82%]'} object-contain group-hover:scale-105 transition-transform duration-200`}
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
@@ -4350,6 +4365,11 @@ function CatalogBrowse() {
     ? (rawCategoryPath.startsWith(SHOWROOM_CATEGORY) ? rawCategoryPath : '')
     : rawCategoryPath
   const inStock = params.get('in_stock') === '1' || params.get('in_stock') === 'true'
+  // Equipment you judge by looking at it — truck bodies, aerial lifts, tow
+  // bodies, trailers — gets three big photos per row instead of six
+  // thumbnails (Ben, 2026-09-24). Parts stay dense.
+  const bigPictureGrid = /truck bodies|aerial lifts|bucket trucks|tow truck|trailer|dump bed/i
+    .test(`${rawCategoryTop} ${rawCategoryPath}`)
   const vehicleType = params.get('vehicle_type') || ''  // 'Van' restricts to van-fitting + universal
   const page = parseInt(params.get('page') || '1', 10)
   const sort = params.get('sort') || ''  // '' / 'name_asc' / 'name_desc' / 'stock_asc'. Default = stock-desc.
@@ -4858,8 +4878,12 @@ function CatalogBrowse() {
                     {data?.hits.map((h) => <ProductListRow key={h.id} h={h} vehicleId={data?.resolved_vehicle?.base_vehicle_id} />)}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-                    {data?.hits.map((h) => <ProductCard key={h.id} h={h} vehicleId={data?.resolved_vehicle?.base_vehicle_id} />)}
+                  // Equipment you buy with your eyes — truck bodies, aerials —
+                  // gets three big photos per row instead of six thumbnails.
+                  <div className={bigPictureGrid
+                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+                    : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4'}>
+                    {data?.hits.map((h) => <ProductCard key={h.id} h={h} vehicleId={data?.resolved_vehicle?.base_vehicle_id} big={bigPictureGrid} />)}
                   </div>
                 )}
               </div>
@@ -5557,6 +5581,33 @@ function ProductDetail() {
               {data.total_on_hand <= 0 && (
                 <div className="mt-1"><NotifyBackInStock sku={data.sku} /></div>
               )}
+            </div>
+          )}
+          {data.cta_mode === 'call_to_order' && (
+            /* Truck bodies and the like: priced by build, mounted here, and
+               shipped by freight — so the page asks for a phone call, with
+               the quote form underneath for anyone who'd rather write. */
+            <div className="mt-6 rounded border border-red-200 bg-red-50 p-4">
+              <div className="text-sm font-bold uppercase tracking-wide text-red-800">Call to order</div>
+              <p className="mt-1 text-sm text-gray-700">
+                We build these to your truck and mount them here, so pricing depends on the
+                chassis and options. Call either branch and we'll spec it with you.
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <a href="tel:+15035489300" className="flex-1 rounded bg-red-700 py-2.5 text-center font-semibold text-white hover:bg-red-800">
+                  Portland 503-548-9300
+                </a>
+                <a href="tel:+12533953825" className="flex-1 rounded bg-red-700 py-2.5 text-center font-semibold text-white hover:bg-red-800">
+                  Kent 253-395-3825
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => openInquiry({ kind: 'quote', product_sku: data.sku, product_name: data.name })}
+                className="mt-3 w-full rounded border border-red-300 bg-white py-2 text-sm font-semibold text-red-800 hover:bg-red-100"
+              >
+                Or request a quote by email
+              </button>
             </div>
           )}
           {data.cta_mode === 'quote_shipping' && (

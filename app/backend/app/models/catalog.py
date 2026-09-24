@@ -36,6 +36,9 @@ class CTAMode(str, Enum):
 
     ADD_TO_CART = "add_to_cart"
     QUOTE_SHIPPING = "quote_shipping"
+    # Big equipment — a truck body in a shopping cart with no freight cost
+    # reads wrong, so the card asks the shopper to call either branch.
+    CALL_TO_ORDER = "call_to_order"
     BROWSE_ONLY = "browse_only"
 
 
@@ -248,6 +251,11 @@ class Product(Base):
     instock_only_municipality: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     is_for_sale: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
+
+    # Bodies and other cross-company equipment show every branch's stock,
+    # including Spokane — the storefront default counts Portland + Kent
+    # only (services/stock_scope.py).
+    show_all_branch_stock: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     # Shipping fulfillment mode — ship | truck_freight | will_call (see
     # ShippingMode). `shipping_mode` is the EFFECTIVE value (drives badge +

@@ -22,9 +22,18 @@ NELSON_WAREHOUSE_CODES = (1, 2)
 
 
 def nelson_stock_only():
-    """SQLAlchemy condition limiting ProductInventory rows to Nelson's branches."""
-    from app.models import ProductInventory, Warehouse
+    """SQLAlchemy condition limiting ProductInventory rows to Nelson's branches.
 
-    return ProductInventory.warehouse_id.in_(
+    Products flagged ``show_all_branch_stock`` are exempt: truck bodies and
+    other equipment the two companies sell together count every branch,
+    Spokane included (Ben, 2026-09-24).
+    """
+    from app.models import Product, ProductInventory, Warehouse
+
+    at_nelson = ProductInventory.warehouse_id.in_(
         select(Warehouse.id).where(Warehouse.code.in_(NELSON_WAREHOUSE_CODES))
     )
+    every_branch = ProductInventory.product_id.in_(
+        select(Product.id).where(Product.show_all_branch_stock.is_(True))
+    )
+    return at_nelson | every_branch
