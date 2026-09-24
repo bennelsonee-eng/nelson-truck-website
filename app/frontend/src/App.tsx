@@ -2998,23 +2998,9 @@ type BodyOptionItem = {
  *  ours showed none, so a customer had no way to see what a body can be built
  *  with. They are NOT sold separately and carry no price: they're specified on
  *  the order, so the section says so plainly and ends in a quote request. */
-function BodyFactoryOptions({ sku }: { sku: string }) {
-  const [options, setOptions] = useState<BodyOptionItem[]>([])
-  const [brand, setBrand] = useState<string | null>(null)
+function BodyFactoryOptions({ sku, options, brand }: { sku: string; options: BodyOptionItem[]; brand: string | null }) {
   const [open, setOpen] = useState<BodyOptionItem | null>(null)
   const [showAll, setShowAll] = useState(false)
-  useEffect(() => {
-    let alive = true
-    fetch(`/api/catalog/products/${encodeURIComponent(sku)}/body-options`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (!alive) return
-        setOptions(d?.options || [])
-        setBrand(d?.brand || null)
-      })
-      .catch(() => alive && setOptions([]))
-    return () => { alive = false }
-  }, [sku])
   if (options.length === 0) return null
   const shown = showAll ? options : options.slice(0, 12)
   return (
@@ -5404,6 +5390,12 @@ function ProductDetail() {
   const [lostSaleOpen, setLostSaleOpen] = useState(false)
   const [priceMatchOpen, setPriceMatchOpen] = useState(false)
   const [presentOpen, setPresentOpen] = useState(false)
+  // Body options are fetched up here, not inside the section, so <Seo> can hold
+  // the prerenderer until they land -- 395 options of the manufacturer's own
+  // copy is the content a truck-body page should be found on. null = still
+  // loading; [] = this product has none.
+  const [bodyOptions, setBodyOptions] = useState<BodyOptionItem[] | null>(null)
+  const [bodyOptionBrand, setBodyOptionBrand] = useState<string | null>(null)
   // Per-sale markup override (null = use the customer's profile/default markup).
   const [markupOverride, setMarkupOverride] = useState<number | null>(null)
 
@@ -5437,6 +5429,22 @@ function ProductDetail() {
         })
       })
       .catch((e) => setError(e.message))
+  }, [sku])
+
+  // Truck bodies only -- everything else comes back with an empty list, which
+  // is what releases the prerenderer.
+  useEffect(() => {
+    let alive = true
+    setBodyOptions(null)
+    fetch(`/api/catalog/products/${encodeURIComponent(sku!)}/body-options`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive) return
+        setBodyOptions(d?.options || [])
+        setBodyOptionBrand(d?.brand || null)
+      })
+      .catch(() => alive && setBodyOptions([]))
+    return () => { alive = false }
   }, [sku])
 
   async function onAdd() {
@@ -5544,6 +5552,7 @@ function ProductDetail() {
         type="product"
         noindex={data.is_hidden || !data.is_for_sale}
         jsonLd={[productJsonLd, breadcrumbJsonLd]}
+        ready={bodyOptions !== null}
       />
       <Link to="/catalog" className="text-sm text-red-700 hover:underline">← Catalog</Link>
 
@@ -5765,7 +5774,7 @@ function ProductDetail() {
           (product_accessory). Renders nothing for products with none. */}
       {/* Truck bodies: the factory options the builder can add before it
           ships (body_option). Renders nothing for products with none. */}
-      <BodyFactoryOptions sku={sku!} />
+      <BodyFactoryOptions sku={sku!} options={bodyOptions || []} brand={bodyOptionBrand} />
 
       <BodyPartsAndOptions sku={sku!} />
 
