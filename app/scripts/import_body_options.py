@@ -73,16 +73,38 @@ class FamilyRule:
 # deluxe body gets its own set rather than both.
 FAMILY_RULES: tuple[FamilyRule, ...] = (
     # --- Knapheide -------------------------------------------------------
-    FamilyRule("Knapheide", "service", ("696", "682", "698", "6108", "6132"),
-               (r"\bservice body\b", r"\bKUV\b", r"\bmechanic", r"value-master(?!-x)\b",
-                r"\bcombo steel\b", r"\bfliptop\b", r"low pro")),
+    # Knapheide's steel and aluminum bodies really do differ: the steel service
+    # body carries 12 options the aluminum one doesn't (torsion box floor, cab
+    # guard, canopy roof, crane reinforcement), so they stay separate families.
+    FamilyRule("Knapheide", "SERVICE_STEEL", ("696", "682", "698", "6108", "6132"),
+               # the combo body has its own set, so it must not read as steel too
+               (r"(?<!combo )\bsteel service body\b", r"\blow profile steel\b")),
+    FamilyRule("Knapheide", "SERVICE_ALUMINUM", (),
+               (r"\baluminum (fliptop|standard|low pro)\b",)),
+    FamilyRule("Knapheide", "SERVICE_COMBO", (), (r"\bcombo steel\b",)),
+    FamilyRule("Knapheide", "SERVICE_LINE", (), (r"\bline body\b",)),
+    FamilyRule("Knapheide", "MECHANICS", ("KMT", "KMS"), (r"\bmechanic",)),
+    FamilyRule("Knapheide", "KUV", (), (r"\bKUV\b(?!.*(cab chassis|chassis cab))",)),
+    FamilyRule("Knapheide", "KUVCC", (), (r"\bKUV\b.*(cab chassis|chassis cab)",)),
+    # PX/PXS are the legacy steel platform bodies Knapheide replaced with the
+    # Value-Master X, so they take the PVMX set (harvest note, 2026-09-24).
     FamilyRule("Knapheide", "PVMX", ("PVMX", "PVMXS", "PVMXT", "PX", "PXS"),
-               (r"\bplatform body\b", r"\bflatbed\b", r"value-master-x")),
-    FamilyRule("Knapheide", "gooseneck", ("PGTB", "PGTC", "PGNA", "PGNB", "PGNC", "PGND", "NGB"),
+               (r"value-master-x", r"\bflatbed\b")),
+    FamilyRule("Knapheide", "PLATFORM_ALUMINUM", (), (r"\baluminum platform body\b",)),
+    # PGNA has no page of its own; it maps onto the PGT pages the harvest read.
+    FamilyRule("Knapheide", "GOOSENECK",
+               ("PGTB", "PGTC", "PGTD", "PGTE", "PGNA", "PGNB", "PGNC", "PGND", "NGB"),
                (r"\bgooseneck\b",)),
-    FamilyRule("Knapheide", "contractor", ("PCON",),
-               (r"\bcontractor body\b", r"\bconcrete body\b", r"\blandscaper body\b")),
-    FamilyRule("Knapheide", "dump", ("PDUMP",), (r"\bdump body\b",)),
+    FamilyRule("Knapheide", "CARGO_HAULER", (), (r"cargo[- ]hauler",)),
+    FamilyRule("Knapheide", "HEAVY_HAULER", (), (r"heavy[- ]hauler",)),
+    FamilyRule("Knapheide", "DUMP", ("PDUMP",), (r"\bdump body\b",)),
+    FamilyRule("Knapheide", "CONTRACTOR", ("PCON",), (r"\bcontractor body\b",)),
+    FamilyRule("Knapheide", "CONCRETE", (), (r"\bconcrete body\b",)),
+    FamilyRule("Knapheide", "LANDSCAPE", (), (r"\blandscaper? body\b",)),
+    FamilyRule("Knapheide", "FORESTRY", (), (r"\bforestry body\b",)),
+    FamilyRule("Knapheide", "SERVICE_CRANE", (), (r"\bcrane body\b",)),
+    FamilyRule("Knapheide", "FUEL_LUBE", (), (r"fuel[- ]lube",)),
+    FamilyRule("Knapheide", "WATER", (), (r"\bwater (body|truck)\b",)),
     # --- CM Truck Beds ---------------------------------------------------
     FamilyRule("CM Truck Beds", "RD", name_patterns=(r"^RD\b",)),
     FamilyRule("CM Truck Beds", "ALRD", name_patterns=(r"^AL RD\b",)),
