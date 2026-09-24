@@ -299,6 +299,20 @@ def walk_inv_days(
                     if pid:
                         break
 
+            # …and the ERP-sourced shape, where the SKU is the ourparts_num
+            # itself ('TOMCVL-AA-1330EF71') or prod_code + parts_num. Without
+            # this, whole lines sat on the site reading "not in stock" while
+            # the stock was on the floor — every Tommy Gate liftgate, 54
+            # Western parts and 208 products in all (found 2026-09-24).
+            if pid is None:
+                pid = sku_map.get(ourparts)
+            if pid is None and mpc:
+                pc_upper = mpc.upper()
+                for cand in candidates:
+                    pid = sku_map.get(f"{pc_upper}{cand}") or sku_map.get(f"{pc_upper}-{cand}")
+                    if pid:
+                        break
+
             if pid is None:
                 stats[f"{source_tag}_unmatched_sku"] += 1
                 per_brand[(mpc, "miss")] += 1
