@@ -2984,6 +2984,126 @@ const BODY_PART_GROUPS_OPEN = new Set([
   'Sizes & configurations', 'Bumpers & hitches', 'Mounting & installation kits', 'Racks, bulkheads & sides',
 ])
 
+type BodyOptionItem = {
+  name: string
+  slug: string
+  description: string | null
+  image_url: string | null
+  thumb_url: string | null
+  model_name: string | null
+}
+
+/** "Factory options for this body" — what the builder can add before the body
+ *  ships. Ben, 2026-09-24: Knapheide and CM show these on their own pages and
+ *  ours showed none, so a customer had no way to see what a body can be built
+ *  with. They are NOT sold separately and carry no price: they're specified on
+ *  the order, so the section says so plainly and ends in a quote request. */
+function BodyFactoryOptions({ sku }: { sku: string }) {
+  const [options, setOptions] = useState<BodyOptionItem[]>([])
+  const [brand, setBrand] = useState<string | null>(null)
+  const [open, setOpen] = useState<BodyOptionItem | null>(null)
+  const [showAll, setShowAll] = useState(false)
+  useEffect(() => {
+    let alive = true
+    fetch(`/api/catalog/products/${encodeURIComponent(sku)}/body-options`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!alive) return
+        setOptions(d?.options || [])
+        setBrand(d?.brand || null)
+      })
+      .catch(() => alive && setOptions([]))
+    return () => { alive = false }
+  }, [sku])
+  if (options.length === 0) return null
+  const shown = showAll ? options : options.slice(0, 12)
+  return (
+    <section className="border-t bg-gray-50" aria-labelledby="body-options-heading">
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <h2 id="body-options-heading" className="text-lg font-bold text-gray-900">
+          Factory options for this body
+        </h2>
+        <p className="text-sm text-gray-600 mt-1 mb-1 max-w-3xl">
+          {brand ? `${brand} builds ` : 'The builder adds '}
+          these when the body is made — they are specified on the order, not bought separately,
+          so there is no price on them here. Tell us which ones you want and we will quote the
+          body built your way.
+        </p>
+        <p className="text-xs text-gray-500 mb-4">
+          {options.length} option{options.length === 1 ? '' : 's'} available ·{' '}
+          <a href={`mailto:sales@nelsontruck.com?subject=${encodeURIComponent(`Truck body options for ${sku}`)}`} className="text-red-700 hover:underline font-semibold">
+            Ask about options
+          </a>
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {shown.map((o) => (
+            <button
+              key={o.slug}
+              type="button"
+              onClick={() => setOpen(o)}
+              className="text-left bg-white rounded border border-gray-200 overflow-hidden hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-shadow"
+            >
+              <div className="aspect-[4/3] bg-white flex items-center justify-center overflow-hidden">
+                {o.thumb_url ? (
+                  <img src={o.thumb_url} alt={o.name} loading="lazy" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-[10px] uppercase tracking-wide text-gray-300">No photo</div>
+                )}
+              </div>
+              <div className="p-3 border-t border-gray-100">
+                <div className="text-sm font-semibold text-gray-900 leading-snug">{o.name}</div>
+                {o.description && (
+                  <div className="text-xs text-gray-500 mt-1 line-clamp-2 leading-snug">{o.description}</div>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+        {options.length > 12 && (
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="mt-4 text-sm font-semibold text-red-700 hover:underline"
+          >
+            {showAll ? 'Show fewer options' : `Show all ${options.length} options`}
+          </button>
+        )}
+      </div>
+
+      {open && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+          onClick={() => setOpen(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={open.name}
+        >
+          <div className="bg-white rounded-lg max-w-2xl w-full overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            {open.image_url && (
+              <img src={open.image_url} alt={open.name} className="w-full max-h-[55vh] object-contain bg-gray-50" />
+            )}
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-4">
+                <h3 className="text-lg font-bold text-gray-900">{open.name}</h3>
+                <button onClick={() => setOpen(null)} className="text-gray-400 hover:text-gray-700 text-xl leading-none" aria-label="Close">×</button>
+              </div>
+              {open.description && <p className="text-sm text-gray-600 mt-2 leading-relaxed">{open.description}</p>}
+              <p className="text-xs text-gray-500 mt-4">
+                Ordered with the body — ask us to add it to your quote.
+              </p>
+              <a
+                href={`mailto:sales@nelsontruck.com?subject=${encodeURIComponent(`${open.name} on ${sku}`)}`}
+                className="inline-block mt-3 px-4 py-2 bg-red-700 text-white text-sm font-semibold rounded hover:bg-red-800"
+              >
+                Request a quote with this option
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
 /** "Sizes & parts for this body" on a truck-body page. Owner ask 2026-09-21:
  *  the Knapheide parts that were filed on Truck Bodies are listed underneath
  *  the body they fit, and the sizes we stock under the model they belong to.
@@ -5643,6 +5763,10 @@ function ProductDetail() {
 
       {/* Truck bodies: the stocked sizes of this model and the parts that fit it
           (product_accessory). Renders nothing for products with none. */}
+      {/* Truck bodies: the factory options the builder can add before it
+          ships (body_option). Renders nothing for products with none. */}
+      <BodyFactoryOptions sku={sku!} />
+
       <BodyPartsAndOptions sku={sku!} />
 
       {/* Like-products rail — "Other parts for your truck" when YMM is set,

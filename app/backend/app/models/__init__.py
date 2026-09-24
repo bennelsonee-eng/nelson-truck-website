@@ -52,6 +52,7 @@ from app.models.product_match import ProductMatch, ProductMatchStatus, ProductMa
 from app.models.product_resource import ProductResource, ResourceKind
 from app.models.product_spec_table import ProductSpecTable
 from app.models.product_accessory import ProductAccessory
+from app.models.body_option import BodyOption, ProductBodyOption
 from app.models.inquiry import Inquiry, NewsletterSubscriber
 from app.models.kit import Kit, KitComponent
 from app.models.catalog_visibility import CatalogOverride, OVERRIDABLE_FIELDS
@@ -168,6 +169,8 @@ __all__ = [
     "ProductSpecTable",
     # Parts + sized bodies listed underneath a truck body
     "ProductAccessory",
+    "BodyOption",
+    "ProductBodyOption",
     # Quote / contact requests and newsletter sign-ups (launch audit 2026-09-22)
     "Inquiry",
     "NewsletterSubscriber",

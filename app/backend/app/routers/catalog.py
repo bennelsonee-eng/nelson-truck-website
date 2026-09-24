@@ -3666,6 +3666,53 @@ async def product_accessories(
         g.pop("order")
     return {"sku": sku, "groups": out, "show_prices": channel == "retail"}
 
+@router.get("/products/{sku}/body-options")
+async def product_body_options(
+    sku: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """The factory options a truck body can be ordered with.
+
+    Knapheide and CM publish an options set per body family -- grain sides,
+    swing-out rear gates, contractor packages, cargo tie downs. Ben, 2026-09-24:
+    the site showed none of it, so a customer couldn't see what a body can be
+    built with. These are CONTENT, not sellable line items: they're ordered
+    with the body, so the page lists them and invites a call. No channel guard
+    and no price -- nothing here is for sale on its own.
+    """
+    from app.models import BodyOption, ProductBodyOption
+
+    body = (await db.execute(
+        select(Product.id).where(Product.sku == sku)
+    )).scalar_one_or_none()
+    if body is None:
+        raise HTTPException(status_code=404, detail=f"Product not found: {sku}")
+
+    rows = (await db.execute(
+        select(BodyOption, ProductBodyOption.sort_order)
+        .join(ProductBodyOption, ProductBodyOption.body_option_id == BodyOption.id)
+        .where(ProductBodyOption.product_id == body)
+        .order_by(ProductBodyOption.sort_order, BodyOption.name)
+    )).all()
+    if not rows:
+        return {"sku": sku, "brand": None, "family": None, "options": []}
+
+    return {
+        "sku": sku,
+        "brand": rows[0][0].brand,
+        # Families are per-option; the page shows the one they share.
+        "family": rows[0][0].family,
+        "options": [{
+            "name": o.name,
+            "slug": o.slug,
+            "description": o.description,
+            "image_url": o.image_url,
+            "thumb_url": o.thumb_url or o.image_url,
+            "model_name": o.model_name,
+        } for o, _ in rows],
+    }
+
+
 
 # =====================================================================
 # ADMIN: category image curation
