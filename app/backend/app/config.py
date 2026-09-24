@@ -44,6 +44,11 @@ class Settings(BaseSettings):
     # Titan site (which uses "products") without clobbering its index.
     typesense_collection: str = "nelson_products"
 
+    # --- ERP database (same box) ---
+    # Read-only source for the cus190_erp / sup190_erp mirror tables —
+    # see scripts/sync_erp_feeds.py. Empty until set in app/.env.
+    erp_database_url: str = ""
+
     # --- Source data sync (Titan MySQL) ---
     titan_mysql_host: str = ""
     titan_mysql_port: int = 3306
