@@ -56,7 +56,8 @@ MASTER_TABLES = {
     "tte_parts_master": "tte_parts_master.csv",
     "nte_parts_master": "nte_parts_master.csv",
 }
-MASTER_PAGE = 100_000
+# The bridge caps one query at 50k rows, so ask for less than that.
+MASTER_PAGE = 25_000
 
 
 async def fetch_csv(url: str, token: str, table: str, dest: Path) -> int:
@@ -103,7 +104,10 @@ async def fetch_csv_paged(url: str, token: str, table: str, dest: Path,
             parts.extend(rows)
             fetched = len(lines) - 1
             offset += page
-            if fetched < page:
+            if fetched < page:   # short page = last page
+                break
+            if offset > 2_000_000:  # guard against a bridge that ignores OFFSET
+                log.warning("%s: stopping at %d rows", table, offset)
                 break
     blob = b"".join(parts)
     tmp = dest.with_suffix(dest.suffix + ".tmp")
