@@ -17,7 +17,8 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from sync_inventory import DUMPS_DIR, INV_TABLES, fetch_csv, log
+from sync_inventory import (DUMPS_DIR, INV_TABLES, MASTER_TABLES, fetch_csv,
+                            fetch_csv_paged, log)
 
 
 async def main() -> int:
@@ -36,6 +37,15 @@ async def main() -> int:
         try:
             await fetch_csv(settings.titan_bridge_url, settings.titan_bridge_token,
                             table, DUMPS_DIR / fname)
+        except Exception:
+            log.exception("fetch %s failed (prior CSV kept)", table)
+            return 1
+    # The parts masters decide whether an inventory row can be matched at all,
+    # so they are refreshed here too, in pages (see fetch_csv_paged).
+    for table, fname in MASTER_TABLES.items():
+        try:
+            await fetch_csv_paged(settings.titan_bridge_url, settings.titan_bridge_token,
+                                  table, DUMPS_DIR / fname)
         except Exception:
             log.exception("fetch %s failed (prior CSV kept)", table)
             return 1

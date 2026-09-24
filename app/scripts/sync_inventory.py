@@ -47,6 +47,17 @@ INV_TABLES = {
     "nte_inv_days": "nte_inv_days.csv",
 }
 
+# The linker looks every inventory row up in the parts master; a part missing
+# from these means its stock is dropped ("no_master"). They were a stale
+# snapshot until 2026-09-24 — 331,201 of 441,088 rows, which is why every
+# Tommy Gate liftgate on the site read "not in stock" with one on the floor.
+# Fetched in pages because a single bridge response tops out around 331k rows.
+MASTER_TABLES = {
+    "tte_parts_master": "tte_parts_master.csv",
+    "nte_parts_master": "nte_parts_master.csv",
+}
+MASTER_PAGE = 100_000
+
 
 async def fetch_csv(url: str, token: str, table: str, dest: Path) -> int:
     """Fetch one inventory table as CSV and atomically replace `dest`.
@@ -65,6 +76,42 @@ async def fetch_csv(url: str, token: str, table: str, dest: Path) -> int:
     tmp.replace(dest)  # atomic swap
     log.info("fetched %s -> %s (%d bytes)", table, dest.name, len(body))
     return len(body)
+
+
+async def fetch_csv_paged(url: str, token: str, table: str, dest: Path,
+                          page: int = MASTER_PAGE) -> int:
+    """Fetch a whole table as CSV in pages, then atomically replace `dest`.
+
+    The bridge caps one response; paging with LIMIT/OFFSET gets every row.
+    The header comes back on each page, so only the first one is kept.
+    """
+    parts: list[bytes] = []
+    offset = 0
+    async with httpx.AsyncClient(timeout=300, verify=True) as client:
+        while True:
+            q = f"SELECT * FROM {table} LIMIT {page} OFFSET {offset}"
+            r = await client.get(url, params={"token": token, "query": q, "format": "csv"})
+            r.raise_for_status()
+            body = r.content
+            if b"ourparts_num" not in body[:300].lower():
+                raise RuntimeError(
+                    f"{table}: response missing expected header ({len(body)}B): {body[:160]!r}")
+            lines = body.splitlines(keepends=True)
+            rows = lines if offset == 0 else lines[1:]
+            if not rows or (offset and len(rows) == 0):
+                break
+            parts.extend(rows)
+            fetched = len(lines) - 1
+            offset += page
+            if fetched < page:
+                break
+    blob = b"".join(parts)
+    tmp = dest.with_suffix(dest.suffix + ".tmp")
+    tmp.write_bytes(blob)
+    tmp.replace(dest)
+    log.info("fetched %s -> %s (%d rows, %d bytes)", table, dest.name,
+             max(len(parts) - 1, 0), len(blob))
+    return len(blob)
 
 
 async def main() -> None:
