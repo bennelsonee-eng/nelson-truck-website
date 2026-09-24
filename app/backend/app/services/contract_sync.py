@@ -152,22 +152,25 @@ async def sync_contracts(db: AsyncSession, settings: Settings, *, dry_run: bool 
 
     # Replace in one transaction: the rows this sync owns, plus the shape the
     # July one-off import left behind (name "contract-…" with no description).
-    async with db.begin():
-        await db.execute(text(
-            "create table if not exists _bak_contract_sync as select * from contract where false"))
-        await db.execute(text(
-            "insert into _bak_contract_sync select * from contract "
-            "where description = :tag or (description is null and name like 'contract-%')"
-        ).bindparams(tag=SOURCE_TAG))
-        deleted = await db.execute(
-            delete(Contract).where(
-                (Contract.description == SOURCE_TAG)
-                | (Contract.description.is_(None) & Contract.name.like("contract-%"))
-            )
+    # One transaction: back up what we own, delete it, insert the fresh set.
+    # (The session may already have a transaction open, so no db.begin() here.)
+    await db.execute(text(
+        "create table if not exists _bak_contract_sync as select * from contract where false"))
+    await db.execute(text("truncate _bak_contract_sync"))
+    await db.execute(text(
+        "insert into _bak_contract_sync select * from contract "
+        "where description = :tag or (description is null and name like 'contract-%')"
+    ).bindparams(tag=SOURCE_TAG))
+    deleted = await db.execute(
+        delete(Contract).where(
+            (Contract.description == SOURCE_TAG)
+            | (Contract.description.is_(None) & Contract.name.like("contract-%"))
         )
-        result.deleted = deleted.rowcount or 0
-        for i in range(0, len(rows), 2000):
-            await db.execute(pg_insert(Contract).values(rows[i:i + 2000]))
-            result.inserted += len(rows[i:i + 2000])
+    )
+    result.deleted = deleted.rowcount or 0
+    for i in range(0, len(rows), 2000):
+        await db.execute(pg_insert(Contract).values(rows[i:i + 2000]))
+        result.inserted += len(rows[i:i + 2000])
+    await db.commit()
     log.info(result.summary())
     return result
