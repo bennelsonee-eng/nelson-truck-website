@@ -284,6 +284,11 @@ def walk_inv_days(
             stripped_zeros = pn_upper.lstrip("0")
             if stripped_zeros and stripped_zeros != pn_upper:
                 candidates.append(stripped_zeros)
+            # Some master rows repeat the prod code inside parts_num
+            # ("KNP6108D-S" rather than "6108D-S"), which hid stock on
+            # products keyed the ordinary way (found 2026-09-24).
+            if mpc and pn_upper.startswith(mpc.upper()) and len(pn_upper) > len(mpc):
+                candidates.append(pn_upper[len(mpc):].lstrip("-"))
 
             pid = None
             for cand in candidates:
