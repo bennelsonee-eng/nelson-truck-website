@@ -55,6 +55,7 @@ def upgrade() -> None:
         # How the link was made, so a rebuild can replace only its own rows.
         sa.Column("source", sa.String(40), nullable=False, server_default="body-option-rules"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.UniqueConstraint("product_id", "body_option_id", name="uq_product_body_option"),
     )
 
