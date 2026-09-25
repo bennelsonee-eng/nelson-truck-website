@@ -53,6 +53,10 @@ from app.models.product_resource import ProductResource, ResourceKind
 from app.models.product_spec_table import ProductSpecTable
 from app.models.product_accessory import ProductAccessory
 from app.models.body_option import BodyOption, ProductBodyOption
+from app.models.unit_listing import (
+    ErpOnhand, UnitLead, UnitListing, UnitListingMedia, UnitListingPart,
+    UnitListingStat, UnitPriceGuide,
+)
 from app.models.inquiry import Inquiry, NewsletterSubscriber
 from app.models.kit import Kit, KitComponent
 from app.models.catalog_visibility import CatalogOverride, OVERRIDABLE_FIELDS
@@ -171,6 +175,13 @@ __all__ = [
     "ProductAccessory",
     "BodyOption",
     "ProductBodyOption",
+    "UnitListing",
+    "UnitListingPart",
+    "UnitListingMedia",
+    "UnitListingStat",
+    "UnitLead",
+    "UnitPriceGuide",
+    "ErpOnhand",
     # Quote / contact requests and newsletter sign-ups (launch audit 2026-09-22)
     "Inquiry",
     "NewsletterSubscriber",

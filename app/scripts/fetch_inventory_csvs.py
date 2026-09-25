@@ -52,7 +52,23 @@ async def main() -> int:
     # Fetching a master says nothing about whether the legacy side still
     # rebuilds it; warn (without failing) when one has gone stale.
     await warn_if_masters_stale(settings.titan_bridge_url, settings.titan_bridge_token)
+    await refresh_unit_onhand()
     return 0
+
+
+async def refresh_unit_onhand() -> None:
+    """Mirror Nelson's on-hand rows into erp_onhand for the trucks-for-sale
+    admin (part-number checks, "in stock but not listed", cost and age).
+    Never fails the unit: the stock upsert that follows matters more."""
+    try:
+        from app.database import async_session
+        from app.services.unit_listings import refresh_erp_onhand
+        async with async_session() as db:
+            n = await refresh_erp_onhand(db, DUMPS_DIR / "nte_inv_days.csv",
+                                         DUMPS_DIR / "nte_parts_master.csv")
+        log.info("erp_onhand: %d on-hand rows mirrored for the unit listings", n)
+    except Exception:
+        log.exception("erp_onhand refresh failed (skipped)")
 
 
 if __name__ == "__main__":
