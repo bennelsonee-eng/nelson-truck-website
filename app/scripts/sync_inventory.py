@@ -7,7 +7,7 @@ min but nothing carried that into the website's Postgres `product_inventory`
 
 Runs on the `titan-inventory-sync` 15-min systemd timer. Steps:
   1. Fetch `tte_inv_days` + `nte_inv_days` from the read-only PHP bridge
-     (settings.titan_bridge_url, token-auth — same source customer_sync uses),
+     (settings.titan_bridge_url, token-auth — same source contract_sync uses),
      writing them where link_titan_inventory_v2 expects (atomic replace, so a
      mid-fetch failure never leaves a truncated CSV).
   2. Run link_titan_inventory_v2 in INVENTORY-ONLY mode (write_prices=False) so

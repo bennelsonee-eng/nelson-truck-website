@@ -59,7 +59,8 @@ class Settings(BaseSettings):
     titan_pricing_sync_hour: int = 1  # 1am PST nightly bulk
 
     # Read-only PHP bridge for the Titan MySQL (lives on TigerTech web root).
-    # Used by customer_sync.py — the bridge supports SHOW/SELECT/DESCRIBE only
+    # Used by contract_sync, price_sync and the inventory fetch — the bridge
+    # supports SHOW/SELECT/DESCRIBE only
     # and is hardened with a shared-secret token (see app/scripts/dump_titan_tables.php).
     titan_bridge_url: str = "https://nelsontruck.com.customers.tigertech.net/dump_titan_tables.php"
     titan_bridge_token: str = "ttn-x8e2-9qa1-y3h7-r5b6-mc4f-2026-rebuild"

@@ -1,24 +1,35 @@
-"""Customer sync — pulls nte_cus190 from the legacy MySQL bridge into local Postgres.
+"""Customer sync — fills the website's `customer` table from the ERP mirror.
 
-Source: the read-only PHP bridge at `settings.titan_bridge_url` (lives on the
-TigerTech web root — see `app/scripts/dump_titan_tables.php` for the source).
-Authenticated via `settings.titan_bridge_token`. Returns JSON (or CSV) for any
-table or arbitrary SELECT. No direct MySQL credentials needed on this side.
-(Field names keep the `titan_` prefix — inherited from the Titan clone — but
-this Nelson site reads the `nte_` tables.)
+Source: `cus190_erp`, the website database's own mirror of the ERP's customer
+master (filled by `scripts/sync_erp_feeds.py`, which copies the ERP Postgres
+rows that land nightly as the CUS190 feed). Both live in `nelson_web`, so this
+is a plain in-database read — no MySQL, no PHP bridge, no CSV.
 
-Target: Postgres `customer` + `customer_address` tables on the Nelson-website DB.
+It used to read `nte_cus190` through the legacy bridge. That table does not
+exist in the `nelsontruck1` schema and never did, so the sync had never once
+run: every website customer was still the placeholder the July contracts load
+created ("Customer 79902", no name, no email, no address, no phone).
 
-Why this exists: the admin Shop-as-Customer dropdown (SOW A4.28) needs a
-populated `customer` table. Run this sync once after deploy to bring all
-Nelson customers in.
+Target: the `customer` + `customer_address` tables.
+
+What it does NOT do:
+  * It never deletes or deactivates a customer that is absent from the mirror.
+    388 of them exist — they came from the contracts file and have contract
+    rows but no ERP record, so dropping them would take their pricing with it.
+  * It never changes an existing customer's `tier`. See TIER below.
+
+TIER: every customer today is `JOBBER`, a blanket default from the July load,
+and new ones are created the same way. The ERP does carry a real per-customer
+price level in `cus190_erp.price_type` (3: 2174, 1: 830, 0: 768, 2: 237,
+5: 66, 4: 4, null: 210), but mapping those onto the four-value CustomerTier
+enum is a pricing decision, not a data one — and not a free one either, since
+`retail_price` is only above `jobber_price` on about half the catalogue. So
+this sync leaves tier alone; price_type stays in `cus190_erp` in the same
+database, ready to drive that mapping in one UPDATE once it is decided.
 
 Run modes:
-  * Programmatic: `await sync_customers_from_tte_cus190(db, settings)`
-  * CLI: `python -m scripts.sync_customers --dry-run --limit 50`
-
-Column mapping below matches the real FACS tte_cus190 schema (confirmed
-via the bridge's DESCRIBE 2026-05-17).
+  * Programmatic: `await sync_customers_from_erp_mirror(db)`
+  * CLI: `python -m scripts.sync_customers --dry-run`
 """
 
 from __future__ import annotations
@@ -28,11 +39,9 @@ from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-import httpx
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import Settings
 from app.models import (
     AddressType,
     Customer,
@@ -44,43 +53,27 @@ from app.models import (
 log = logging.getLogger(__name__)
 
 
-# Real column names in the legacy cus190 table (per DESCRIBE 2026-05-17). The
-# bridge returns a header row whose `cus_num` value is literally "Customer #" —
-# we skip that. Otherwise everything else is a real customer.
-# Nelson pulls nte_cus190 (Titan pulls tte_cus190). Verify the bridge exposes
-# nte_cus190 — see open item in NELSON_WEBSITE_SEPARATION_PLAN.md §8.
-SOURCE_TABLE = "nte_cus190"
+# The mirror table, and the columns worth carrying across. Everything the ERP
+# sends that the website has nowhere to put (territory, location_code,
+# default_warehouse, po_required, tax_code, start_date, erp_id) stays in
+# cus190_erp rather than being dropped on the floor.
+SOURCE_TABLE = "cus190_erp"
 
-COL_CUS_NUM = "cus_num"
-COL_NAME = "name"
-COL_BILL_ADDR1 = "addr1"
-COL_BILL_ADDR2 = "addr2"
-COL_BILL_CITY = "city"
-COL_BILL_STATE = "state"
-COL_BILL_ZIP = "zip"
-COL_SHIP_NAME = "ship_to_name"
-COL_SHIP_ADDR1 = "ship_to_address_1"
-COL_SHIP_ADDR2 = "ship_to_address_2"
-COL_SHIP_CITY = "ship_to_city"
-COL_SHIP_STATE = "ship_to_state"
-COL_SHIP_ZIP = "ship_to_zip_code"
-COL_PHONE = "phone_number"
-COL_FAX = "fax_number"
-COL_CONTACT_NAME = "contact_name"
-COL_CONTACT_EMAIL = "contact_email"
-COL_CONTACT_PHONE = "contact_phone"
-COL_TERMS = "terms"
-COL_CREDIT_LIMIT = "credit_limit"
-COL_TAX_EXEMPT = "tax_exempt"
-COL_TAX_EXEMPT_STATE = "tax_exempt_state"
-COL_TAX_EXEMPT_NUMBER = "tax_exempt_number"
-COL_SALES_REP = "sales_rep_number"
-COL_CUST_STATUS = "cust_status"          # "A" = active
-COL_BILL_TO_CUSTOMER = "bill_to_customer"  # cus_num of parent; equal to cus_num for top-level
-COL_DEALER = "dealer"                    # "Y" / "N"
+SOURCE_QUERY = f"""
+    select customer_number, name, contact, address1, address2, city, state, zip,
+           phone, fax, email, terms, tax_exempt, status, price_type,
+           bill_to_customer, sales_rep, credit_limit
+    from {SOURCE_TABLE}
+    where coalesce(customer_number, '') <> ''
+"""
 
+# "A" is an open account; "C" is closed (205 of 4,289).
+STATUS_ACTIVE = "A"
 
-# --- Result -----------------------------------------------------------------
+# The ERP writes '0' into bill_to_customer to mean "bills itself". Treating
+# that as a parent would hang 3,544 customers off a customer numbered 0 that
+# does not exist; only 391 rows name a real different parent.
+NO_PARENT = {"", "0"}
 
 
 @dataclass
@@ -90,14 +83,16 @@ class SyncResult:
     updated: int = 0
     skipped: int = 0
     parents_linked: int = 0
+    addresses_written: int = 0
     errors: list[str] = field(default_factory=list)
     dry_run: bool = False
 
     def summary(self) -> str:
         return (
-            f"nte_cus190 sync: read={self.rows_read} inserted={self.inserted} "
+            f"{SOURCE_TABLE} sync: read={self.rows_read} inserted={self.inserted} "
             f"updated={self.updated} skipped={self.skipped} "
-            f"parents_linked={self.parents_linked} errors={len(self.errors)} "
+            f"parents_linked={self.parents_linked} "
+            f"addresses={self.addresses_written} errors={len(self.errors)} "
             f"dry_run={self.dry_run}"
         )
 
@@ -105,20 +100,12 @@ class SyncResult:
 # --- Helpers ----------------------------------------------------------------
 
 
-def _get(row: dict[str, Any], col: str) -> str | None:
-    v = row.get(col)
+def _s(v: Any) -> str | None:
+    """Trim to a non-empty string, or None."""
     if v is None:
         return None
-    if isinstance(v, str):
-        v = v.strip()
-        return v or None
-    return str(v) if v != "" else None
-
-
-def _bool_yn(v: Any) -> bool:
-    if isinstance(v, str):
-        return v.strip().upper().startswith("Y")
-    return bool(v)
+    s = str(v).strip()
+    return s or None
 
 
 def _parse_decimal(v: Any) -> Decimal | None:
@@ -130,14 +117,9 @@ def _parse_decimal(v: Any) -> Decimal | None:
         return None
 
 
-def _is_header_row(row: dict[str, Any]) -> bool:
-    """The first row that FACS exports is a label row, not a customer."""
-    val = (row.get(COL_CUS_NUM) or "").strip()
-    return val == "" or val.lower() == "customer #"
-
-
 def _build_address(
     addr_type: AddressType,
+    *,
     name: str | None,
     company: str,
     addr1: str | None,
@@ -146,6 +128,7 @@ def _build_address(
     state: str | None,
     zip_: str | None,
 ) -> CustomerAddress | None:
+    """A partial address is worse than none — it would ship somewhere wrong."""
     if not (addr1 and city and state and zip_):
         return None
     return CustomerAddress(
@@ -156,242 +139,203 @@ def _build_address(
         addr1=addr1,
         addr2=addr2,
         city=city,
-        state=(state or "")[:2].upper(),
+        state=state[:2].upper(),
         zip=zip_,
         country="US",
     )
 
 
-async def _fetch_rows(settings: Settings, limit: int | None = None) -> list[dict[str, Any]]:
-    """Hit the PHP bridge and return the parsed row list."""
-    params: dict[str, Any] = {
-        "token": settings.titan_bridge_token,
-        "table": SOURCE_TABLE,
-        "format": "json",
-    }
-    if limit:
-        params["limit"] = int(limit)
-    url = settings.titan_bridge_url
-    async with httpx.AsyncClient(timeout=120, verify=True) as client:
-        r = await client.get(url, params=params)
-        r.raise_for_status()
-        body = r.json()
-    return body.get("rows", [])
+# --- Main sync --------------------------------------------------------------
 
 
-# --- Main sync function -----------------------------------------------------
-
-
-async def sync_customers_from_tte_cus190(
+async def sync_customers_from_erp_mirror(
     db: AsyncSession,
-    settings: Settings,
     *,
     dry_run: bool = False,
     limit: int | None = None,
     default_tier: CustomerTier = CustomerTier.JOBBER,
 ) -> SyncResult:
-    """Pull every row from tte_cus190 via the PHP bridge → upsert into the
-    local customer + customer_address tables. After all rows land, a second
-    pass populates `parent_customer_id` from `bill_to_customer`.
+    """Upsert every `cus190_erp` row into `customer` (+ its primary addresses),
+    then link `parent_customer_id` from `bill_to_customer` in a second pass.
+
+    Matched on `customer_number`, which carries a unique index, so the sync is
+    idempotent: running it twice changes nothing the second time.
     """
     result = SyncResult(dry_run=dry_run)
 
-    if not (settings.titan_bridge_url and settings.titan_bridge_token):
-        msg = "titan_bridge_url / titan_bridge_token not set"
-        result.errors.append(msg)
-        log.warning(msg)
-        return result
-
+    sql = SOURCE_QUERY + (f" limit {int(limit)}" if limit else "")
     try:
-        rows = await _fetch_rows(settings, limit=limit)
+        rows = (await db.execute(text(sql))).mappings().all()
     except Exception as e:
-        msg = f"Bridge fetch failed: {e}"
+        msg = f"Reading {SOURCE_TABLE} failed: {e}"
         result.errors.append(msg)
         log.exception(msg)
         return result
 
-    # Map cus_num → bill_to_customer for the parent-linking second pass.
+    if not rows:
+        msg = (f"{SOURCE_TABLE} is empty — run scripts/sync_erp_feeds.py first, "
+               f"or the website would learn nothing about its customers")
+        result.errors.append(msg)
+        log.warning(msg)
+        return result
+
+    # cus_num -> bill_to, for the second pass once every row exists.
     parent_map: dict[str, str] = {}
 
     for row in rows:
         result.rows_read += 1
-        if _is_header_row(row):
-            result.skipped += 1
-            continue
         try:
             cus_num = await _upsert_one(db, row, default_tier, dry_run, result)
-            if cus_num:
-                bill_to = _get(row, COL_BILL_TO_CUSTOMER)
-                if bill_to and bill_to != cus_num:
-                    parent_map[cus_num] = bill_to
         except Exception as e:
-            result.errors.append(f"row {row.get(COL_CUS_NUM, '?')}: {e}")
+            result.errors.append(f"row {row.get('customer_number', '?')}: {e}")
             log.exception("Sync row failed")
+            continue
+        if not cus_num:
+            continue
+        bill_to = _s(row.get("bill_to_customer"))
+        if bill_to and bill_to not in NO_PARENT and bill_to != cus_num:
+            parent_map[cus_num] = bill_to
 
-    # Second pass: link parent_customer_id where bill_to_customer differs.
     if not dry_run and parent_map:
-        all_nums = list({n for n in parent_map.keys()} | {p for p in parent_map.values()})
-        existing = (
-            await db.execute(
-                select(Customer.id, Customer.customer_number).where(
-                    Customer.customer_number.in_(all_nums)
-                )
-            )
-        ).all()
-        id_by_num = {num: cid for cid, num in existing}
-        for child_num, parent_num in parent_map.items():
-            child_id = id_by_num.get(child_num)
-            parent_id = id_by_num.get(parent_num)
-            if child_id is None or parent_id is None:
-                continue
-            child = (
-                await db.execute(select(Customer).where(Customer.id == child_id))
-            ).scalar_one_or_none()
-            if child is not None and child.parent_customer_id != parent_id:
-                child.parent_customer_id = parent_id
-                result.parents_linked += 1
+        result.parents_linked = await _link_parents(db, parent_map)
+    elif dry_run:
+        result.parents_linked = len(parent_map)
 
-    if not dry_run:
-        await db.commit()
-    else:
+    if dry_run:
         await db.rollback()
+    else:
+        await db.commit()
 
     log.info(result.summary())
     return result
 
 
+async def _link_parents(db: AsyncSession, parent_map: dict[str, str]) -> int:
+    """Point each child at its billing parent. A parent the mirror names but
+    the website does not carry is skipped rather than invented."""
+    wanted = set(parent_map) | set(parent_map.values())
+    rows = (
+        await db.execute(
+            select(Customer.id, Customer.customer_number).where(
+                Customer.customer_number.in_(wanted)
+            )
+        )
+    ).all()
+    id_by_num = {num: cid for cid, num in rows}
+
+    children = (
+        await db.execute(
+            select(Customer).where(Customer.customer_number.in_(list(parent_map)))
+        )
+    ).scalars().all()
+
+    linked = 0
+    for child in children:
+        parent_id = id_by_num.get(parent_map[child.customer_number])
+        if parent_id is None or parent_id == child.id:
+            continue
+        if child.parent_customer_id != parent_id:
+            child.parent_customer_id = parent_id
+            linked += 1
+    return linked
+
+
 async def _upsert_one(
     db: AsyncSession,
-    row: dict[str, Any],
+    row: Any,
     default_tier: CustomerTier,
     dry_run: bool,
     result: SyncResult,
 ) -> str | None:
-    cus_num = _get(row, COL_CUS_NUM)
+    cus_num = _s(row.get("customer_number"))
     if not cus_num:
         result.skipped += 1
         return None
 
-    name = _get(row, COL_NAME) or f"Customer {cus_num}"
-    is_active = (_get(row, COL_CUST_STATUS) or "").upper() == "A"
-    is_dealer = _bool_yn(_get(row, COL_DEALER))
-
-    # Tier heuristic: dealer=Y → DEALER, else default (JOBBER). The customer_class
-    # column carries other distinctions (COD, etc.) that we can refine later.
-    tier = CustomerTier.DEALER if is_dealer else default_tier
+    name = _s(row.get("name")) or f"Customer {cus_num}"
+    is_active = (_s(row.get("status")) or "").upper() == STATUS_ACTIVE
 
     existing = (
-        await db.execute(
-            select(Customer).where(Customer.customer_number == cus_num)
-        )
+        await db.execute(select(Customer).where(Customer.customer_number == cus_num))
     ).scalar_one_or_none()
 
     if existing is None:
         cust = Customer(
             customer_number=cus_num,
-            tier=tier,
+            tier=default_tier,
             name=name,
-            contact_name=_get(row, COL_CONTACT_NAME),
-            email=_get(row, COL_CONTACT_EMAIL),
-            phone=_get(row, COL_PHONE) or _get(row, COL_CONTACT_PHONE),
-            fax=_get(row, COL_FAX),
-            sales_rep_code=_get(row, COL_SALES_REP),
-            is_tax_exempt=_bool_yn(_get(row, COL_TAX_EXEMPT)),
-            tax_exempt_cert_number=_get(row, COL_TAX_EXEMPT_NUMBER),
-            tax_exempt_state=_get(row, COL_TAX_EXEMPT_STATE),
-            payment_terms=_get(row, COL_TERMS),
+            is_tax_exempt=bool(row.get("tax_exempt")),
             is_active=is_active,
         )
-        credit = _parse_decimal(_get(row, COL_CREDIT_LIMIT))
-        if credit is not None:
-            try:
-                cust.credit_limit_usd = int(credit)
-            except (TypeError, ValueError):
-                pass
-        if dry_run:
-            result.inserted += 1
-            return cus_num
         db.add(cust)
-        await db.flush()
         result.inserted += 1
     else:
         cust = existing
-        # Preserve admin-set tier; update everything else.
-        cust.name = name
-        cust.contact_name = _get(row, COL_CONTACT_NAME) or cust.contact_name
-        cust.email = _get(row, COL_CONTACT_EMAIL) or cust.email
-        cust.phone = _get(row, COL_PHONE) or _get(row, COL_CONTACT_PHONE) or cust.phone
-        cust.fax = _get(row, COL_FAX) or cust.fax
-        cust.sales_rep_code = _get(row, COL_SALES_REP) or cust.sales_rep_code
-        cust.is_tax_exempt = _bool_yn(_get(row, COL_TAX_EXEMPT))
-        cust.tax_exempt_cert_number = _get(row, COL_TAX_EXEMPT_NUMBER) or cust.tax_exempt_cert_number
-        cust.tax_exempt_state = _get(row, COL_TAX_EXEMPT_STATE) or cust.tax_exempt_state
-        cust.payment_terms = _get(row, COL_TERMS) or cust.payment_terms
-        cust.is_active = is_active
-        credit = _parse_decimal(_get(row, COL_CREDIT_LIMIT))
-        if credit is not None:
-            try:
-                cust.credit_limit_usd = int(credit)
-            except (TypeError, ValueError):
-                pass
-        if dry_run:
-            result.updated += 1
-            return cus_num
         result.updated += 1
 
-    # Address replacement — purge existing primary addresses, then rebuild.
-    if not dry_run and cust.id is not None:
-        existing_addrs = (
-            await db.execute(
-                select(CustomerAddress).where(
-                    CustomerAddress.customer_id == cust.id,
-                    CustomerAddress.is_primary.is_(True),
-                )
+    # Written on both paths. The ERP is authoritative for these, so a value it
+    # sends overwrites; a field it leaves empty keeps whatever is there rather
+    # than blanking a detail someone added in the admin.
+    cust.name = name
+    cust.contact_name = _s(row.get("contact")) or cust.contact_name
+    cust.email = _s(row.get("email")) or cust.email
+    cust.phone = _s(row.get("phone")) or cust.phone
+    cust.fax = _s(row.get("fax")) or cust.fax
+    cust.sales_rep_code = _s(row.get("sales_rep")) or cust.sales_rep_code
+    cust.payment_terms = _s(row.get("terms")) or cust.payment_terms
+    cust.is_tax_exempt = bool(row.get("tax_exempt"))
+    cust.is_active = is_active
+
+    credit = _parse_decimal(row.get("credit_limit"))
+    if credit is not None:
+        try:
+            cust.credit_limit_usd = int(credit)
+        except (TypeError, ValueError):
+            pass
+
+    if dry_run:
+        return cus_num
+
+    await db.flush()  # a new customer needs its id before addresses hang off it
+
+    # The CUS190 feed carries one address, the billing one; there are no ship_to
+    # columns, so shipping is the same address until someone edits it in the
+    # admin. Primary addresses are rebuilt each run; non-primary ones (added by
+    # a customer or a rep) are left alone.
+    addr1 = _s(row.get("address1"))
+    city = _s(row.get("city"))
+    state = _s(row.get("state"))
+    zip_ = _s(row.get("zip"))
+    if not (addr1 and city and state and zip_):
+        return cus_num
+
+    stale = (
+        await db.execute(
+            select(CustomerAddress).where(
+                CustomerAddress.customer_id == cust.id,
+                CustomerAddress.is_primary.is_(True),
             )
-        ).scalars().all()
-        for a in existing_addrs:
-            await db.delete(a)
+        )
+    ).scalars().all()
+    for a in stale:
+        await db.delete(a)
+    if stale:
         await db.flush()
 
-    bill_addr = _build_address(
-        AddressType.BILLING,
-        name=cust.contact_name,
-        company=cust.name,
-        addr1=_get(row, COL_BILL_ADDR1),
-        addr2=_get(row, COL_BILL_ADDR2),
-        city=_get(row, COL_BILL_CITY),
-        state=_get(row, COL_BILL_STATE),
-        zip_=_get(row, COL_BILL_ZIP),
-    )
-    ship_addr = _build_address(
-        AddressType.SHIPPING,
-        name=_get(row, COL_SHIP_NAME) or cust.contact_name,
-        company=cust.name,
-        addr1=_get(row, COL_SHIP_ADDR1),
-        addr2=_get(row, COL_SHIP_ADDR2),
-        city=_get(row, COL_SHIP_CITY),
-        state=_get(row, COL_SHIP_STATE),
-        zip_=_get(row, COL_SHIP_ZIP),
-    )
-    # Ship-to falls back to bill-to when ship_* columns are empty (very common).
-    if ship_addr is None and bill_addr is not None:
-        ship_addr = _build_address(
-            AddressType.SHIPPING,
+    for addr_type in (AddressType.BILLING, AddressType.SHIPPING):
+        addr = _build_address(
+            addr_type,
             name=cust.contact_name,
             company=cust.name,
-            addr1=_get(row, COL_BILL_ADDR1),
-            addr2=_get(row, COL_BILL_ADDR2),
-            city=_get(row, COL_BILL_CITY),
-            state=_get(row, COL_BILL_STATE),
-            zip_=_get(row, COL_BILL_ZIP),
+            addr1=addr1,
+            addr2=_s(row.get("address2")),
+            city=city,
+            state=state,
+            zip_=zip_,
         )
-
-    if not dry_run:
-        if bill_addr is not None:
-            bill_addr.customer_id = cust.id
-            db.add(bill_addr)
-        if ship_addr is not None:
-            ship_addr.customer_id = cust.id
-            db.add(ship_addr)
+        if addr is not None:
+            addr.customer_id = cust.id
+            db.add(addr)
+            result.addresses_written += 1
 
     return cus_num

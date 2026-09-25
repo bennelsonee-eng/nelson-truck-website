@@ -1,25 +1,18 @@
-"""Sync Titan customers from MySQL tte_cus190 into the local Postgres customer table.
+"""Fill the website's `customer` table from the ERP customer mirror.
 
-Run from `app/backend/` directory with venv activated:
+Reads `cus190_erp` (see scripts/sync_erp_feeds.py, which fills it from the ERP
+Postgres) and upserts `customer` + `customer_address`. Run sync_erp_feeds first
+so the mirror is current; this script reads it and nothing else.
 
-    python -m scripts.sync_customers --dry-run --limit 50   # safe preview
-    python -m scripts.sync_customers --limit 1000           # write 1000 rows
-    python -m scripts.sync_customers                        # full sync
+Run from app/ with the backend venv:
 
-Required env (in app/.env or shell):
-    TITAN_MYSQL_HOST=<host>
-    TITAN_MYSQL_PORT=3306          (default)
-    TITAN_MYSQL_USER=<user>
-    TITAN_MYSQL_PASS=<pass>
-    TITAN_MYSQL_DB=<schema name>   (e.g. nelsontruck1)
+    PYTHONPATH=/home/titan/nelson-truck-website/app/backend \
+      backend/.venv/bin/python -m scripts.sync_customers [--dry-run] [--limit N]
 
-See app/backend/app/services/customer_sync.py for the column mapping
-(COLUMN_MAP / TteCus190Columns) — edit there if Titan's actual columns
-differ from the FACS conventions assumed by default.
-
-Idempotent: matches by Customer.customer_number and updates in place.
-Primary BILLING + SHIPPING addresses are replaced on each sync; any
-non-primary addresses (jobber-added) are preserved.
+Idempotent: matched on `customer_number` (unique index), so a second run is a
+no-op. Customers absent from the mirror are never touched — 388 of them came
+from the contracts file and have no ERP record, and deleting them would take
+their contract pricing with them.
 """
 
 from __future__ import annotations
@@ -29,25 +22,26 @@ import asyncio
 import logging
 import sys
 
-from app.config import get_settings
 from app.database import async_session
-from app.services.customer_sync import sync_customers_from_tte_cus190
+from app.services.customer_sync import sync_customers_from_erp_mirror
 
 
 async def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync tte_cus190 → local customer table")
-    parser.add_argument("--dry-run", action="store_true", help="Read + report; don't write")
-    parser.add_argument("--limit", type=int, default=None, help="Cap rows fetched from MySQL")
+    parser = argparse.ArgumentParser(
+        description="Sync cus190_erp -> the website customer table")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Read and report; write nothing")
+    parser.add_argument("--limit", type=int, default=None,
+                        help="Cap rows read from the mirror (for a quick look)")
     args = parser.parse_args()
 
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
     )
-    settings = get_settings()
 
     async with async_session() as db:
-        result = await sync_customers_from_tte_cus190(
-            db, settings, dry_run=args.dry_run, limit=args.limit,
+        result = await sync_customers_from_erp_mirror(
+            db, dry_run=args.dry_run, limit=args.limit,
         )
 
     print()
