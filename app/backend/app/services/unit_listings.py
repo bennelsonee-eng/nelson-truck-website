@@ -134,16 +134,25 @@ def _round_up(v: float, step: int) -> int:
     return int(math.ceil(v / step) * step)
 
 
-def effective_range(listing: UnitListing) -> tuple[int, int] | None:
+def effective_range(listing: UnitListing, cost: float | None = None) -> tuple[int, int] | None:
     """The range a qualified customer is told. An explicit range wins; otherwise
-    3% either side of the asking price, rounded outward to the nearest $1,000."""
+    3% either side of the asking price, rounded outward to the nearest $1,000.
+
+    A worked-out range never starts below what the unit cost us: on a thin
+    margin the 3% would otherwise quote under cost (the 2024 F-550 MPL60 at
+    $159,500 on $156,440 would have opened at $154,000). An explicit range the
+    admin typed is taken as meant."""
     if listing.range_low and listing.range_high and listing.range_high >= listing.range_low:
         return int(listing.range_low), int(listing.range_high)
     base = listing.sale_price or listing.price
     if not base:
         return None
     b = float(base)
-    return _round_down(b * 0.97, 1000), _round_up(b * 1.03, 1000)
+    low, high = _round_down(b * 0.97, 1000), _round_up(b * 1.03, 1000)
+    if cost:
+        low = max(low, _round_up(cost, 1000))
+        high = max(high, low)
+    return low, high
 
 
 def builder_range(low: float, high: float) -> tuple[int, int]:
@@ -290,8 +299,8 @@ def listing_health(
         items.append(HealthItem("parts", "ERP part number linked", parts_total > 0, True,
                                 "A future build still needs the chassis or body part it will be built from."))
     else:
-        items.append(HealthItem("parts", "ERP part on hand", parts_on_hand > 0, True,
-                                f"{parts_on_hand} of {parts_total} linked parts are on hand."
+        items.append(HealthItem("parts", "ERP part on hand, not sold", parts_on_hand > 0, True,
+                                f"{parts_on_hand} of {parts_total} linked parts are on hand and not on a customer's order."
                                 if parts_total else "Link the unit's ERP part number."))
 
     items.append(HealthItem("photos", f"{MIN_PHOTOS}+ photos", photos >= MIN_PHOTOS, True,
@@ -329,6 +338,29 @@ def listing_health(
     items.append(HealthItem("specs", "Key specs filled in",
                             spec_count >= 3 or (l.unit_type != "equipment" and chassis_count >= 3), False))
     return items
+
+
+def erp_state(l: UnitListing, pstat: dict[str, Any], mirror_live: bool) -> str:
+    """What the ERP says about a Nelson-owned, in-stock listing:
+    "ok", "committed" (on the lot but on a customer's order -> shown as sale
+    pending) or "gone" (no longer on hand -> taken off the site).
+    Consigned units and future builds aren't tracked this way, and nothing is
+    judged while the on-hand mirror is empty (a failed refresh must not take
+    every unit off the site)."""
+    if not mirror_live or l.ownership == "consignment" or l.availability != "in_stock":
+        return "ok"
+    parts = pstat.get("parts") or []
+    if not parts:
+        return "ok"
+    if pstat.get("on_hand", 0) == 0:
+        return "gone"
+    if pstat.get("committed", 0) >= pstat.get("on_hand", 0):
+        return "committed"
+    return "ok"
+
+
+async def erp_mirror_live(db: AsyncSession) -> bool:
+    return (await db.execute(select(ErpOnhand.id).limit(1))).first() is not None
 
 
 def health_score(items: list[HealthItem]) -> dict[str, Any]:
@@ -703,7 +735,7 @@ async def parts_status(db: AsyncSession, listing_ids: list[int]) -> dict[int, di
     for r in oh_rows:
         by_pn.setdefault(r.part_number, []).append(r)
 
-    out: dict[int, dict[str, Any]] = {lid: {"parts": [], "prod_codes": [], "on_hand": 0,
+    out: dict[int, dict[str, Any]] = {lid: {"parts": [], "prod_codes": [], "on_hand": 0, "committed": 0,
                                            "gl_cost": 0.0, "max_days": None, "list_p1": 0.0}
                                       for lid in listing_ids}
     for p in parts:
@@ -714,10 +746,14 @@ async def parts_status(db: AsyncSession, listing_ids: list[int]) -> dict[int, di
         else:
             match = rows
         on = [r for r in match if (r.onhand or 0) > 0]
-        first = on[0] if on else (rows[0] if rows else None)
+        # "available" drops to 0 when the unit is on a customer's order: still
+        # on the lot, but sold. Such a part can't carry a listing.
+        free = [r for r in on if r.available is None or r.available > 0]
+        first = (free or on or rows or [None])[0]
         entry = {
             "id": p.id, "part_number": p.part_number, "serial": p.serial, "role": p.role,
-            "on_hand": bool(on), "prod_code": first.prod_code if first else None,
+            "on_hand": bool(on), "committed": bool(on) and not free,
+            "prod_code": first.prod_code if first else None,
             "warehouse": first.warehouse if first else None,
             "description": first.description if first else None,
             "gl_cost": float(first.gl_cost) if first and first.gl_cost is not None else None,
@@ -730,6 +766,8 @@ async def parts_status(db: AsyncSession, listing_ids: list[int]) -> dict[int, di
         o["parts"].append(entry)
         if entry["prod_code"]:
             o["prod_codes"].append(entry["prod_code"])
+        if entry["committed"]:
+            o["committed"] += 1
         if entry["on_hand"]:
             o["on_hand"] += 1
             o["gl_cost"] += entry["gl_cost"] or 0.0

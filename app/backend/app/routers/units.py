@@ -96,7 +96,7 @@ def _chassis_specs(l: UnitListing) -> list[dict[str, str]]:
     return [{"label": k, "value": str(v)} for k, v in rows if v not in (None, "", "None")]
 
 
-def _card(l: UnitListing, media: list, restricted: bool) -> dict[str, Any]:
+def _card(l: UnitListing, media: list, restricted: bool, erp: str = "ok") -> dict[str, Any]:
     photos = [m for m in media if m.kind == "photo"]
     videos = [m for m in media if m.kind == "video"]
     first = photos[0] if photos else None
@@ -109,7 +109,9 @@ def _card(l: UnitListing, media: list, restricted: bool) -> dict[str, Any]:
         "category_label": svc.CATEGORY_LABELS.get(l.category, l.category),
         "unit_type": l.unit_type,
         "condition": l.condition,
-        "status": l.status,
+        # On a customer's order in the ERP -> shown as sale pending, whatever
+        # the listing says, until the admin marks it sold.
+        "status": "pending" if erp == "committed" and l.status == "active" else l.status,
         "availability": l.availability,
         "available_date": l.available_date.isoformat() if l.available_date else None,
         "available_note": l.available_note,
@@ -126,11 +128,13 @@ def _card(l: UnitListing, media: list, restricted: bool) -> dict[str, Any]:
     }
 
 
-async def _load_public(db: AsyncSession, listings: list[UnitListing]) -> tuple[dict, dict]:
+async def _load_public(db: AsyncSession, listings: list[UnitListing]) -> tuple[dict, dict, dict]:
     ids = [l.id for l in listings]
     media = await svc.media_for(db, ids)
     parts = await svc.parts_status(db, ids)
-    return media, parts
+    live = await svc.erp_mirror_live(db)
+    state = {l.id: svc.erp_state(l, parts.get(l.id, {}), live) for l in listings}
+    return media, parts, state
 
 
 def _restricted(l: UnitListing, parts: dict) -> bool:
@@ -167,8 +171,10 @@ async def list_units(
     }.get(sort, [UnitListing.featured.desc(), UnitListing.featured_rank.asc(),
                  UnitListing.published_at.desc().nullslast()])
     rows = (await db.execute(q.order_by(*order, UnitListing.id.desc()))).scalars().all()
-    media, parts = await _load_public(db, rows)
-    items = [_card(l, media.get(l.id, []), _restricted(l, parts)) for l in rows]
+    media, parts, state = await _load_public(db, rows)
+    # A unit that has left the lot in the ERP comes off the site by itself.
+    rows = [l for l in rows if state[l.id] != "gone"]
+    items = [_card(l, media.get(l.id, []), _restricted(l, parts), state[l.id]) for l in rows]
 
     # Facets over everything public, so a filter never hides its own options.
     all_rows = (await db.execute(
@@ -214,10 +220,12 @@ async def units_showcase(
                    UnitListing.status.asc(), UnitListing.published_at.desc().nullslast(),
                    UnitListing.id.desc()).limit(limit)
     rows = (await db.execute(q)).scalars().all()
-    media, parts = await _load_public(db, rows)
-    total = (await db.execute(select(func.count()).select_from(UnitListing)
-                              .where(UnitListing.status.in_(PUBLIC_STATUSES)))).scalar_one()
-    return {"items": [_card(l, media.get(l.id, []), _restricted(l, parts)) for l in rows],
+    media, parts, state = await _load_public(db, rows)
+    rows = [l for l in rows if state[l.id] != "gone"]
+    all_live = (await db.execute(select(UnitListing).where(UnitListing.status.in_(PUBLIC_STATUSES)))).scalars().all()
+    _, _, all_state = await _load_public(db, all_live)
+    total = sum(1 for l in all_live if all_state[l.id] != "gone")
+    return {"items": [_card(l, media.get(l.id, []), _restricted(l, parts), state[l.id]) for l in rows],
             "total": total}
 
 
@@ -252,10 +260,10 @@ async def unit_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict[str
     l = (await db.execute(select(UnitListing).where(UnitListing.slug == slug))).scalar_one_or_none()
     if l is None or l.status not in PUBLIC_STATUSES + ("sold",):
         raise HTTPException(status_code=404, detail="That unit is no longer listed.")
-    media, parts = await _load_public(db, [l])
+    media, parts, state = await _load_public(db, [l])
     restricted = _restricted(l, parts)
     ms = media.get(l.id, [])
-    card = _card(l, ms, restricted)
+    card = _card(l, ms, restricted, state[l.id])
     qs = l.qualify_specs or svc.default_qualify_specs(l)
     card.update({
         "description": l.description,
@@ -277,7 +285,7 @@ async def unit_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict[str
         "vin": l.vin, "stock_number": l.stock_number,
         "published_at": l.published_at.isoformat() if l.published_at else None,
         "updated_at": l.updated_at.isoformat() if l.updated_at else None,
-        "sold": l.status == "sold",
+        "sold": l.status == "sold" or state[l.id] == "gone",
     })
     return card
 
@@ -321,6 +329,8 @@ class InquiryIn(ContactIn):
     kind: str = "quote"                         # quote | call | question | offer
     message: str | None = Field(None, max_length=5000)
     offer_amount: float | None = Field(None, ge=0, le=10_000_000)
+    # Equipment the customer wants quoted on top of the unit (Ben, 2026-09-25).
+    additional_items: list[str] = Field(default_factory=list)
 
 
 class PriceRangeIn(ContactIn):
@@ -394,6 +404,9 @@ def _alert(lead: dict[str, Any]) -> None:
         if lead.get("range_low") is not None and lead.get("range_high") is not None:
             shown = "shown and emailed" if lead.get("range_shown") else "emailed"
             lines.append(f"  Range:    ${float(lead['range_low']):,.0f} - ${float(lead['range_high']):,.0f} ({shown})")
+        extra = (lead.get("answers") or {}).get("additional_items")
+        if extra:
+            lines.append("  ALSO QUOTE: " + ", ".join(str(x) for x in extra))
         if lead.get("specs_confirmed") is False:
             lines.append("  NOTE:     the customer wants a different spec than the listed unit - price their build.")
         ans = lead.get("answers") or {}
@@ -464,6 +477,9 @@ async def _public_listing(db: AsyncSession, slug: str) -> UnitListing:
     l = (await db.execute(select(UnitListing).where(UnitListing.slug == slug))).scalar_one_or_none()
     if l is None or l.status not in PUBLIC_STATUSES:
         raise HTTPException(status_code=404, detail="That unit is no longer listed.")
+    _, _, state = await _load_public(db, [l])
+    if state[l.id] == "gone":
+        raise HTTPException(status_code=404, detail="That unit has sold.")
     return l
 
 
@@ -480,8 +496,10 @@ async def unit_inquiry(slug: str, body: InquiryIn, request: Request, background:
     l = await _public_listing(db, slug)
     c = await _guard(db, body, request, need_email=False)
     kind = body.kind if body.kind in ("quote", "call", "question", "offer") else "quote"
+    extra = [x for x in (_clean(i, 80) for i in body.additional_items[:20]) if x]
     lead = UnitLead(listing_id=l.id, kind=kind, status="new", listing_title=svc.listing_title(l),
                     message=_clean(body.message, 5000),
+                    answers={"additional_items": extra} if extra else {},
                     offer_amount=Decimal(str(body.offer_amount)) if kind == "offer" and body.offer_amount else None,
                     **c)
     db.add(lead)
@@ -504,7 +522,7 @@ async def unit_price_range(slug: str, body: PriceRangeIn, request: Request, back
     restricted = svc.price_restricted(l, parts.get(l.id, {}).get("prod_codes", []))
     if svc.effective_price_mode(l, restricted) != "range":
         raise HTTPException(status_code=409, detail="Please call us for pricing on this unit.")
-    rng = svc.effective_range(l)
+    rng = svc.effective_range(l, parts.get(l.id, {}).get("gl_cost") or None)
     c = await _guard(db, body, request, need_email=True)
     qs = [s for s in (l.qualify_specs or svc.default_qualify_specs(l)) if s.get("label") and s.get("value")]
     all_confirmed = bool(qs) and len(body.confirmed) == len(qs) and all(body.confirmed)

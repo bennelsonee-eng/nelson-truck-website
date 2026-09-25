@@ -126,7 +126,7 @@ def _full(l: UnitListing, media: list[UnitListingMedia], pstat: dict[str, Any],
     restricted = svc.price_restricted(l, pstat.get("prod_codes", []))
     health = svc.health_score(svc.listing_health(
         l, photos=photos, videos=videos, parts_total=len(pstat.get("parts", [])),
-        parts_on_hand=pstat.get("on_hand", 0), restricted=restricted))
+        parts_on_hand=pstat.get("on_hand", 0) - pstat.get("committed", 0), restricted=restricted))
     out = {c.name: getattr(l, c.name) for c in UnitListing.__table__.columns}
     for k in ("price", "sale_price", "range_low", "range_high", "wheelbase_in", "cab_to_axle_in"):
         out[k] = svc.money(out[k])
@@ -134,9 +134,9 @@ def _full(l: UnitListing, media: list[UnitListingMedia], pstat: dict[str, Any],
         out[k] = out[k].isoformat() if out[k] else None
     for k in ("created_at", "updated_at", "published_at", "sold_at"):
         out[k] = out[k].isoformat() if out[k] else None
-    rng = svc.effective_range(l)
-    asking = float(l.sale_price or l.price or 0) or None
     cost = pstat.get("gl_cost") or None
+    rng = svc.effective_range(l, cost)
+    asking = float(l.sale_price or l.price or 0) or None
     out.update({
         "title": svc.listing_title(l),
         "subtitle": svc.listing_subtitle(l),
@@ -204,6 +204,9 @@ def _erp_out(r: ErpOnhand, linked: dict[tuple[str, str], list[dict[str, Any]]]) 
         "warehouse": r.warehouse,
         "location": svc.WAREHOUSE_LOCATION.get(r.warehouse or 0),
         "onhand": float(r.onhand or 0), "gl_cost": svc.money(r.gl_cost), "days": r.days,
+        "available": svc.money(r.available),
+        # On the lot but on a customer's order -- sold, not stock to advertise.
+        "committed": r.available is not None and r.available <= 0,
         "serial": r.serial, "description": r.description, "extra_desc": r.extra_desc,
         "p1": svc.money(r.p1), "p2": svc.money(r.p2), "p3": svc.money(r.p3),
         "kind": svc.classify_erp_part(r.prod_code, r.part_number),
@@ -248,13 +251,16 @@ async def erp_unlisted(min_cost: float = Query(10000, ge=0), db: AsyncSession = 
     rows = [r for r in rows if not svc.PSEUDO_PART.match(r.part_number)]
     linked = await _linked_map(db)
     items = [_erp_out(r, linked) for r in rows]
-    unlisted = [i for i in items if not i["linked_to"]]
+    unlisted = [i for i in items if not i["linked_to"] and not i["committed"]]
+    committed = [i for i in items if i["committed"]]
     synced = max((r.synced_at for r in rows), default=None)
     return {
         "items": items,
         "unlisted_count": len(unlisted),
         "unlisted_cost": round(sum(i["gl_cost"] or 0 for i in unlisted), 2),
         "listed_cost": round(sum(i["gl_cost"] or 0 for i in items if i["linked_to"]), 2),
+        "committed_count": len(committed),
+        "committed_cost": round(sum(i["gl_cost"] or 0 for i in committed), 2),
         "synced_at": synced.isoformat() if synced else None,
     }
 
@@ -328,6 +334,8 @@ async def units_reports(days: int = Query(30, ge=1, le=365), db: AsyncSession = 
     unl = await erp_unlisted(min_cost=10000, db=db, _=_)  # type: ignore[arg-type]
     aging = {"0-90": 0.0, "91-180": 0.0, "181-365": 0.0, "365+": 0.0}
     for it in unl["items"]:
+        if it["linked_to"] or it["committed"]:
+            continue
         d = it["days"] or 0
         b = "0-90" if d <= 90 else "91-180" if d <= 180 else "181-365" if d <= 365 else "365+"
         aging[b] += it["gl_cost"] or 0
@@ -376,6 +384,7 @@ async def list_units(status: str | None = None, q: str | None = None,
     ids = [l.id for l in rows]
     media = await svc.media_for(db, ids)
     pst = await svc.parts_status(db, ids)
+    mirror_live = await svc.erp_mirror_live(db)
     since = datetime.now(svc.PACIFIC).date() - timedelta(days=29)
     views = dict((await db.execute(select(UnitListingStat.listing_id, func.sum(UnitListingStat.views))
                                    .where(UnitListingStat.day >= since, UnitListingStat.listing_id.in_(ids or [0]))
@@ -390,6 +399,7 @@ async def list_units(status: str | None = None, q: str | None = None,
     for l in rows:
         f = _full(l, media.get(l.id, []), pst.get(l.id, {}), int(views.get(l.id, 0) or 0), int(leads.get(l.id, 0)))
         f["new_leads"] = int(new_leads.get(l.id, 0))
+        f["erp_state"] = svc.erp_state(l, pst.get(l.id, {}), mirror_live)
         # The list needs one photo, not the whole gallery.
         photos = [m for m in f["media"] if m["kind"] == "photo"]
         f["photo"] = (photos[0]["thumb_url"] or photos[0]["url"]) if photos else None

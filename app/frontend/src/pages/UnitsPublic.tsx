@@ -41,6 +41,39 @@ interface UnitDetail extends UnitCard {
 interface FollowUp { when: string; text: string }
 
 const money = (n: number) => '$' + Math.round(n).toLocaleString('en-US')
+
+// Equipment a customer can ask to have quoted on top of the unit or build
+// (Ben, 2026-09-25: "we can always add truck equipment components to it after
+// the fact"). Sent as additional_items and flagged ALSO QUOTE in the alert.
+export const ADD_ONS = ['Toolboxes', 'LED light bar & strobes', 'Work lights', 'Backup camera', 'Wireless remote',
+  'Hitch / pintle hook', 'Headache rack', 'Mud flaps & fenders', 'Two-way radio', 'Snow plow / spreader']
+
+function AddOnPicker({ value, onChange, dark }: { value: string[]; onChange: (v: string[]) => void; dark?: boolean }) {
+  const [other, setOther] = useState('')
+  const toggle = (x: string) => onChange(value.includes(x) ? value.filter((y) => y !== x) : [...value, x])
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2">
+        {ADD_ONS.map((x) => {
+          const on = value.includes(x)
+          return <button key={x} type="button" onClick={() => toggle(x)}
+            className={`rounded-full border px-3 py-1.5 text-sm font-semibold transition ${on ? 'border-red-700 bg-red-700 text-white' : dark ? 'border-gray-300 bg-white text-gray-800' : 'border-gray-300 bg-white text-gray-800 hover:border-red-400'}`}>
+            {on ? '✓ ' : '+ '}{x}</button>
+        })}
+        {value.filter((x) => !ADD_ONS.includes(x)).map((x) => (
+          <button key={x} type="button" onClick={() => toggle(x)} className="rounded-full border border-red-700 bg-red-700 px-3 py-1.5 text-sm font-semibold text-white">✓ {x}</button>
+        ))}
+      </div>
+      <div className="mt-2 flex gap-2">
+        <input value={other} onChange={(e) => setOther(e.target.value)} placeholder="Something else? e.g. crane, compressor, ladder rack"
+          onKeyDown={(e) => { if (e.key === 'Enter' && other.trim()) { e.preventDefault(); onChange([...value, other.trim()]); setOther('') } }}
+          className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm" />
+        <button type="button" disabled={!other.trim()} onClick={() => { onChange([...value, other.trim()]); setOther('') }}
+          className="shrink-0 rounded-md border border-gray-300 bg-white px-3 text-sm font-semibold disabled:opacity-40">Add</button>
+      </div>
+    </div>
+  )
+}
 const PHONE = { Portland: BRANCHES[0], Kent: BRANCHES[1] }
 
 function availabilityChip(u: Pick<UnitCard, 'availability' | 'available_date' | 'available_note' | 'status'>): { text: string; tone: string } {
@@ -546,6 +579,7 @@ const inputCls = 'w-full rounded-md border border-gray-300 px-3 py-2 text-[15px]
 
 function ContactModal({ kind, unit, onClose }: { kind: 'quote' | 'call' | 'offer' | 'question'; unit: UnitDetail; onClose: () => void }) {
   const [f, setF] = useState({ name: '', company: '', email: '', phone: '', zip: '', message: '', offer_amount: '', website: '' })
+  const [addOns, setAddOns] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [done, setDone] = useState<FollowUp | null>(null)
@@ -553,7 +587,7 @@ function ContactModal({ kind, unit, onClose }: { kind: 'quote' | 'call' | 'offer
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr(null)
     const r = await fetch(`/api/units/${unit.slug}/inquiry`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...f, kind, offer_amount: f.offer_amount ? Number(f.offer_amount.replace(/[^\d.]/g, '')) : null, page_url: window.location.href }) })
+      body: JSON.stringify({ ...f, kind, additional_items: addOns, offer_amount: f.offer_amount ? Number(f.offer_amount.replace(/[^\d.]/g, '')) : null, page_url: window.location.href }) })
     const d = await r.json().catch(() => ({}))
     setBusy(false)
     if (!r.ok) { setErr(d.detail || 'Something went wrong — please call us.'); return }
@@ -577,6 +611,7 @@ function ContactModal({ kind, unit, onClose }: { kind: 'quote' | 'call' | 'offer
               <Field label="Email"><input type="email" className={inputCls} value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} autoComplete="email" /></Field>
               <Field label="Phone" req={kind === 'call'}><input type="tel" required={kind === 'call'} className={inputCls} value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} autoComplete="tel" /></Field>
             </div>
+            {kind === 'quote' && <Field label="Add equipment to the quote (optional)"><AddOnPicker value={addOns} onChange={setAddOns} /></Field>}
             {kind === 'offer' && <Field label="Your offer" req><input required inputMode="numeric" placeholder="$" className={inputCls} value={f.offer_amount} onChange={(e) => setF({ ...f, offer_amount: e.target.value })} /></Field>}
             <Field label={kind === 'question' ? 'Your question' : 'Anything we should know?'} req={kind === 'question'}>
               <textarea required={kind === 'question'} rows={3} className={inputCls} value={f.message} onChange={(e) => setF({ ...f, message: e.target.value })}
@@ -611,6 +646,7 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [confirmed, setConfirmed] = useState<boolean[]>([])
+  const [addOns, setAddOns] = useState<string[]>([])
   const [c, setC] = useState({ name: '', company: '', email: '', phone: '', zip: '', website: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -619,7 +655,7 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
   const specs = unit.qualify_specs
   const uses = USE[unit.category] || ['Business use', 'Fleet', 'Owner-operator', 'Other']
 
-  // Steps: 0 timeline, 1 use, 2..(2+n-1) specs, 2+n trade-in, 3+n contact, 4+n done
+  // Steps: 0 timeline, 1 use, 2..(2+n-1) specs, 2+n trade-in, 3+n add-ons, 4+n contact, 5+n done
   const nSpec = specs.length
   const bot = (text: ReactNode) => setMsgs((m) => [...m, { who: 'bot', text }])
   const me = (text: string) => setMsgs((m) => [...m, { who: 'me', text }])
@@ -630,7 +666,7 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
       { who: 'bot', text: <>Hi! I can get you a price range on the <b>{unit.title} {unit.subtitle}</b> right now.</> },
       { who: 'bot', text: 'First I’ll check a few specs with you, so the price is for exactly the truck you want. When do you need it?' },
     ])
-    setStep(0); setAnswers({}); setConfirmed([]); setResult(null); setErr(null)
+    setStep(0); setAnswers({}); setConfirmed([]); setAddOns([]); setResult(null); setErr(null)
   }, [open, unit.title, unit.subtitle])
   useEffect(() => { end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }) }, [msgs, step, result])
 
@@ -651,11 +687,11 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr(null)
     const r = await fetch(`/api/units/${unit.slug}/price-range`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...c, confirmed, answers, page_url: window.location.href }) })
+      body: JSON.stringify({ ...c, confirmed, answers: { ...answers, ...(addOns.length ? { additional_items: addOns } : {}) }, page_url: window.location.href }) })
     const d = await r.json().catch(() => ({}))
     setBusy(false)
     if (!r.ok) { setErr(d.detail || 'Something went wrong — please call us.'); return }
-    setResult(d); setStep(4 + nSpec)
+    setResult(d); setStep(5 + nSpec)
   }
 
   if (!open) return null
@@ -686,8 +722,16 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
             </div>
           )}
           {step === 2 + nSpec && <div className="flex flex-wrap gap-2">{['Yes', 'No', 'Maybe'].map((t) => <button key={t} type="button" className={chip}
-            onClick={() => answer('trade_in', t, () => { bot('Last thing — where should we send your price range?'); setStep(3 + nSpec) })}>{t}</button>)}</div>}
+            onClick={() => answer('trade_in', t, () => { bot('Want anything else quoted with it? Toolboxes, lights, a hitch… we install it all.'); setStep(3 + nSpec) })}>{t}</button>)}</div>}
           {step === 3 + nSpec && (
+            <div className="space-y-2 rounded-2xl border border-gray-200 bg-white p-3">
+              <AddOnPicker value={addOns} onChange={setAddOns} />
+              <button type="button" className="w-full rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white"
+                onClick={() => { me(addOns.length ? `Also quote: ${addOns.join(', ')}` : 'No, just the truck'); setTimeout(() => { bot('Last thing — where should we send your price range?'); setStep(4 + nSpec) }, 250) }}>
+                {addOns.length ? `Add ${addOns.length} to my quote` : 'No, just the truck'}</button>
+            </div>
+          )}
+          {step === 4 + nSpec && (
             <form onSubmit={submit} className="space-y-2 rounded-2xl border border-gray-200 bg-white p-3">
               <input type="text" name="website" value={c.website} onChange={(e) => setC({ ...c, website: e.target.value })} className="hidden" tabIndex={-1} autoComplete="off" />
               <input required placeholder="Your name *" className={inputCls} value={c.name} onChange={(e) => setC({ ...c, name: e.target.value })} autoComplete="name" />
@@ -704,6 +748,7 @@ export function PriceRangeChat({ open, onClose, unit }: { open: boolean; onClose
           )}
           {result && (
             <div className="space-y-3">
+              {addOns.length > 0 && <div className="rounded-2xl border border-gray-200 bg-white p-3 text-sm text-gray-700">Your salesperson will add pricing for: <b>{addOns.join(', ')}</b>.</div>}
               {result.range ? (
                 <div className="rounded-2xl border-2 border-red-700 bg-white p-4 text-center">
                   <div className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">Your price range</div>
@@ -751,6 +796,7 @@ export function BuildAndPricePage() {
   const [picks, setPicks] = useState<Record<string, number[]>>({})
   const [specs, setSpecs] = useState<Record<string, string>>({})
   const [answers, setAnswers] = useState<Record<string, string>>({ timeline: '' })
+  const [addOns, setAddOns] = useState<string[]>([])
   const [c, setC] = useState({ name: '', company: '', email: '', phone: '', zip: '', message: '', website: '' })
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
@@ -770,7 +816,7 @@ export function BuildAndPricePage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault(); setBusy(true); setErr(null)
     const r = await fetch('/api/units/builder/quote', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...c, category: cat, choice_ids: Object.values(picks).flat(), specs, answers, page_url: window.location.href }) })
+      body: JSON.stringify({ ...c, category: cat, choice_ids: Object.values(picks).flat(), specs, answers: { ...answers, ...(addOns.length ? { additional_items: addOns } : {}) }, page_url: window.location.href }) })
     const d = await r.json().catch(() => ({}))
     setBusy(false)
     if (!r.ok) { setErr(d.detail || 'Something went wrong — please call us.'); return }
@@ -795,10 +841,11 @@ export function BuildAndPricePage() {
         {result ? (
           <div className="mx-auto max-w-2xl text-center">
             {result.range ? <>
-              <div className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">Your ballpark</div>
+              <div className="text-xs font-bold uppercase tracking-[0.14em] text-red-700">Your ballpark{addOns.length ? ' for the truck' : ''}</div>
               <div className="mt-1 font-cond text-5xl text-gray-900">{money(result.range.low)} – {money(result.range.high)}</div>
               <p className="mx-auto mt-2 max-w-xl text-gray-600">For the {cur?.label.toLowerCase()} you configured, based on similar trucks we’ve built and today’s chassis and equipment pricing. Your exact price depends on the chassis we can source, options and timing.</p>
               {result.emailed && <p className="mt-2 text-sm text-green-700">✓ We’ve emailed this to {c.email}</p>}
+              {addOns.length > 0 && <p className="mt-2 text-sm text-gray-700">Your salesperson will add pricing for: <b>{addOns.join(', ')}</b>.</p>}
             </> : <div className="font-cond text-3xl text-gray-900">We’ve got your build</div>}
             <div className="mx-auto mt-6 max-w-xl rounded-xl border border-gray-200 bg-gray-50 p-5 text-left text-[15px] text-gray-800">{result.follow_up.text}</div>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
@@ -867,7 +914,14 @@ export function BuildAndPricePage() {
 
               {cur && (
                 <section>
-                  <h2 className="font-cond text-2xl text-gray-900">{cur.steps.length + 3}. Where should we send your price?</h2>
+                  <h2 className="font-cond text-2xl text-gray-900">{cur.steps.length + 3}. Add equipment <span className="text-sm font-sans text-gray-500">(optional — your salesperson prices these with the build)</span></h2>
+                  <div className="mt-3"><AddOnPicker value={addOns} onChange={setAddOns} /></div>
+                </section>
+              )}
+
+              {cur && (
+                <section>
+                  <h2 className="font-cond text-2xl text-gray-900">{cur.steps.length + 4}. Where should we send your price?</h2>
                   <form onSubmit={submit} className="mt-3 space-y-3">
                     <input type="text" name="website" value={c.website} onChange={(e) => setC({ ...c, website: e.target.value })} className="hidden" tabIndex={-1} autoComplete="off" />
                     <div className="grid gap-3 sm:grid-cols-2">
@@ -892,6 +946,7 @@ export function BuildAndPricePage() {
                   <dl className="mt-2 space-y-2 text-sm">
                     <div><dt className="text-gray-500">Type</dt><dd className="font-semibold text-gray-900">{cur.label}</dd></div>
                     {cur.steps.map((s) => <div key={s.name}><dt className="text-gray-500">{s.name}</dt><dd className="font-semibold text-gray-900">{labelFor(s) || <span className="font-normal text-gray-400">{s.multi ? 'None' : '—'}</span>}</dd></div>)}
+                    {addOns.length > 0 && <div><dt className="text-gray-500">Also quote</dt><dd className="font-semibold text-gray-900">{addOns.join(', ')}</dd></div>}
                   </dl>
                 )}
               </div>

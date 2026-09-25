@@ -70,7 +70,7 @@ function Shell({ children, openLeads }: { children: ReactNode; openLeads?: numbe
 
 interface ErpRow {
   id: number; part_number: string; prod_code: string | null; warehouse: number | null; location: string | null
-  onhand: number; gl_cost: number | null; days: number | null; serial: string | null; description: string | null
+  onhand: number; available: number | null; committed: boolean; gl_cost: number | null; days: number | null; serial: string | null; description: string | null
   extra_desc: string | null; p1: number | null; p2: number | null; p3: number | null; kind: string
   linked_to: { id: number; status: string; title: string }[]; synced_at: string | null
 }
@@ -86,21 +86,21 @@ function HealthBar({ h }: { h: any }) {
 }
 
 function UnlistedPanel({ onCreate }: { onCreate: (pn: string, serial: string | null) => void }) {
-  const [d, setD] = useState<{ items: ErpRow[]; unlisted_count: number; unlisted_cost: number; synced_at: string | null } | null>(null)
+  const [d, setD] = useState<{ items: ErpRow[]; unlisted_count: number; unlisted_cost: number; committed_count: number; committed_cost: number; synced_at: string | null } | null>(null)
   const [open, setOpen] = useState(true)
   const [kind, setKind] = useState('')
   const [showListed, setShowListed] = useState(false)
   useEffect(() => { api('/api/admin/units/erp/unlisted').then((r) => r.ok && setD(r.data)) }, [])
   if (!d) return null
   const kinds = [...new Set(d.items.map((i) => i.kind))]
-  const rows = d.items.filter((i) => (showListed || !i.linked_to.length) && (!kind || i.kind === kind))
+  const rows = d.items.filter((i) => (showListed || (!i.linked_to.length && !i.committed)) && (!kind || i.kind === kind))
   return (
     <section className="mb-6 rounded-xl border border-amber-300 bg-amber-50">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
         <span className="text-xl">📦</span>
         <div className="flex-1">
           <div className="font-bold text-gray-900">In stock, not listed yet: {d.unlisted_count} units · {money(d.unlisted_cost)} at cost</div>
-          <div className="text-xs text-gray-600">Straight from the ERP on-hand, refreshed every 15 minutes{d.synced_at ? ` (last ${new Date(d.synced_at).toLocaleTimeString()})` : ''}. Units over $10,000 at cost.</div>
+          <div className="text-xs text-gray-600">Straight from the ERP on-hand, refreshed every 15 minutes{d.synced_at ? ` (last ${new Date(d.synced_at).toLocaleTimeString()})` : ''}. Units over $10,000 at cost.{d.committed_count ? ` Not counted: ${d.committed_count} on customers’ orders (${money(d.committed_cost)}).` : ''}</div>
         </div>
         <span className="text-gray-500">{open ? '▲' : '▼'}</span>
       </button>
@@ -109,7 +109,7 @@ function UnlistedPanel({ onCreate }: { onCreate: (pn: string, serial: string | n
           <div className="flex flex-wrap items-center gap-2 py-3 text-sm">
             <button type="button" onClick={() => setKind('')} className={`rounded-full px-3 py-1 ${!kind ? 'bg-gray-900 text-white' : 'bg-white'}`}>All</button>
             {kinds.map((k) => <button key={k} type="button" onClick={() => setKind(k)} className={`rounded-full px-3 py-1 ${kind === k ? 'bg-gray-900 text-white' : 'bg-white'}`}>{k}</button>)}
-            <label className="ml-auto flex items-center gap-1.5 text-gray-600"><input type="checkbox" checked={showListed} onChange={(e) => setShowListed(e.target.checked)} /> show ones already listed</label>
+            <label className="ml-auto flex items-center gap-1.5 text-gray-600"><input type="checkbox" checked={showListed} onChange={(e) => setShowListed(e.target.checked)} /> show listed and sold ones too</label>
           </div>
           <div className="max-h-[420px] overflow-auto rounded-lg border border-amber-200 bg-white">
             <table className="w-full text-sm">
@@ -127,7 +127,8 @@ function UnlistedPanel({ onCreate }: { onCreate: (pn: string, serial: string | n
                     <td className="px-3 py-2 text-right">{money(r.gl_cost)}</td>
                     <td className="px-3 py-2 text-right text-gray-500">{r.p1 ? money(r.p1) : '—'}</td>
                     <td className="px-3 py-2 text-right">
-                      {r.linked_to.length ? <Link to={`/admin/units/${r.linked_to[0].id}`} className="text-xs text-gray-500 underline">{r.linked_to[0].status}</Link>
+                      {r.committed ? <span className="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-bold text-gray-700" title="On a customer's order in the ERP">SOLD</span>
+                        : r.linked_to.length ? <Link to={`/admin/units/${r.linked_to[0].id}`} className="text-xs text-gray-500 underline">{r.linked_to[0].status}</Link>
                         : <button type="button" onClick={() => onCreate(r.part_number, r.serial)} className="rounded bg-red-700 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-800">List it</button>}
                     </td>
                   </tr>
@@ -220,6 +221,8 @@ export function AdminUnitsInventoryPage() {
                 <div className="mt-0.5 text-xs text-gray-500">Created {new Date(u.created_at).toLocaleDateString()} · {u.category} · {u.condition}{u.location ? ` · ${u.location}` : ''}{u.stock_number ? ` · stock ${u.stock_number}` : ''}</div>
                 <div className="mt-3 max-w-sm"><HealthBar h={u.health} /></div>
                 {!u.health.can_publish && <div className="mt-1 text-xs text-amber-700">Needs: {u.health.items.filter((i: any) => i.blocking && !i.ok).map((i: any) => i.label).join(' · ')}</div>}
+                {u.erp_state === 'committed' && <div className="mt-1 text-xs font-semibold text-sky-800">The ERP has this unit on a customer’s order — the site shows it as Sale pending. Mark it sold when it goes.</div>}
+                {u.erp_state === 'gone' && <div className="mt-1 text-xs font-semibold text-red-700">No longer on hand in the ERP — it’s off the site. Mark it sold.</div>}
               </div>
               <div className="border-t border-gray-100 p-4 text-sm md:border-l md:border-t-0">
                 <div className="text-xs text-gray-500">Price</div>
@@ -595,7 +598,7 @@ export function AdminUnitEditorPage() {
                       <td className="py-2 font-mono text-xs">{p.part_number}<div className="font-sans text-gray-500">{s?.description}</div></td>
                       <td className="font-mono text-xs">{p.serial || '—'}</td>
                       <td><select className="rounded border border-gray-300 px-1 py-0.5 text-xs" value={p.role} onChange={(e) => { setParts(parts.map((x, j) => (j === i ? { ...x, role: e.target.value } : x))); setDirty(true) }}>{meta.part_roles.map((r: string) => <option key={r}>{r}</option>)}</select></td>
-                      <td>{s ? (s.on_hand ? <span className="font-semibold text-green-700">Yes · {s.warehouse === 1 ? 'Portland' : s.warehouse === 2 ? 'Kent' : `wh ${s.warehouse}`}</span> : <span className="text-red-700">Not on hand</span>) : <span className="text-gray-400">save to check</span>}</td>
+                      <td>{s ? (s.committed ? <span className="font-semibold text-sky-800">On a customer’s order</span> : s.on_hand ? <span className="font-semibold text-green-700">Yes · {s.warehouse === 1 ? 'Portland' : s.warehouse === 2 ? 'Kent' : `wh ${s.warehouse}`}</span> : <span className="text-red-700">Not on hand</span>) : <span className="text-gray-400">save to check</span>}</td>
                       <td className="text-right">{s?.days ?? '—'}</td>
                       <td className="text-right">{money(s?.gl_cost)}</td>
                       <td className="text-right text-xs text-gray-500">{[s?.p1, s?.p2, s?.p3].map((v: number | null) => (v ? money(v) : '—')).join(' / ')}</td>
@@ -616,6 +619,7 @@ export function AdminUnitEditorPage() {
                     className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left text-sm hover:bg-sky-50">
                     <span className="font-mono text-xs">{r.part_number}</span><span className="flex-1 truncate">{r.description} <span className="text-gray-500">{r.extra_desc}</span></span>
                     <span className="text-xs text-gray-500">{r.serial ? `sn ${r.serial} · ` : ''}{r.location || `wh ${r.warehouse}`} · {money(r.gl_cost)}</span>
+                    {r.committed && <span className="rounded bg-gray-200 px-1.5 text-[10px] font-bold text-gray-700">SOLD</span>}
                     {r.linked_to.length > 0 && <span className="rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-800">on #{r.linked_to[0].id}</span>}
                   </button>
                 ))}
@@ -854,7 +858,8 @@ export function AdminUnitLeadsPage() {
                 <Fragment key={x.id}>
                   <tr className="cursor-pointer border-t border-gray-100 hover:bg-gray-50" onClick={() => setOpenRow(openRow === x.id ? null : x.id)}>
                     <td className="px-3 py-2.5 text-xs text-gray-600">{new Date(x.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</td>
-                    <td className="px-3 py-2.5"><span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold">{KIND_LABEL[x.kind] || x.kind}</span>{x.specs_confirmed === false && <div className="mt-0.5 text-[11px] font-semibold text-amber-700">wants a different spec</div>}</td>
+                    <td className="px-3 py-2.5"><span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-semibold">{KIND_LABEL[x.kind] || x.kind}</span>{x.specs_confirmed === false && <div className="mt-0.5 text-[11px] font-semibold text-amber-700">wants a different spec</div>}
+                      {(x.answers?.additional_items || []).length > 0 && <div className="mt-0.5 text-[11px] font-semibold text-red-700">+ also quote {x.answers.additional_items.length} item{x.answers.additional_items.length > 1 ? 's' : ''}</div>}</td>
                     <td className="px-3 py-2.5">{x.listing_id ? <Link to={`/admin/units/${x.listing_id}`} onClick={(e) => e.stopPropagation()} className="text-sky-700 hover:underline">{x.listing_title}</Link> : <span className="text-gray-700">{x.listing_title}</span>}</td>
                     <td className="px-3 py-2.5"><div className="font-semibold text-gray-900">{x.name}{x.company ? <span className="font-normal text-gray-500"> · {x.company}</span> : ''}</div>
                       <div className="text-xs">{x.email && <a href={`mailto:${x.email}`} onClick={(e) => e.stopPropagation()} className="text-sky-700">{x.email}</a>}{x.phone && <> · <a href={`tel:${x.phone}`} onClick={(e) => e.stopPropagation()} className="text-sky-700">{x.phone}</a></>}</div></td>
