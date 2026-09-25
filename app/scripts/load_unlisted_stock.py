@@ -5,7 +5,7 @@ master plus a naming/category pass:
 
     {"ourparts": "JERR4017000739", "prod_code": "JERR", "parts_num": "4017000739",
      "name": "...", "description": "...", "extended": "...", "category_id": 9002,
-     "freight": false, "p1".."p5": "36.43", "weight"/"length"/"width"/"height": "2.00",
+     "freight": false, "call_to_order": false, "p1".."p5": "36.43", "weight"/"length"/"width"/"height": "2.00",
      "product_id": 300765   # only for an existing hidden page being cleaned up}
 
 What it does (one transaction; dry run unless --apply):
@@ -163,18 +163,23 @@ async def load(conn, rows: list[dict], batch: str) -> None:
             existed += 1                              # the linker reaches it now
             continue
         freight = bool(r.get("freight"))
+        # Complete units (bodies, hoists, spreaders, liftgates) follow the truck
+        # body rule: Call to Order with both branch numbers, and both
+        # companies' stock shown (product.show_all_branch_stock).
+        unit = bool(r.get("call_to_order"))
+        cta = "CALL_TO_ORDER" if unit else "QUOTE_SHIPPING" if freight else "ADD_TO_CART"
         pid = await conn.fetchval(
             "INSERT INTO product (sku, brand_id, prod_code, name, description, extended_description, "
             "tte_ourparts_num, weight_lb, length_in, width_in, height_in, cta_mode, requires_shipping, "
             "taxable, own_box, ship_quote, free_ground, shipping_mode, base_shipping_mode, "
             "base_hidden, is_hidden, is_hidden_retail, is_hidden_wholesale, is_hidden_dealer, "
-            "is_hidden_municipality, is_for_sale, login_required, saleprice_hidden, admin_notes) "
+            "is_hidden_municipality, is_for_sale, login_required, saleprice_hidden, admin_notes, "
+            "show_all_branch_stock) "
             "VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12::cta_mode,TRUE,TRUE,FALSE,$13,0,$14,$14,"
-            "TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,$15) RETURNING id",
+            "TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,TRUE,FALSE,FALSE,$15,$16) RETURNING id",
             sku, b["id"], pc, r["name"], r.get("description") or r["name"], r.get("extended") or None,
             r["ourparts"], dim(r.get("weight")), dim(r.get("length")), dim(r.get("width")), dim(r.get("height")),
-            "QUOTE_SHIPPING" if freight else "ADD_TO_CART", freight,
-            "truck_freight" if freight else "ship", tag)
+            cta, freight and not unit, "truck_freight" if freight else "ship", tag, unit)
         prices = [money(r.get(k)) for k in ("p1", "p2", "p3", "p4", "p5")]
         if any(prices):
             await conn.execute(
