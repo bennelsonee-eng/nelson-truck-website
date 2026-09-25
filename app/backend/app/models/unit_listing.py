@@ -108,6 +108,8 @@ class UnitListing(Base):
 
     featured: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     featured_rank: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # Admin-chosen badges: "Hot item", "New build", "Price reduced", or anything typed.
+    tags: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     video_urls: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
     ctt_ad_id: Mapped[str | None] = mapped_column(String(20))
     created_by: Mapped[str | None] = mapped_column(String(254))
@@ -203,6 +205,33 @@ class UnitPriceGuide(Base):
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     basis: Mapped[str | None] = mapped_column(String(300))
+
+
+class ErpUnitOrder(Base):
+    """An open order or quote in the ERP that touches a unit's part number,
+    classified by Ben's rule (2026-09-25): without an account, a sale needs
+    money down; with an account, a valid PO. Anything else is a quote."""
+
+    __tablename__ = "erp_unit_order"
+
+    part_number: Mapped[str] = mapped_column(String(60), nullable=False, index=True)
+    serial: Mapped[str | None] = mapped_column(String(40))
+    order_number: Mapped[str] = mapped_column(String(20), nullable=False)
+    order_type: Mapped[str | None] = mapped_column(String(4))
+    order_status: Mapped[str | None] = mapped_column(String(20))
+    order_date: Mapped[date | None] = mapped_column(Date)
+    customer_number: Mapped[str | None] = mapped_column(String(20))
+    customer_name: Mapped[str | None] = mapped_column(String(160))
+    terms: Mapped[str | None] = mapped_column(String(12))
+    is_account: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    po_number: Mapped[str | None] = mapped_column(String(40))
+    po_valid: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    deposit_received: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False, default=0)
+    is_internal: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    qty_ordered: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    classification: Mapped[str] = mapped_column(String(12), nullable=False, index=True)
+    reason: Mapped[str | None] = mapped_column(String(200))
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class ErpOnhand(Base):

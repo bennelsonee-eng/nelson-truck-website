@@ -26,6 +26,7 @@ export interface UnitCard {
   mileage: number | null; drive: string | null; fuel: string | null; gvwr_lbs: number | null
   photo: string | null; thumb: string | null; photo_count: number; video_count: number
   price: PriceBlock; featured: boolean
+  sold: boolean; tags: string[]
 }
 interface KV { label: string; value: string }
 interface UnitDetail extends UnitCard {
@@ -76,7 +77,8 @@ function AddOnPicker({ value, onChange, dark }: { value: string[]; onChange: (v:
 }
 const PHONE = { Portland: BRANCHES[0], Kent: BRANCHES[1] }
 
-function availabilityChip(u: Pick<UnitCard, 'availability' | 'available_date' | 'available_note' | 'status'>): { text: string; tone: string } {
+function availabilityChip(u: Pick<UnitCard, 'availability' | 'available_date' | 'available_note' | 'status'> & { sold?: boolean }): { text: string; tone: string } {
+  if (u.sold || u.status === 'sold') return { text: 'Sold', tone: 'bg-gray-900 text-white' }
   if (u.status === 'pending') return { text: 'Sale pending', tone: 'bg-amber-500 text-black' }
   if (u.availability === 'future_build') {
     if (u.available_note) return { text: u.available_note, tone: 'bg-sky-600 text-white' }
@@ -96,6 +98,23 @@ function specLine(u: UnitCard): string {
   if (u.fuel) bits.push(u.fuel)
   if (u.gvwr_lbs) bits.push(`${u.gvwr_lbs.toLocaleString()} lb GVWR`)
   return bits.join(' · ')
+}
+
+// Admin-chosen badges ("Hot item", "New build"...). Colour by name; anything
+// typed in the admin gets the neutral one.
+const TAG_TONE: Record<string, string> = {
+  'hot item': 'bg-red-600 text-white', "won't last": 'bg-red-600 text-white',
+  'new build': 'bg-sky-600 text-white', 'fleet special': 'bg-sky-600 text-white',
+  'just arrived': 'bg-green-600 text-white', 'ready to work': 'bg-green-600 text-white',
+  'price reduced': 'bg-amber-400 text-black', 'make an offer': 'bg-amber-400 text-black',
+}
+export function TagBadges({ tags, className = '' }: { tags: string[]; className?: string }) {
+  if (!tags?.length) return null
+  return (
+    <div className={`flex flex-wrap gap-1 ${className}`}>
+      {tags.map((t) => <span key={t} className={`rounded px-1.5 py-0.5 text-[10.5px] font-extrabold uppercase tracking-wide shadow-sm ${TAG_TONE[t.toLowerCase()] || 'bg-white/90 text-gray-900'}`}>{t}</span>)}
+    </div>
+  )
 }
 
 export function PriceTag({ price, dark, size = 'md' }: { price: PriceBlock; dark?: boolean; size?: 'md' | 'lg' }) {
@@ -125,7 +144,11 @@ export function UnitCardView({ u, dark, big }: { u: UnitCard; dark?: boolean; bi
         {u.photo
           ? <img src={u.thumb || u.photo} alt={u.title} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
           : <div className="grid h-full place-items-center text-sm text-gray-500">Photos coming</div>}
-        <span className={`absolute left-2 top-2 rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${chip.tone}`}>{chip.text}</span>
+        {u.sold && <div className="absolute inset-0 bg-black/35" />}
+        <div className="absolute left-2 top-2 flex flex-col items-start gap-1">
+          <span className={`rounded px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ${chip.tone}`}>{chip.text}</span>
+          <TagBadges tags={u.tags} />
+        </div>
         {u.condition !== 'new' && <span className="absolute right-2 top-2 rounded bg-black/70 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">{u.condition}</span>}
         <span className="absolute bottom-2 right-2 rounded bg-black/65 px-2 py-0.5 text-[11px] font-semibold text-white">
           📷 {u.photo_count}{u.video_count ? ` · ▶ ${u.video_count}` : ''}
@@ -137,7 +160,7 @@ export function UnitCardView({ u, dark, big }: { u: UnitCard; dark?: boolean; bi
         {u.subtitle && <div className={`text-sm ${dark ? 'text-[#d8cfbf]' : 'text-gray-700'}`}>{u.subtitle}</div>}
         {specLine(u) && <div className={`text-xs ${dark ? 'text-[#9a917f]' : 'text-gray-500'}`}>{specLine(u)}</div>}
         <div className="mt-auto flex items-end justify-between gap-2 pt-3">
-          <PriceTag price={u.price} dark={dark} />
+          {u.sold ? <span className={`text-sm font-bold uppercase tracking-wide ${dark ? 'text-[#9a917f]' : 'text-gray-500'}`}>Sold by Nelson</span> : <PriceTag price={u.price} dark={dark} />}
           {u.location_label && <span className={`shrink-0 text-xs ${dark ? 'text-[#9a917f]' : 'text-gray-500'}`}>{u.location_label}</span>}
         </div>
       </div>
@@ -152,12 +175,13 @@ export function UnitCardView({ u, dark, big }: { u: UnitCard; dark?: boolean; bi
 export function UnitShowcase({ variant = 'home', category, title }: { variant?: 'home' | 'strip'; category?: string; title?: string }) {
   const [items, setItems] = useState<UnitCard[] | null>(null)
   const [total, setTotal] = useState(0)
+  const [soldCount, setSoldCount] = useState(0)
   const rail = useRef<HTMLDivElement>(null)
   useEffect(() => {
     const qs = new URLSearchParams({ limit: '12' })
     if (category) qs.set('category', category)
     fetch(`/api/units/showcase?${qs}`).then((r) => (r.ok ? r.json() : null))
-      .then((d) => { setItems(d?.items || []); setTotal(d?.total || 0) })
+      .then((d) => { setItems(d?.items || []); setTotal(d?.total || 0); setSoldCount(d?.sold_count || 0) })
       .catch(() => setItems([]))
   }, [category])
   const scroll = (dir: number) => rail.current?.scrollBy({ left: dir * (rail.current.clientWidth * 0.85), behavior: 'smooth' })
@@ -207,6 +231,13 @@ export function UnitShowcase({ variant = 'home', category, title }: { variant?: 
               <span className="mt-4 text-sm font-bold text-amber-300">Start building →</span>
             </Link>
           )}
+          {dark && soldCount > 0 && (
+            <Link to="/trucks-for-sale#sold" className="flex w-[60%] shrink-0 snap-start flex-col justify-center rounded-xl border border-[#2a2620] bg-[#1b1813] p-6 hover:border-amber-400 sm:w-[34%] lg:w-[20%]">
+              <div className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#9a917f]">Recently sold</div>
+              <div className="mt-1 font-cond text-2xl text-white">{soldCount} truck{soldCount === 1 ? '' : 's'} sold</div>
+              <span className="mt-3 text-sm font-bold text-amber-300">See what we’ve sold →</span>
+            </Link>
+          )}
         </div>
       </div>
     </section>
@@ -221,7 +252,7 @@ interface Facet { value: string; label?: string; count: number }
 
 export function TrucksForSalePage() {
   const [sp, setSp] = useSearchParams()
-  const [data, setData] = useState<{ items: UnitCard[]; facets: { category: Facet[]; make: Facet[]; location: Facet[]; availability: Record<string, number> } } | null>(null)
+  const [data, setData] = useState<{ items: UnitCard[]; sold?: UnitCard[]; facets: { category: Facet[]; make: Facet[]; location: Facet[]; availability: Record<string, number> } } | null>(null)
   const category = sp.get('category') || ''
   const availability = sp.get('availability') || ''
   const location = sp.get('location') || ''
@@ -303,6 +334,17 @@ export function TrucksForSalePage() {
               <span className="mt-4 text-sm font-bold text-red-700">Start building →</span>
             </Link>
           </div>
+        )}
+
+        {data && (data.sold || []).length > 0 && (
+          <section id="sold" className="mt-12 scroll-mt-24 border-t border-gray-200 pt-8">
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-gray-500">Recently sold</div>
+            <h2 className="font-cond text-3xl text-gray-900">What we’ve sold</h2>
+            <p className="mt-1 max-w-2xl text-sm text-gray-600">These found their new owners. Want one like it? We build them to order — <Link to="/trucks-for-sale/build" className="font-semibold text-red-700 hover:underline">build & price yours</Link>.</p>
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {(data.sold || []).map((u) => <UnitCardView key={u.slug} u={u} />)}
+            </div>
+          </section>
         )}
       </div>
     </div>
@@ -434,7 +476,7 @@ export function UnitDetailPage() {
         path={`/trucks-for-sale/${u.slug}`}
         image={u.photos[0]?.url || null}
         type="product"
-        noindex={u.sold}
+        noindex={false}
         jsonLd={jsonLd}
       />
       <div className="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 lg:px-8">
@@ -513,13 +555,21 @@ export function UnitDetailPage() {
                 {u.condition !== 'new' && <span className="rounded bg-gray-800 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">{u.condition}</span>}
                 <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-red-700">{u.category_label}</span>
               </div>
+              <TagBadges tags={u.tags} className="mt-2" />
               <h1 className="mt-2 font-cond text-3xl leading-tight text-gray-900">{u.title}</h1>
               {u.subtitle && <div className="text-lg text-gray-700">{u.subtitle}</div>}
               {u.headline && <p className="mt-1 text-sm text-gray-600">{u.headline}</p>}
               <div className="mt-2 text-sm text-gray-500">{[u.location_label, u.stock_number ? `Stock # ${u.stock_number}` : ''].filter(Boolean).join(' · ')}</div>
 
               <div className="mt-4 border-t border-gray-100 pt-4">
-                {priceShown ? (
+                {u.sold ? (
+                  <>
+                    <div className="text-lg font-bold text-gray-900">Sold</div>
+                    <p className="mt-0.5 text-sm text-gray-600">This one found its new owner. We build these to order — tell us what you need.</p>
+                    <Link to="/trucks-for-sale/build" className="mt-3 block w-full rounded-lg bg-red-700 px-4 py-3 text-center text-base font-bold text-white hover:bg-red-800">Build & price one like it</Link>
+                    <button type="button" onClick={() => setContact('question')} className="mt-2 w-full text-sm font-semibold text-red-700 hover:underline">Ask about one like it</button>
+                  </>
+                ) : priceShown ? (
                   <>
                     <PriceTag price={u.price} size="lg" />
                     <p className="mt-1 text-xs text-gray-500">Plus tax, title and license. Trade-ins welcome.</p>

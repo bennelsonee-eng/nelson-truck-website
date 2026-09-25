@@ -41,6 +41,8 @@ log = logging.getLogger(__name__)
 router = APIRouter(tags=["units"])
 
 PUBLIC_STATUSES = ("active", "pending")
+# Sold units stay up, marked SOLD, "for people to see what we sold" (Ben, 2026-09-25).
+VISIBLE_STATUSES = ("active", "pending", "sold")
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 _BOT_RE = re.compile(r"bot|crawl|spider|slurp|prerender|headless|lighthouse|preview|facebookexternalhit", re.I)
 
@@ -109,9 +111,11 @@ def _card(l: UnitListing, media: list, restricted: bool, erp: str = "ok") -> dic
         "category_label": svc.CATEGORY_LABELS.get(l.category, l.category),
         "unit_type": l.unit_type,
         "condition": l.condition,
-        # On a customer's order in the ERP -> shown as sale pending, whatever
-        # the listing says, until the admin marks it sold.
-        "status": "pending" if erp == "committed" and l.status == "active" else l.status,
+        # Sold in the ERP (a real sale, or the unit has left the lot) reads as
+        # sold here even before anyone marks it in the admin.
+        "status": "sold" if erp == "sold" else l.status,
+        "sold": erp == "sold" or l.status == "sold",
+        "tags": [] if (erp == "sold" or l.status == "sold") else (l.tags or []),
         "availability": l.availability,
         "available_date": l.available_date.isoformat() if l.available_date else None,
         "available_note": l.available_note,
@@ -133,7 +137,9 @@ async def _load_public(db: AsyncSession, listings: list[UnitListing]) -> tuple[d
     media = await svc.media_for(db, ids)
     parts = await svc.parts_status(db, ids)
     live = await svc.erp_mirror_live(db)
-    state = {l.id: svc.erp_state(l, parts.get(l.id, {}), live) for l in listings}
+    orders = await svc.orders_for(db, parts)
+    state = {l.id: svc.erp_state(l, parts.get(l.id, {}), live, orders.get(l.id, {}).get("sold", False))
+             for l in listings}
     return media, parts, state
 
 
@@ -154,7 +160,7 @@ async def list_units(
     sort: str = "featured",
     db: AsyncSession = Depends(get_db),
 ) -> dict[str, Any]:
-    q = select(UnitListing).where(UnitListing.status.in_(PUBLIC_STATUSES))
+    q = select(UnitListing).where(UnitListing.status.in_(VISIBLE_STATUSES))
     cats = [c for c in (category or "").split(",") if c in UNIT_CATEGORIES]
     if cats:
         q = q.where(UnitListing.category.in_(cats))
@@ -172,15 +178,15 @@ async def list_units(
                  UnitListing.published_at.desc().nullslast()])
     rows = (await db.execute(q.order_by(*order, UnitListing.id.desc()))).scalars().all()
     media, parts, state = await _load_public(db, rows)
-    # A unit that has left the lot in the ERP comes off the site by itself.
-    rows = [l for l in rows if state[l.id] != "gone"]
-    items = [_card(l, media.get(l.id, []), _restricted(l, parts), state[l.id]) for l in rows]
+    cards = [_card(l, media.get(l.id, []), _restricted(l, parts), state[l.id]) for l in rows]
+    items = [c for c in cards if not c["sold"]]
+    sold = sorted([c for c in cards if c["sold"]], key=lambda c: c.get("published_at") or "", reverse=True)[:24]
 
     # Facets over everything public, so a filter never hides its own options.
     all_rows = (await db.execute(
         select(UnitListing.category, UnitListing.make, UnitListing.upfit_make,
                UnitListing.location, UnitListing.availability)
-        .where(UnitListing.status.in_(PUBLIC_STATUSES)))).all()
+        .where(UnitListing.status.in_(VISIBLE_STATUSES)))).all()
     facet_cat: dict[str, int] = {}
     facet_make: dict[str, int] = {}
     facet_loc: dict[str, int] = {}
@@ -195,6 +201,7 @@ async def list_units(
     return {
         "items": items,
         "total": len(items),
+        "sold": sold,
         "facets": {
             "category": [{"value": k, "label": svc.CATEGORY_LABELS.get(k, k), "count": v}
                          for k, v in sorted(facet_cat.items(), key=lambda kv: -kv[1])],
@@ -221,12 +228,12 @@ async def units_showcase(
                    UnitListing.id.desc()).limit(limit)
     rows = (await db.execute(q)).scalars().all()
     media, parts, state = await _load_public(db, rows)
-    rows = [l for l in rows if state[l.id] != "gone"]
-    all_live = (await db.execute(select(UnitListing).where(UnitListing.status.in_(PUBLIC_STATUSES)))).scalars().all()
+    rows = [l for l in rows if state[l.id] != "sold"]
+    all_live = (await db.execute(select(UnitListing).where(UnitListing.status.in_(VISIBLE_STATUSES)))).scalars().all()
     _, _, all_state = await _load_public(db, all_live)
-    total = sum(1 for l in all_live if all_state[l.id] != "gone")
+    total = sum(1 for l in all_live if l.status != "sold" and all_state[l.id] != "sold")
     return {"items": [_card(l, media.get(l.id, []), _restricted(l, parts), state[l.id]) for l in rows],
-            "total": total}
+            "total": total, "sold_count": len(all_live) - total}
 
 
 @router.get("/api/units/builder")
@@ -258,7 +265,7 @@ async def builder_config(category: str | None = None, db: AsyncSession = Depends
 @router.get("/api/units/{slug}")
 async def unit_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     l = (await db.execute(select(UnitListing).where(UnitListing.slug == slug))).scalar_one_or_none()
-    if l is None or l.status not in PUBLIC_STATUSES + ("sold",):
+    if l is None or l.status not in VISIBLE_STATUSES:
         raise HTTPException(status_code=404, detail="That unit is no longer listed.")
     media, parts, state = await _load_public(db, [l])
     restricted = _restricted(l, parts)
@@ -285,7 +292,6 @@ async def unit_detail(slug: str, db: AsyncSession = Depends(get_db)) -> dict[str
         "vin": l.vin, "stock_number": l.stock_number,
         "published_at": l.published_at.isoformat() if l.published_at else None,
         "updated_at": l.updated_at.isoformat() if l.updated_at else None,
-        "sold": l.status == "sold" or state[l.id] == "gone",
     })
     return card
 
@@ -473,13 +479,13 @@ def _email_customer_range(lead: dict[str, Any], follow_up: str, unit_url: str | 
         log.exception("unit lead %s: customer range email raised", lead.get("id"))
 
 
-async def _public_listing(db: AsyncSession, slug: str) -> UnitListing:
+async def _public_listing(db: AsyncSession, slug: str, allow_sold: bool = False) -> UnitListing:
     l = (await db.execute(select(UnitListing).where(UnitListing.slug == slug))).scalar_one_or_none()
-    if l is None or l.status not in PUBLIC_STATUSES:
+    if l is None or l.status not in VISIBLE_STATUSES:
         raise HTTPException(status_code=404, detail="That unit is no longer listed.")
     _, _, state = await _load_public(db, [l])
-    if state[l.id] == "gone":
-        raise HTTPException(status_code=404, detail="That unit has sold.")
+    if not allow_sold and (l.status == "sold" or state[l.id] == "sold"):
+        raise HTTPException(status_code=409, detail="That unit has sold — ask us about one like it.")
     return l
 
 
@@ -493,7 +499,7 @@ async def unit_inquiry(slug: str, body: InquiryIn, request: Request, background:
                        db: AsyncSession = Depends(get_db)) -> dict[str, Any]:
     if body.website:
         return {"ok": True}
-    l = await _public_listing(db, slug)
+    l = await _public_listing(db, slug, allow_sold=True)
     c = await _guard(db, body, request, need_email=False)
     kind = body.kind if body.kind in ("quote", "call", "question", "offer") else "quote"
     extra = [x for x in (_clean(i, 80) for i in body.additional_items[:20]) if x]

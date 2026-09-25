@@ -73,6 +73,19 @@ async def refresh_unit_onhand() -> None:
         log.info("erp_onhand: %d on-hand rows mirrored for the unit listings", n)
     except Exception:
         log.exception("erp_onhand refresh failed (skipped)")
+    # The ERP's open orders and quotes on those units: a write-up is only a
+    # sale with money down, or an account customer's valid PO (Ben, 2026-09-25).
+    try:
+        from app.config import get_settings
+        from app.database import async_session
+        from app.services.unit_listings import refresh_unit_orders
+        dsn = getattr(get_settings(), "erp_database_url", "") or ""
+        if dsn:
+            async with async_session() as db:
+                n = await refresh_unit_orders(db, dsn)
+            log.info("erp_unit_order: %d open orders/quotes on units mirrored", n)
+    except Exception:
+        log.exception("erp_unit_order refresh failed (skipped)")
 
 
 if __name__ == "__main__":

@@ -29,11 +29,11 @@ from typing import Any, Iterable
 from zoneinfo import ZoneInfo
 
 import httpx
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.unit_listing import (ErpOnhand, UnitListing, UnitListingMedia,
-                                     UnitListingPart)
+from app.models.unit_listing import (ErpOnhand, ErpUnitOrder, UnitListing,
+                                     UnitListingMedia, UnitListingPart)
 
 log = logging.getLogger(__name__)
 
@@ -93,6 +93,15 @@ FEATURES: list[str] = [
     "Power Windows", "Power Locks", "Bluetooth", "Tilt Steering", "Block Heater",
     "Two-Way Radio Prep", "DOT Inspected", "Warranty Remaining",
 ]
+
+# Badges the admin can put on a listing (Ben, 2026-09-25: "tags like hot item
+# ... new build and more action items that can be dictated in admin"). Anything
+# typed is allowed too; these are the ones offered, with their colour.
+TAG_PRESETS: dict[str, str] = {
+    "Hot item": "red", "New build": "blue", "Just arrived": "green", "Price reduced": "amber",
+    "Ready to work": "green", "Low miles": "slate", "Demo unit": "slate", "Fleet special": "blue",
+    "Won't last": "red", "Make an offer": "amber",
+}
 
 # ---------------------------------------------------------------------------
 # Price policy
@@ -299,8 +308,8 @@ def listing_health(
         items.append(HealthItem("parts", "ERP part number linked", parts_total > 0, True,
                                 "A future build still needs the chassis or body part it will be built from."))
     else:
-        items.append(HealthItem("parts", "ERP part on hand, not sold", parts_on_hand > 0, True,
-                                f"{parts_on_hand} of {parts_total} linked parts are on hand and not on a customer's order."
+        items.append(HealthItem("parts", "ERP part on hand", parts_on_hand > 0, True,
+                                f"{parts_on_hand} of {parts_total} linked parts are on hand."
                                 if parts_total else "Link the unit's ERP part number."))
 
     items.append(HealthItem("photos", f"{MIN_PHOTOS}+ photos", photos >= MIN_PHOTOS, True,
@@ -340,23 +349,178 @@ def listing_health(
     return items
 
 
-def erp_state(l: UnitListing, pstat: dict[str, Any], mirror_live: bool) -> str:
-    """What the ERP says about a Nelson-owned, in-stock listing:
-    "ok", "committed" (on the lot but on a customer's order -> shown as sale
-    pending) or "gone" (no longer on hand -> taken off the site).
+def erp_state(l: UnitListing, pstat: dict[str, Any], mirror_live: bool,
+              sold_by_order: bool = False) -> str:
+    """What the ERP says about a Nelson-owned, in-stock listing: "ok" or "sold".
+
+    Sold means the unit has left the lot (no linked part on hand), or an open
+    order on it counts as a sale by Ben's rule (money down, or an account
+    customer with a valid PO). A quote -- the ERP marks the unit committed, but
+    nobody has bought it -- leaves it for sale. Sold units stay on the site,
+    marked SOLD.
+
     Consigned units and future builds aren't tracked this way, and nothing is
-    judged while the on-hand mirror is empty (a failed refresh must not take
-    every unit off the site)."""
+    judged while the on-hand mirror is empty (a failed refresh must not mark
+    every unit sold)."""
     if not mirror_live or l.ownership == "consignment" or l.availability != "in_stock":
         return "ok"
     parts = pstat.get("parts") or []
     if not parts:
         return "ok"
     if pstat.get("on_hand", 0) == 0:
-        return "gone"
-    if pstat.get("committed", 0) >= pstat.get("on_hand", 0):
-        return "committed"
+        return "sold"
+    if sold_by_order:
+        return "sold"
     return "ok"
+
+
+# -- the ERP's orders and quotes on a unit ---------------------------------
+
+# Charge terms = a customer "with an account". COD and VISA (card on file) are not.
+ACCOUNT_TERMS = {"N10TH", "N10THA", "N30", "O/A", "OA"}
+# Nelson's own accounts: demos, internal moves, adjustments -- never a sale.
+INTERNAL_CUSTOMERS = {"43850", "43856"}
+# What gets typed in the PO box when there is no PO.
+PO_PLACEHOLDER = re.compile(r"QUOTE|DEMO|ADJUST|\bTBD\b|^N/?A$|\bNONE\b|\bSTOCK\b|\bHOLD\b|ON FILE|VERBAL|PENDING", re.I)
+
+
+def classify_order(order_type: str | None, status: str | None, customer_number: str | None,
+                   customer_name: str | None, terms: str | None, po: str | None,
+                   deposit: float) -> tuple[str, str, bool, bool, bool]:
+    """-> (classification, reason, is_account, po_valid, is_internal)."""
+    cust = (customer_number or "").strip()
+    internal = cust in INTERNAL_CUSTOMERS or (customer_name or "").upper().startswith("NELSON TRUCK EQUIPMENT")
+    account = (terms or "").strip().upper() in ACCOUNT_TERMS
+    po = (po or "").strip()
+    po_valid = bool(po) and not PO_PLACEHOLDER.search(po)
+    if internal:
+        return "internal", "Nelson's own account (demo, internal or adjustment)", account, po_valid, True
+    if (order_type or "").upper() == "Q" or (status or "").lower() in ("draft", "quote"):
+        return "quote", "written up as a quote", account, po_valid, False
+    if deposit > 0:
+        return "sale", f"${deposit:,.0f} down", account, po_valid, False
+    if account and po_valid:
+        return "sale", f"account customer with PO {po}", account, po_valid, False
+    if account:
+        return "quote", f"account customer, no valid PO ({po or 'blank'})", account, po_valid, False
+    return "quote", f"{(terms or 'no').strip()} terms and no money down", account, po_valid, False
+
+
+async def refresh_unit_orders(db: AsyncSession, erp_dsn: str) -> int:
+    """Mirror the ERP's open orders and quotes on unit part numbers.
+
+    Units are the on-hand parts over $10,000 at cost plus anything linked to a
+    listing. Invoiced orders are left out on purpose: an invoiced unit leaves
+    the on-hand, which already marks it sold -- and Landoll and Jerr-Dan part
+    numbers are reused for every unit of a model, so last year's invoice for a
+    455B-53 says nothing about the one on the lot today."""
+    import asyncpg
+
+    pns = set((await db.execute(select(ErpOnhand.part_number).where(ErpOnhand.gl_cost >= 10000))).scalars().all())
+    pns |= set((await db.execute(select(UnitListingPart.part_number))).scalars().all())
+    pns = {p for p in pns if p and not PSEUDO_PART.match(p)}
+    if not pns:
+        return 0
+    conn = await asyncpg.connect(erp_dsn.replace("postgresql+asyncpg://", "postgresql://"), timeout=20)
+    try:
+        rows = await conn.fetch("""
+            with lines as (
+                select l.order_id, l.ourparts_num, l.serial_number, l.qty_ordered
+                from sales_order_lines l
+                where l.ourparts_num = any($1::text[])
+            ), dep as (
+                select order_id, -sum(extended_price) as received
+                from sales_order_lines
+                where ourparts_num ~* '^(MIS ?)?DEPOSIT'
+                group by order_id
+            )
+            select lines.ourparts_num, lines.serial_number, lines.qty_ordered,
+                   o.order_number, o.order_type, o.status, o.order_date, o.po_number,
+                   c.customer_number, coalesce(c.name, o.walkin_customer_name) as customer_name,
+                   c.terms, coalesce(dep.received, 0) as received
+            from lines
+            join sales_orders o on o.id = lines.order_id
+            left join customers c on c.id = o.customer_id
+            left join dep on dep.order_id = o.id
+            where coalesce(o.status, '') not in ('invoiced', 'shipped', 'closed', 'complete', 'completed',
+                                                 'void', 'voided', 'cancelled', 'canceled', 'deleted')
+              and o.order_date > now() - interval '18 months'
+              and coalesce(lines.qty_ordered, 0) > 0
+        """, list(pns))
+    finally:
+        await conn.close()
+
+    now = datetime.now(timezone.utc)
+    out = []
+    for r in rows:
+        cls, reason, account, po_ok, internal = classify_order(
+            r["order_type"], r["status"], r["customer_number"], r["customer_name"],
+            r["terms"], r["po_number"], float(r["received"] or 0))
+        out.append({
+            "part_number": r["ourparts_num"][:60], "serial": ((r["serial_number"] or "").strip()[:40] or None),
+            "order_number": str(r["order_number"])[:20], "order_type": (r["order_type"] or "")[:4] or None,
+            "order_status": (r["status"] or "")[:20] or None, "order_date": r["order_date"],
+            "customer_number": (r["customer_number"] or "")[:20] or None,
+            "customer_name": (r["customer_name"] or "")[:160] or None,
+            "terms": (r["terms"] or "")[:12] or None, "is_account": account,
+            "po_number": ((r["po_number"] or "").strip()[:40] or None), "po_valid": po_ok,
+            "deposit_received": Decimal(str(max(float(r["received"] or 0), 0))), "is_internal": internal,
+            "qty_ordered": r["qty_ordered"], "classification": cls, "reason": reason[:200], "synced_at": now,
+        })
+    await db.execute(delete(ErpUnitOrder))
+    if out:
+        await db.execute(ErpUnitOrder.__table__.insert(), out)
+    await db.commit()
+    return len(out)
+
+
+def part_sold(part_number: str, serial: str | None, orders: list[ErpUnitOrder], on_hand: int) -> bool:
+    """Is this unit sold by the ERP's orders?
+
+    A part number that names one unit (CHASSIS-<VIN>, or only one on hand):
+    any sale order sells it. A model-level number (JERRMPL40 covers eight
+    bodies) is sold for this unit when a sale order carries its serial, or --
+    since legacy order lines carry no serial -- when the sale orders cover
+    every one on hand. Seven MPL40 sales against eight bodies leaves one to
+    sell."""
+    mine = [o for o in orders if o.part_number == part_number and o.classification == "sale"]
+    if not mine:
+        return False
+    if part_number.upper().startswith("CHASSIS") or on_hand <= 1:
+        return True
+    if serial and any(o.serial and _norm(o.serial).endswith(_norm(serial)[-6:]) for o in mine):
+        return True
+    return len([o for o in mine if not o.serial]) >= on_hand
+
+
+async def orders_for(db: AsyncSession, pstats: dict[int, dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    """Per listing: the ERP orders on its part numbers (for the admin to watch)
+    and whether they make the unit sold."""
+    pns = {p["part_number"] for ps in pstats.values() for p in ps.get("parts", [])}
+    if not pns:
+        return {lid: {"orders": [], "sold": False} for lid in pstats}
+    orders = (await db.execute(select(ErpUnitOrder).where(ErpUnitOrder.part_number.in_(pns))
+                               .order_by(ErpUnitOrder.order_date.desc()))).scalars().all()
+    counts = dict((await db.execute(select(ErpOnhand.part_number, func.count())
+                                    .where(ErpOnhand.part_number.in_(pns), ErpOnhand.onhand > 0)
+                                    .group_by(ErpOnhand.part_number))).all())
+    out: dict[int, dict[str, Any]] = {}
+    for lid, ps in pstats.items():
+        parts = ps.get("parts", [])
+        mine = [o for o in orders if any(o.part_number == p["part_number"] for p in parts)]
+        sold = any(part_sold(p["part_number"], p.get("serial"), orders, counts.get(p["part_number"], 0))
+                   for p in parts)
+        out[lid] = {"orders": mine, "sold": sold}
+    return out
+
+
+def order_out(o: ErpUnitOrder) -> dict[str, Any]:
+    return {"order_number": o.order_number, "order_type": o.order_type, "status": o.order_status,
+            "order_date": o.order_date.isoformat() if o.order_date else None,
+            "customer_number": o.customer_number, "customer_name": o.customer_name,
+            "terms": o.terms, "is_account": o.is_account, "po_number": o.po_number,
+            "po_valid": o.po_valid, "deposit_received": float(o.deposit_received or 0),
+            "classification": o.classification, "reason": o.reason, "serial": o.serial}
 
 
 async def erp_mirror_live(db: AsyncSession) -> bool:

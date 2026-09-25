@@ -213,7 +213,7 @@ async def sitemap_static(db: AsyncSession = Depends(get_db)) -> Response:
     # and they change weekly, so they ride in the static sitemap.
     from app.models.unit_listing import UnitListing
     units = (await db.execute(select(UnitListing.slug, UnitListing.updated_at)
-                              .where(UnitListing.status.in_(("active", "pending"))))).all()
+                              .where(UnitListing.status.in_(("active", "pending", "sold"))))).all()
     entries += [_url(_abs(f"/trucks-for-sale/{slug}"),
                      lastmod=upd.date().isoformat() if upd else None,
                      changefreq="weekly", priority="0.8") for slug, upd in units]

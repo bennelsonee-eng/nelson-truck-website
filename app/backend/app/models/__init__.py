@@ -54,7 +54,7 @@ from app.models.product_spec_table import ProductSpecTable
 from app.models.product_accessory import ProductAccessory
 from app.models.body_option import BodyOption, ProductBodyOption
 from app.models.unit_listing import (
-    ErpOnhand, UnitLead, UnitListing, UnitListingMedia, UnitListingPart,
+    ErpOnhand, ErpUnitOrder, UnitLead, UnitListing, UnitListingMedia, UnitListingPart,
     UnitListingStat, UnitPriceGuide,
 )
 from app.models.inquiry import Inquiry, NewsletterSubscriber
@@ -182,6 +182,7 @@ __all__ = [
     "UnitLead",
     "UnitPriceGuide",
     "ErpOnhand",
+    "ErpUnitOrder",
     # Quote / contact requests and newsletter sign-ups (launch audit 2026-09-22)
     "Inquiry",
     "NewsletterSubscriber",

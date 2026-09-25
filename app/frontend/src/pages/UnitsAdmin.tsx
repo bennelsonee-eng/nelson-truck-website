@@ -70,9 +70,37 @@ function Shell({ children, openLeads }: { children: ReactNode; openLeads?: numbe
 
 interface ErpRow {
   id: number; part_number: string; prod_code: string | null; warehouse: number | null; location: string | null
-  onhand: number; available: number | null; committed: boolean; gl_cost: number | null; days: number | null; serial: string | null; description: string | null
+  onhand: number; available: number | null; sold: boolean; quotes: number; sales_on_model: string | null
+  orders: ErpOrder[]; gl_cost: number | null; days: number | null; serial: string | null; description: string | null
   extra_desc: string | null; p1: number | null; p2: number | null; p3: number | null; kind: string
   linked_to: { id: number; status: string; title: string }[]; synced_at: string | null
+}
+
+interface ErpOrder {
+  order_number: string; order_type: string | null; status: string | null; order_date: string | null
+  customer_number: string | null; customer_name: string | null; terms: string | null; is_account: boolean
+  po_number: string | null; po_valid: boolean; deposit_received: number; classification: 'sale' | 'quote' | 'internal'; reason: string | null
+}
+const ORDER_TONE: Record<string, string> = { sale: 'bg-green-600 text-white', quote: 'bg-amber-300 text-black', internal: 'bg-gray-200 text-gray-700' }
+
+// What the legacy ERP has written up on a unit, classified by Ben's rule
+// (2026-09-25): no account -> a sale needs money down; account -> a valid PO.
+function ErpOrders({ orders, compact }: { orders: ErpOrder[]; compact?: boolean }) {
+  if (!orders?.length) return compact ? null : <div className="text-sm text-gray-500">Nothing written up on this unit in the ERP.</div>
+  return (
+    <ul className={compact ? 'space-y-0.5' : 'space-y-1.5'}>
+      {orders.map((o) => (
+        <li key={o.order_number + o.classification} className="flex flex-wrap items-center gap-2 text-xs">
+          <span className={`rounded px-1.5 py-0.5 font-bold uppercase ${ORDER_TONE[o.classification]}`}>{o.classification}</span>
+          <span className="font-mono">#{o.order_number}</span>
+          <span className="text-gray-500">{o.order_date}</span>
+          <span className="font-semibold text-gray-900">{o.customer_name}</span>
+          {!compact && <span className="text-gray-500">{o.terms}{o.is_account ? ' (account)' : ''} · PO {o.po_number || '—'}{o.deposit_received ? ` · ${money(o.deposit_received)} down` : ''}</span>}
+          <span className="text-gray-600">— {o.reason}</span>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 function HealthBar({ h }: { h: any }) {
@@ -87,20 +115,21 @@ function HealthBar({ h }: { h: any }) {
 
 function UnlistedPanel({ onCreate }: { onCreate: (pn: string, serial: string | null) => void }) {
   const [d, setD] = useState<{ items: ErpRow[]; unlisted_count: number; unlisted_cost: number; committed_count: number; committed_cost: number; synced_at: string | null } | null>(null)
+  const [openRow, setOpenRow] = useState<number | null>(null)
   const [open, setOpen] = useState(true)
   const [kind, setKind] = useState('')
   const [showListed, setShowListed] = useState(false)
   useEffect(() => { api('/api/admin/units/erp/unlisted').then((r) => r.ok && setD(r.data)) }, [])
   if (!d) return null
   const kinds = [...new Set(d.items.map((i) => i.kind))]
-  const rows = d.items.filter((i) => (showListed || (!i.linked_to.length && !i.committed)) && (!kind || i.kind === kind))
+  const rows = d.items.filter((i) => (showListed || (!i.linked_to.length && !i.sold)) && (!kind || i.kind === kind))
   return (
     <section className="mb-6 rounded-xl border border-amber-300 bg-amber-50">
       <button type="button" onClick={() => setOpen(!open)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
         <span className="text-xl">📦</span>
         <div className="flex-1">
           <div className="font-bold text-gray-900">In stock, not listed yet: {d.unlisted_count} units · {money(d.unlisted_cost)} at cost</div>
-          <div className="text-xs text-gray-600">Straight from the ERP on-hand, refreshed every 15 minutes{d.synced_at ? ` (last ${new Date(d.synced_at).toLocaleTimeString()})` : ''}. Units over $10,000 at cost.{d.committed_count ? ` Not counted: ${d.committed_count} on customers’ orders (${money(d.committed_cost)}).` : ''}</div>
+          <div className="text-xs text-gray-600">Straight from the ERP on-hand, refreshed every 15 minutes{d.synced_at ? ` (last ${new Date(d.synced_at).toLocaleTimeString()})` : ''}. Units over $10,000 at cost.{d.committed_count ? ` Not counted: ${d.committed_count} sold on ERP orders (${money(d.committed_cost)}) — a sale needs money down, or an account customer’s valid PO.` : ''}</div>
         </div>
         <span className="text-gray-500">{open ? '▲' : '▼'}</span>
       </button>
@@ -121,13 +150,16 @@ function UnlistedPanel({ onCreate }: { onCreate: (pn: string, serial: string | n
                   <tr key={r.id} className="border-t border-gray-100">
                     <td className="px-3 py-2 text-xs text-gray-600">{r.kind}</td>
                     <td className="px-3 py-2 font-mono text-xs">{r.part_number}{r.serial ? <div className="text-gray-400">sn {r.serial}</div> : null}</td>
-                    <td className="px-3 py-2">{r.description}<div className="text-xs text-gray-500">{r.extra_desc}</div></td>
+                    <td className="px-3 py-2">{r.description}<div className="text-xs text-gray-500">{r.extra_desc}</div>
+                      {r.orders?.length > 0 && <button type="button" onClick={() => setOpenRow(openRow === r.id ? null : r.id)} className="mt-0.5 text-[11px] font-semibold text-sky-700 underline">
+                        {r.sales_on_model || (r.sold ? 'sold on an ERP order' : `${r.quotes} quote${r.quotes === 1 ? '' : 's'} in the ERP`)} {openRow === r.id ? '▲' : '▼'}</button>}
+                      {openRow === r.id && <div className="mt-1 rounded bg-gray-50 p-2"><ErpOrders orders={r.orders} compact /></div>}</td>
                     <td className="px-3 py-2 text-xs capitalize">{r.location || `wh ${r.warehouse}`}</td>
                     <td className={`px-3 py-2 text-right ${(r.days || 0) > 365 ? 'font-bold text-red-700' : (r.days || 0) > 180 ? 'text-amber-700' : ''}`}>{r.days ?? '—'}</td>
                     <td className="px-3 py-2 text-right">{money(r.gl_cost)}</td>
                     <td className="px-3 py-2 text-right text-gray-500">{r.p1 ? money(r.p1) : '—'}</td>
                     <td className="px-3 py-2 text-right">
-                      {r.committed ? <span className="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-bold text-gray-700" title="On a customer's order in the ERP">SOLD</span>
+                      {r.sold ? <span className="rounded bg-gray-200 px-2 py-0.5 text-[11px] font-bold text-gray-700" title="A sale order in the ERP">SOLD</span>
                         : r.linked_to.length ? <Link to={`/admin/units/${r.linked_to[0].id}`} className="text-xs text-gray-500 underline">{r.linked_to[0].status}</Link>
                         : <button type="button" onClick={() => onCreate(r.part_number, r.serial)} className="rounded bg-red-700 px-2.5 py-1 text-xs font-bold text-white hover:bg-red-800">List it</button>}
                     </td>
@@ -221,8 +253,9 @@ export function AdminUnitsInventoryPage() {
                 <div className="mt-0.5 text-xs text-gray-500">Created {new Date(u.created_at).toLocaleDateString()} · {u.category} · {u.condition}{u.location ? ` · ${u.location}` : ''}{u.stock_number ? ` · stock ${u.stock_number}` : ''}</div>
                 <div className="mt-3 max-w-sm"><HealthBar h={u.health} /></div>
                 {!u.health.can_publish && <div className="mt-1 text-xs text-amber-700">Needs: {u.health.items.filter((i: any) => i.blocking && !i.ok).map((i: any) => i.label).join(' · ')}</div>}
-                {u.erp_state === 'committed' && <div className="mt-1 text-xs font-semibold text-sky-800">The ERP has this unit on a customer’s order — the site shows it as Sale pending. Mark it sold when it goes.</div>}
-                {u.erp_state === 'gone' && <div className="mt-1 text-xs font-semibold text-red-700">No longer on hand in the ERP — it’s off the site. Mark it sold.</div>}
+                {u.erp_state === 'sold' && u.status !== 'sold' && <div className="mt-1 text-xs font-semibold text-gray-900">The ERP shows this unit sold — the site already shows it as SOLD. Mark it sold here to match.</div>}
+                {u.erp_orders?.filter((o: ErpOrder) => o.classification !== 'internal').length > 0 && <div className="mt-2"><ErpOrders orders={u.erp_orders.filter((o: ErpOrder) => o.classification !== 'internal')} compact /></div>}
+                {(u.tags || []).length > 0 && <div className="mt-2 flex flex-wrap gap-1">{u.tags.map((t: string) => <span key={t} className="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-bold uppercase text-white">{t}</span>)}</div>}
               </div>
               <div className="border-t border-gray-100 p-4 text-sm md:border-l md:border-t-0">
                 <div className="text-xs text-gray-500">Price</div>
@@ -598,7 +631,7 @@ export function AdminUnitEditorPage() {
                       <td className="py-2 font-mono text-xs">{p.part_number}<div className="font-sans text-gray-500">{s?.description}</div></td>
                       <td className="font-mono text-xs">{p.serial || '—'}</td>
                       <td><select className="rounded border border-gray-300 px-1 py-0.5 text-xs" value={p.role} onChange={(e) => { setParts(parts.map((x, j) => (j === i ? { ...x, role: e.target.value } : x))); setDirty(true) }}>{meta.part_roles.map((r: string) => <option key={r}>{r}</option>)}</select></td>
-                      <td>{s ? (s.committed ? <span className="font-semibold text-sky-800">On a customer’s order</span> : s.on_hand ? <span className="font-semibold text-green-700">Yes · {s.warehouse === 1 ? 'Portland' : s.warehouse === 2 ? 'Kent' : `wh ${s.warehouse}`}</span> : <span className="text-red-700">Not on hand</span>) : <span className="text-gray-400">save to check</span>}</td>
+                      <td>{s ? (s.on_hand ? <span className="font-semibold text-green-700">Yes · {s.warehouse === 1 ? 'Portland' : s.warehouse === 2 ? 'Kent' : `wh ${s.warehouse}`}</span> : <span className="text-red-700">Not on hand</span>) : <span className="text-gray-400">save to check</span>}</td>
                       <td className="text-right">{s?.days ?? '—'}</td>
                       <td className="text-right">{money(s?.gl_cost)}</td>
                       <td className="text-right text-xs text-gray-500">{[s?.p1, s?.p2, s?.p3].map((v: number | null) => (v ? money(v) : '—')).join(' / ')}</td>
@@ -609,6 +642,16 @@ export function AdminUnitEditorPage() {
               </table>
             )}
             {u.parts.length === 0 && parts.length > 0 && <div className="mb-3 text-sm text-gray-500">{parts.length} part(s) added — save to check stock.</div>}
+            {u.parts.length > 0 && (
+              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                <div className="mb-1.5 flex items-center justify-between text-xs font-bold uppercase tracking-wide text-gray-500">
+                  <span>Written up in the ERP</span>
+                  {u.erp_state === 'sold' && <span className="rounded bg-gray-900 px-2 py-0.5 text-white">Reads as SOLD on the site</span>}
+                </div>
+                <ErpOrders orders={u.erp_orders || []} />
+                <p className="mt-2 text-[11px] text-gray-500">A write-up is only a sale with money down, or an account customer’s valid PO. Quotes leave the unit for sale. A deposit taken on a separate deposit invoice isn’t seen here — mark the listing Sold yourself.</p>
+              </div>
+            )}
             <F label="Add a part — search the on-hand by part #, serial, VIN or description">
               <input className={inp} value={erpQ} onChange={(e) => setErpQ(e.target.value)} placeholder="e.g. CHASSIS-TG183750, MPL40, 0230013566, Landoll" />
             </F>
@@ -619,7 +662,8 @@ export function AdminUnitEditorPage() {
                     className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left text-sm hover:bg-sky-50">
                     <span className="font-mono text-xs">{r.part_number}</span><span className="flex-1 truncate">{r.description} <span className="text-gray-500">{r.extra_desc}</span></span>
                     <span className="text-xs text-gray-500">{r.serial ? `sn ${r.serial} · ` : ''}{r.location || `wh ${r.warehouse}`} · {money(r.gl_cost)}</span>
-                    {r.committed && <span className="rounded bg-gray-200 px-1.5 text-[10px] font-bold text-gray-700">SOLD</span>}
+                    {r.sold && <span className="rounded bg-gray-200 px-1.5 text-[10px] font-bold text-gray-700">SOLD</span>}
+                    {!r.sold && r.quotes > 0 && <span className="rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-800">{r.quotes} quote{r.quotes === 1 ? '' : 's'}</span>}
                     {r.linked_to.length > 0 && <span className="rounded bg-amber-100 px-1.5 text-[10px] font-bold text-amber-800">on #{r.linked_to[0].id}</span>}
                   </button>
                 ))}
@@ -806,6 +850,21 @@ export function AdminUnitEditorPage() {
               ))}
             </div>
             {!h.can_publish && <p className="mt-2 text-sm text-amber-700">To publish: {h.items.filter((i: any) => i.blocking && !i.ok).map((i: any) => i.label).join(' · ')}</p>}
+            <div className="mt-4 rounded-lg border border-gray-200 px-4 py-3">
+              <b className="text-gray-900">Tags</b><span className="ml-2 text-xs text-gray-600">Badges on the card and the page — up to 6. Pick one or type your own.</span>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {Object.keys(meta.tag_presets || {}).map((t) => {
+                  const on = (f.tags || []).includes(t)
+                  return <button key={t} type="button" onClick={() => set('tags', on ? f.tags.filter((x: string) => x !== t) : [...(f.tags || []), t].slice(0, 6))}
+                    className={`rounded-full border px-3 py-1 text-xs font-bold uppercase ${on ? 'border-red-700 bg-red-700 text-white' : 'border-gray-300 text-gray-700 hover:border-gray-400'}`}>{on ? '✓ ' : ''}{t}</button>
+                })}
+                {(f.tags || []).filter((t: string) => !(t in (meta.tag_presets || {}))).map((t: string) => (
+                  <button key={t} type="button" onClick={() => set('tags', f.tags.filter((x: string) => x !== t))} className="rounded-full border border-red-700 bg-red-700 px-3 py-1 text-xs font-bold uppercase text-white">✓ {t} ✕</button>
+                ))}
+                <input placeholder="+ your own" maxLength={30} className="w-32 rounded-full border border-dashed border-gray-300 px-3 py-1 text-xs"
+                  onKeyDown={(e) => { const v = (e.target as HTMLInputElement).value.trim(); if (e.key === 'Enter' && v) { e.preventDefault(); set('tags', [...(f.tags || []), v].slice(0, 6)); (e.target as HTMLInputElement).value = '' } }} />
+              </div>
+            </div>
             <label className="mt-4 flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
               <span><b className="text-gray-900">Feature on the homepage</b><span className="block text-xs text-gray-600">Featured units lead the band at the top of the homepage. Lower rank shows first.</span></span>
               <span className="flex items-center gap-3"><input type="number" className="w-16 rounded border border-gray-300 px-2 py-1 text-sm" value={f.featured_rank ?? 0} onChange={(e) => set('featured_rank', e.target.value)} title="Rank" />

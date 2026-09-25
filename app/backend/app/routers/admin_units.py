@@ -48,7 +48,7 @@ from app.models import User
 from app.models.unit_listing import (DOC_TYPES, LEAD_STATUSES, OWNERSHIP, PART_ROLES,
                                      PRICE_MODES, RANGE_DELIVERY, UNIT_AVAILABILITY,
                                      UNIT_CATEGORIES, UNIT_CONDITIONS, UNIT_STATUSES,
-                                     UNIT_TYPES, ErpOnhand, UnitLead, UnitListing,
+                                     UNIT_TYPES, ErpOnhand, ErpUnitOrder, UnitLead, UnitListing,
                                      UnitListingMedia, UnitListingPart, UnitListingStat,
                                      UnitPriceGuide)
 from app.services import unit_listings as svc
@@ -120,13 +120,14 @@ def _media_out(m: UnitListingMedia) -> dict[str, Any]:
 
 
 def _full(l: UnitListing, media: list[UnitListingMedia], pstat: dict[str, Any],
-          views_30: int = 0, leads: int = 0) -> dict[str, Any]:
+          views_30: int = 0, leads: int = 0, orders: dict[str, Any] | None = None,
+          mirror_live: bool = True) -> dict[str, Any]:
     photos = sum(1 for m in media if m.kind == "photo")
     videos = sum(1 for m in media if m.kind == "video")
     restricted = svc.price_restricted(l, pstat.get("prod_codes", []))
     health = svc.health_score(svc.listing_health(
         l, photos=photos, videos=videos, parts_total=len(pstat.get("parts", [])),
-        parts_on_hand=pstat.get("on_hand", 0) - pstat.get("committed", 0), restricted=restricted))
+        parts_on_hand=pstat.get("on_hand", 0), restricted=restricted))
     out = {c.name: getattr(l, c.name) for c in UnitListing.__table__.columns}
     for k in ("price", "sale_price", "range_low", "range_high", "wheelbase_in", "cab_to_axle_in"):
         out[k] = svc.money(out[k])
@@ -155,6 +156,10 @@ def _full(l: UnitListing, media: list[UnitListingMedia], pstat: dict[str, Any],
         "views_30": views_30,
         "leads": leads,
         "default_qualify_specs": svc.default_qualify_specs(l),
+        # What the legacy ERP has written up on this unit, and whether any of it
+        # is a sale by Ben's rule -- "watch the quotes".
+        "erp_orders": [svc.order_out(o) for o in (orders or {}).get("orders", [])],
+        "erp_state": svc.erp_state(l, pstat, mirror_live, (orders or {}).get("sold", False)),
         "public_url": f"/trucks-for-sale/{l.slug}",
     })
     return out
@@ -169,13 +174,16 @@ async def _get(db: AsyncSession, listing_id: int) -> UnitListing:
 
 async def _full_one(db: AsyncSession, l: UnitListing) -> dict[str, Any]:
     media = (await svc.media_for(db, [l.id]))[l.id]
-    pstat = (await svc.parts_status(db, [l.id]))[l.id]
+    pall = await svc.parts_status(db, [l.id])
+    pstat = pall[l.id]
+    orders = (await svc.orders_for(db, pall))[l.id]
+    mirror_live = await svc.erp_mirror_live(db)
     since = datetime.now(svc.PACIFIC).date() - timedelta(days=29)
     views = (await db.execute(select(func.coalesce(func.sum(UnitListingStat.views), 0))
                               .where(UnitListingStat.listing_id == l.id, UnitListingStat.day >= since))).scalar_one()
     leads = (await db.execute(select(func.count()).select_from(UnitLead)
                               .where(UnitLead.listing_id == l.id, UnitLead.status != "spam"))).scalar_one()
-    return _full(l, media, pstat, int(views), int(leads))
+    return _full(l, media, pstat, int(views), int(leads), orders, mirror_live)
 
 
 # ---------------------------------------------------------------------------
@@ -192,6 +200,7 @@ async def units_meta(_: User = Depends(require_admin)) -> dict[str, Any]:
         "statuses": UNIT_STATUSES, "conditions": UNIT_CONDITIONS, "unit_types": UNIT_TYPES,
         "doc_types": DOC_TYPES, "part_roles": PART_ROLES, "lead_statuses": LEAD_STATUSES,
         "min_photos": svc.MIN_PHOTOS,
+        "tag_presets": svc.TAG_PRESETS,
         "restricted_note": "Jerr-Dan does not allow an advertised retail price on its wreckers and "
                            "carriers. These units offer the price-range chat or Call for Price instead.",
     }
@@ -205,8 +214,6 @@ def _erp_out(r: ErpOnhand, linked: dict[tuple[str, str], list[dict[str, Any]]]) 
         "location": svc.WAREHOUSE_LOCATION.get(r.warehouse or 0),
         "onhand": float(r.onhand or 0), "gl_cost": svc.money(r.gl_cost), "days": r.days,
         "available": svc.money(r.available),
-        # On the lot but on a customer's order -- sold, not stock to advertise.
-        "committed": r.available is not None and r.available <= 0,
         "serial": r.serial, "description": r.description, "extra_desc": r.extra_desc,
         "p1": svc.money(r.p1), "p2": svc.money(r.p2), "p3": svc.money(r.p3),
         "kind": svc.classify_erp_part(r.prod_code, r.part_number),
@@ -228,6 +235,29 @@ async def _linked_map(db: AsyncSession) -> dict[tuple[str, str], list[dict[str, 
     return out
 
 
+async def _attach_orders(db: AsyncSession, items: list[dict[str, Any]]) -> None:
+    """Mark each on-hand row with the ERP orders written up on it: sold (an
+    order that is a sale by Ben's rule) or just quoted. Model-level part
+    numbers match on serial, so one sold MPL40 doesn't mark all eight."""
+    pns = {i["part_number"] for i in items}
+    orders = (await db.execute(select(ErpUnitOrder).where(ErpUnitOrder.part_number.in_(pns or {""}))
+                               .order_by(ErpUnitOrder.order_date.desc()))).scalars().all() if pns else []
+    per_pn: dict[str, list[dict[str, Any]]] = {}
+    for i in items:
+        per_pn.setdefault(i["part_number"], []).append(i)
+    for pn, rows in per_pn.items():
+        mine = [o for o in orders if o.part_number == pn]
+        sales = [o for o in mine if o.classification == "sale"]
+        # Legacy order lines carry no serial: with N sale orders on a model-level
+        # number, N of its units are sold -- the longest in stock first.
+        n_sold = len(sales) if len(rows) > 1 and not pn.upper().startswith("CHASSIS") else (1 if sales else 0)
+        for k, i in enumerate(sorted(rows, key=lambda r: -(r["days"] or 0))):
+            i["orders"] = [svc.order_out(o) for o in mine]
+            i["sold"] = k < n_sold
+            i["quotes"] = sum(1 for o in mine if o.classification == "quote")
+            i["sales_on_model"] = f"{min(len(sales), len(rows))} of {len(rows)} on sale orders" if len(rows) > 1 and sales else None
+
+
 @router.get("/api/admin/units/erp/search")
 async def erp_search(q: str = Query(..., min_length=2), db: AsyncSession = Depends(get_db),
                      _: User = Depends(require_admin)) -> dict[str, Any]:
@@ -237,7 +267,9 @@ async def erp_search(q: str = Query(..., min_length=2), db: AsyncSession = Depen
         ErpOnhand.description.ilike(like), ErpOnhand.extra_desc.ilike(like)))
         .order_by(ErpOnhand.gl_cost.desc().nullslast()).limit(40))).scalars().all()
     linked = await _linked_map(db)
-    return {"items": [_erp_out(r, linked) for r in rows]}
+    items = [_erp_out(r, linked) for r in rows]
+    await _attach_orders(db, items)
+    return {"items": items}
 
 
 @router.get("/api/admin/units/erp/unlisted")
@@ -251,8 +283,9 @@ async def erp_unlisted(min_cost: float = Query(10000, ge=0), db: AsyncSession = 
     rows = [r for r in rows if not svc.PSEUDO_PART.match(r.part_number)]
     linked = await _linked_map(db)
     items = [_erp_out(r, linked) for r in rows]
-    unlisted = [i for i in items if not i["linked_to"] and not i["committed"]]
-    committed = [i for i in items if i["committed"]]
+    await _attach_orders(db, items)
+    unlisted = [i for i in items if not i["linked_to"] and not i["sold"]]
+    committed = [i for i in items if i["sold"]]
     synced = max((r.synced_at for r in rows), default=None)
     return {
         "items": items,
@@ -334,7 +367,7 @@ async def units_reports(days: int = Query(30, ge=1, le=365), db: AsyncSession = 
     unl = await erp_unlisted(min_cost=10000, db=db, _=_)  # type: ignore[arg-type]
     aging = {"0-90": 0.0, "91-180": 0.0, "181-365": 0.0, "365+": 0.0}
     for it in unl["items"]:
-        if it["linked_to"] or it["committed"]:
+        if it["linked_to"] or it["sold"]:
             continue
         d = it["days"] or 0
         b = "0-90" if d <= 90 else "91-180" if d <= 180 else "181-365" if d <= 365 else "365+"
@@ -385,6 +418,7 @@ async def list_units(status: str | None = None, q: str | None = None,
     media = await svc.media_for(db, ids)
     pst = await svc.parts_status(db, ids)
     mirror_live = await svc.erp_mirror_live(db)
+    ords = await svc.orders_for(db, pst)
     since = datetime.now(svc.PACIFIC).date() - timedelta(days=29)
     views = dict((await db.execute(select(UnitListingStat.listing_id, func.sum(UnitListingStat.views))
                                    .where(UnitListingStat.day >= since, UnitListingStat.listing_id.in_(ids or [0]))
@@ -397,9 +431,9 @@ async def list_units(status: str | None = None, q: str | None = None,
                                        .group_by(UnitLead.listing_id))).all())
     items = []
     for l in rows:
-        f = _full(l, media.get(l.id, []), pst.get(l.id, {}), int(views.get(l.id, 0) or 0), int(leads.get(l.id, 0)))
+        f = _full(l, media.get(l.id, []), pst.get(l.id, {}), int(views.get(l.id, 0) or 0), int(leads.get(l.id, 0)),
+                  ords.get(l.id, []), mirror_live)
         f["new_leads"] = int(new_leads.get(l.id, 0))
-        f["erp_state"] = svc.erp_state(l, pst.get(l.id, {}), mirror_live)
         # The list needs one photo, not the whole gallery.
         photos = [m for m in f["media"] if m["kind"] == "photo"]
         f["photo"] = (photos[0]["thumb_url"] or photos[0]["url"]) if photos else None
@@ -530,6 +564,8 @@ async def save_unit(listing_id: int, body: SaveIn, db: AsyncSession = Depends(ge
         l.qualify_specs = _kv_list(f["qualify_specs"], 10)
     if "features" in f:
         l.features = [x for x in dict.fromkeys(_s(x, 60) for x in (f["features"] or [])) if x][:60]
+    if "tags" in f:
+        l.tags = [x for x in dict.fromkeys(_s(x, 30) for x in (f["tags"] or [])) if x][:6]
     if "video_urls" in f:
         urls = []
         for u in (f["video_urls"] or [])[:10]:
