@@ -381,7 +381,39 @@ ACCOUNT_TERMS = {"N10TH", "N10THA", "N30", "O/A", "OA"}
 # Nelson's own accounts: demos, internal moves, adjustments -- never a sale.
 INTERNAL_CUSTOMERS = {"43850", "43856"}
 # What gets typed in the PO box when there is no PO.
-PO_PLACEHOLDER = re.compile(r"QUOTE|DEMO|ADJUST|\bTBD\b|^N/?A$|\bNONE\b|\bSTOCK\b|\bHOLD\b|ON FILE|VERBAL|PENDING", re.I)
+PO_PLACEHOLDER = re.compile(
+    r"QUOTE|DEMO|ADJUST|\bTBD\b|^N/?A$|\bNONE\b|\bSTOCK\b|\bHOLD\b|ON FILE|VERBAL|PENDING"
+    r"|^V$|^VISA|\bINV\b|INV#|INVOICE", re.I)
+# A number right after one of these words is a truck or unit number, not a PO
+# ("TRUCK 8086").
+_UNIT_NUMBER = re.compile(r"\b(TRUCK|TRK|UNIT|VEH(ICLE)?|FLEET|ASSET|EQUIP(MENT)?)\s*#?\s*\d", re.I)
+# Model numbers of what Nelson sells: "DPM-40/RON" is a quote for a DPM-40, not
+# a PO.
+_MODEL_NUMBER = re.compile(
+    r"^(MPL|HPL|XLP|DPM|DTAX|DLT|DTL|DPL|NRR|NPR|NQR|FTR|MV|HV|F[3-7]50|[345]500|455B|440B|950E|343A)-?\d*[A-Z]?$",
+    re.I)
+
+
+def po_is_valid(po: str | None) -> bool:
+    """Is what's in the PO box a real purchase order?
+
+    Ben, 2026-09-25, looking at 56 public-agency orders: agency numbers are POs
+    ("T099891", "7A4-321", "A-0000302503/LISA", "NEWPO47/MIKE", "FBS42"); a
+    person's name ("RON", "CONNOR/JOHN"), what the job is ("FERRY UNIT", "NEW
+    BUCKET TRUCK", "TRUCK 8086", "DPM-40/RON") and placeholders ("QUOTE", "TBD",
+    "V", "INV#C59260") are not -- those orders are quotes.
+
+    So: some token carries at least two digits, and it isn't a truck/unit
+    number, a model number, a placeholder or an invoice reference. A name after
+    a slash ("/LISA") is the requester and doesn't matter either way."""
+    text = (po or "").strip()
+    if not text or PO_PLACEHOLDER.search(text) or _UNIT_NUMBER.search(text):
+        return False
+    text = re.sub(r"^\s*P\.?\s*O\.?\s*(#|NO\.?|NUMBER)?\s*", "", text, flags=re.I)
+    for tok in re.split(r"[\s/]+", text):
+        if sum(ch.isdigit() for ch in tok) >= 2 and not _MODEL_NUMBER.match(tok):
+            return True
+    return False
 
 
 def classify_order(order_type: str | None, status: str | None, customer_number: str | None,
@@ -392,7 +424,7 @@ def classify_order(order_type: str | None, status: str | None, customer_number: 
     internal = cust in INTERNAL_CUSTOMERS or (customer_name or "").upper().startswith("NELSON TRUCK EQUIPMENT")
     account = (terms or "").strip().upper() in ACCOUNT_TERMS
     po = (po or "").strip()
-    po_valid = bool(po) and not PO_PLACEHOLDER.search(po)
+    po_valid = po_is_valid(po)
     if internal:
         return "internal", "Nelson's own account (demo, internal or adjustment)", account, po_valid, True
     if (order_type or "").upper() == "Q" or (status or "").lower() in ("draft", "quote"):
