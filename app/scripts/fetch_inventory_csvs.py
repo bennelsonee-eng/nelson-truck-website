@@ -61,8 +61,12 @@ async def refresh_unit_onhand() -> None:
     admin (part-number checks, "in stock but not listed", cost and age).
     Never fails the unit: the stock upsert that follows matters more."""
     try:
-        from app.database import async_session
+        from app.database import async_session, engine
         from app.services.unit_listings import refresh_erp_onhand
+        # The shared engine echoes SQL; with 8,000-odd rows inserted every 15
+        # minutes that would balloon the timer log (sync_inventory does the same).
+        engine.echo = False
+        engine.sync_engine.echo = False
         async with async_session() as db:
             n = await refresh_erp_onhand(db, DUMPS_DIR / "nte_inv_days.csv",
                                          DUMPS_DIR / "nte_parts_master.csv")
