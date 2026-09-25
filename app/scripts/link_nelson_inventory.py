@@ -289,6 +289,13 @@ def walk_inv_days(
             # products keyed the ordinary way (found 2026-09-24).
             if mpc and pn_upper.startswith(mpc.upper()) and len(pn_upper) > len(mpc):
                 candidates.append(pn_upper[len(mpc):].lstrip("-"))
+            # Last in line: the ourparts_num minus its prod code, for master
+            # rows whose parts_num isn't a part number at all ("NOT SOLD THIS
+            # WAY" on 35 Meyer parts, "M84415-B" for MAXXM84415) (2026-09-25).
+            if mpc and ourparts.startswith(mpc.upper()) and len(ourparts) > len(mpc):
+                tail = ourparts[len(mpc):].lstrip("-")
+                if tail and tail not in candidates:
+                    candidates.append(tail)
 
             pid = None
             for cand in candidates:
@@ -402,8 +409,13 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
                 return
 
         log.info("Indexing products by SKU + by (brand_id, parts_num)…")
+        # Hidden products are indexed too (visible ones listed last so they
+        # win a shared key): leaving them out meant stock could never reach a
+        # hidden page, so it could never be seen to need showing — 16 Buyers
+        # and 2 SnowDogg parts sat hidden with stock on the floor (2026-09-25).
         prod_rows = await conn.fetch(
-            "SELECT id, brand_id, sku FROM product WHERE is_for_sale AND NOT is_hidden"
+            "SELECT id, brand_id, sku, is_hidden FROM product WHERE is_for_sale"
+            " ORDER BY is_hidden DESC, id"
         )
         sku_map: dict[str, int] = {}
         brand_partnum_map: dict[tuple[int, str], int] = {}
@@ -420,8 +432,14 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
             brand_partnum_map[(p["brand_id"], pn)] = p["id"]
             if "-" in pn:
                 brand_partnum_map[(p["brand_id"], pn.replace("-", ""))] = p["id"]
-        log.info("  %d products indexed, %d (brand,parts_num) keys",
-                 len(sku_map), len(brand_partnum_map))
+            # SKUs with a space ('BGZX-OE38-37 CHARC') against a master
+            # parts_num without one ('OE38-37CHARC').
+            if " " in pn:
+                brand_partnum_map[(p["brand_id"], pn.replace(" ", ""))] = p["id"]
+                brand_partnum_map[(p["brand_id"], pn.replace(" ", "").replace("-", ""))] = p["id"]
+        hidden_pids = {p["id"] for p in prod_rows if p["is_hidden"]}
+        log.info("  %d products indexed (%d hidden), %d (brand,parts_num) keys",
+                 len(sku_map), len(hidden_pids), len(brand_partnum_map))
 
         # --- Load parts masters ------------------------------------------
         tte_master = load_master(TTE_PARTS_MASTER)
@@ -519,6 +537,11 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
                  stats["nte_skip_wh"], stats["nte_skip_blank"])
         log.info("Combined inventory rows to upsert: %d", len(inventory))
         log.info("Unique products with stock: %d", len({k[0] for k in inventory.keys()}))
+        hidden_stocked = sorted({pid for (pid, _), r in inventory.items()
+                                 if pid in hidden_pids and (r.get("on_hand") or 0) > 0})
+        if hidden_stocked:
+            log.warning("%d HIDDEN products have stock on hand (not shown on the site): %s",
+                        len(hidden_stocked), hidden_stocked[:20])
 
         # Per-brand top 20
         brand_totals: Counter = Counter()
