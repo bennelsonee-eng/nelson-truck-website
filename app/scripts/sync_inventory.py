@@ -60,6 +60,67 @@ MASTER_TABLES = {
 MASTER_PAGE = 25_000
 
 
+# A parts master that stops rebuilding is invisible: stock keeps flowing from
+# nte_inv_days, but every part added since the last rebuild is dropped as
+# "no_master" and reads as out of stock. Nelson's nte_parts_master sat frozen
+# from 2026-09-21 to 2026-09-24 without anything noticing, because the upstream
+# feed that rebuilds it (nte-ims200-daily.csv) is not one of the ten
+# {company}-{report}-erp.csv files check_daily_feeds.py watches. These rebuild
+# about 05:45 daily, so a day of grace on top of that is plenty.
+MASTER_STALE_AFTER_HOURS = 36
+
+
+async def warn_if_masters_stale(url: str, token: str,
+                                hours: int = MASTER_STALE_AFTER_HOURS) -> list[str]:
+    """Log a WARNING for every parts master the legacy MySQL has not rebuilt
+    recently. Returns the names found stale.
+
+    Deliberately advisory, never fatal: a stale master still matches far more
+    inventory than no master at all, and failing the 15-minute unit over it
+    would stop the stock upsert entirely, which is the worse outcome.
+    """
+    names = ", ".join(f"'{t}'" for t in MASTER_TABLES)
+    # Age is computed by MySQL against its own NOW(), not ours: this box runs
+    # UTC and the legacy host does not, and a fixed 7-hour skew against a
+    # daily rebuild is enough to invent a staleness warning.
+    q = ("SELECT TABLE_NAME, UPDATE_TIME, "
+         "TIMESTAMPDIFF(HOUR, UPDATE_TIME, NOW()) AS age_hours "
+         "FROM information_schema.TABLES "
+         "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN (" + names + ")")
+    try:
+        async with httpx.AsyncClient(timeout=60, verify=True) as client:
+            r = await client.get(url, params={"token": token, "query": q,
+                                              "format": "json"})
+            r.raise_for_status()
+            rows = r.json().get("rows", [])
+    except Exception:
+        # Never let the freshness probe be the thing that breaks the sync.
+        log.exception("parts-master freshness check failed (skipped)")
+        return []
+
+    stale: list[str] = []
+    for row in rows:
+        table = row.get("TABLE_NAME") or "?"
+        stamp = row.get("UPDATE_TIME")
+        if not stamp:
+            log.warning("%s: no UPDATE_TIME reported, cannot judge freshness", table)
+            continue
+        try:
+            age = int(row["age_hours"])
+        except (KeyError, TypeError, ValueError):
+            log.warning("%s: no usable age for UPDATE_TIME %r", table, stamp)
+            continue
+        if age > hours:
+            stale.append(table)
+            log.warning("%s has not rebuilt in %dh (last %s) - parts added since "
+                        "then are dropped as no_master and read as out of stock. "
+                        "Check that its upstream feed is still being delivered.",
+                        table, age, stamp)
+        else:
+            log.info("%s rebuilt %dh ago (%s)", table, age, stamp)
+    return stale
+
+
 async def fetch_csv(url: str, token: str, table: str, dest: Path) -> int:
     """Fetch one inventory table as CSV and atomically replace `dest`.
     Validates the expected header so a bridge error page never overwrites a

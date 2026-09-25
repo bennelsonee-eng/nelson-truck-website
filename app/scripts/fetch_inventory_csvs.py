@@ -18,7 +18,7 @@ import asyncio
 import sys
 
 from sync_inventory import (DUMPS_DIR, INV_TABLES, MASTER_TABLES, fetch_csv,
-                            fetch_csv_paged, log)
+                            fetch_csv_paged, log, warn_if_masters_stale)
 
 
 async def main() -> int:
@@ -49,6 +49,9 @@ async def main() -> int:
         except Exception:
             log.exception("fetch %s failed (prior CSV kept)", table)
             return 1
+    # Fetching a master says nothing about whether the legacy side still
+    # rebuilds it; warn (without failing) when one has gone stale.
+    await warn_if_masters_stale(settings.titan_bridge_url, settings.titan_bridge_token)
     return 0
 
 
