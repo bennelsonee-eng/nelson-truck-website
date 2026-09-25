@@ -68,6 +68,7 @@ NTE_INV_DAYS = DUMPS_DIR / "nte_inv_days.csv"
 # Default warehouses we accept stock from.  10 = Spokane TTE,
 # 1 = Portland NTE, 2 = Kent NTE.  Customer-tier visibility rules
 # (jobber vs retail per warehouse) are layered on top — out of scope here.
+PROD_CODE_ALIASES = {"MYS": "MYP"}   # ERP prod code -> the brand row's prod code
 TARGET_WAREHOUSES = {10, 1, 2}  # same as Titan: Spokane(10) + Portland(1) + Kent(2), loads both tte+nte_inv_days
 
 REPORT_PATH = SCRIPT_DIR.parent / "data" / "reports" / "tte_inventory_missing_from_website.csv"
@@ -397,6 +398,12 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
                 "aaia_code": r["aaia_code"],
                 "name": r["name"],
             }
+        # One maker, two ERP prod codes: the ERP files Meyer spreaders under
+        # MYS and Meyer plows under MYP, but shoppers see a single Meyer brand
+        # (same part-number space, so the SKU forms can't collide).
+        for alias, target in PROD_CODE_ALIASES.items():
+            if target in brand_pc_map and alias not in brand_pc_map:
+                brand_pc_map[alias] = brand_pc_map[target]
         log.info("  %d brands have prod_code", len(brand_pc_map))
         brand_aaia_by_id = {r["id"]: (r["aaia_code"] or "").upper() for r in brand_rows}
 
