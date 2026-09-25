@@ -171,9 +171,16 @@ def listing_title(l: UnitListing) -> str:
     return title[:200]
 
 
+# Words that already say what the unit is, so the category noun isn't repeated
+# ("Vulcan 894 wrecker", not "Vulcan 894 wrecker wrecker").
+_KIND_WORDS = re.compile(r"wrecker|carrier|rollback|aerial|bucket|lift|trailer|crane|body|bed|truck", re.I)
+
+
 def listing_subtitle(l: UnitListing) -> str:
     if l.upfit_make or l.upfit_model:
         up = " ".join(b for b in [l.upfit_make or "", l.upfit_model or ""] if b)
+        if _KIND_WORDS.search(up):
+            return up
         return f"{up} {CATEGORY_SINGULAR.get(l.category, '').lower()}".strip()
     return CATEGORY_SINGULAR.get(l.category, "")
 

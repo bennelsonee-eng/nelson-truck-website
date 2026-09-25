@@ -23,6 +23,15 @@ import { BRANCHES, InquiryModalHost, openInquiry } from './components/Inquiry'
 const ContactPage = lazy(() => import('./pages/ContactPage'))
 const AdminInquiriesPage = lazy(() => import('./pages/AdminInquiries'))
 const DivisionPage = lazy(() => import('./pages/DivisionPage'))
+const TrucksForSalePage = lazy(() => import('./pages/UnitsPublic').then((m) => ({ default: m.TrucksForSalePage })))
+const UnitDetailPage = lazy(() => import('./pages/UnitsPublic').then((m) => ({ default: m.UnitDetailPage })))
+const BuildAndPricePage = lazy(() => import('./pages/UnitsPublic').then((m) => ({ default: m.BuildAndPricePage })))
+const UnitShowcase = lazy(() => import('./pages/UnitsPublic').then((m) => ({ default: m.UnitShowcase })))
+const AdminUnitsInventoryPage = lazy(() => import('./pages/UnitsAdmin').then((m) => ({ default: m.AdminUnitsInventoryPage })))
+const AdminUnitEditorPage = lazy(() => import('./pages/UnitsAdmin').then((m) => ({ default: m.AdminUnitEditorPage })))
+const AdminUnitLeadsPage = lazy(() => import('./pages/UnitsAdmin').then((m) => ({ default: m.AdminUnitLeadsPage })))
+const AdminUnitReportsPage = lazy(() => import('./pages/UnitsAdmin').then((m) => ({ default: m.AdminUnitReportsPage })))
+const AdminUnitPriceGuidePage = lazy(() => import('./pages/UnitsAdmin').then((m) => ({ default: m.AdminUnitPriceGuidePage })))
 
 // ============================================================================
 // Display helpers
@@ -2077,8 +2086,12 @@ function CategoryNavStrip() {
               {s.name}
             </Link>
           ))
-        ) : (
-          liveSections.map(({ sec }, i) => (
+        ) : (<>
+          {/* Whole units for sale, first and in red on every page (Ben, 2026-09-25). */}
+          <Link to="/trucks-for-sale" className="my-1.5 mr-1 shrink-0 whitespace-nowrap rounded-md bg-red-700 px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-white shadow-sm transition hover:bg-red-800 md:px-4 md:text-sm">
+            Trucks for Sale
+          </Link>
+          {liveSections.map(({ sec }, i) => (
           <div
             key={i}
             ref={(el) => { tabRefs.current[i] = el }}
@@ -2101,8 +2114,8 @@ function CategoryNavStrip() {
               </svg>
             </button>
           </div>
-          ))
-        )}
+          ))}
+        </>)}
         {/* Shop your vehicle — opens the YMM picker; sits right of the category tabs */}
         <div className="ml-1 flex shrink-0 items-center whitespace-nowrap">
           <button type="button" onClick={() => setYmmOpen(true)} className="flex items-center gap-1.5 px-2 py-3 text-xs md:text-sm font-bold italic uppercase tracking-wide text-gray-600 underline decoration-gray-400 underline-offset-4 transition hover:text-red-700">
@@ -2374,6 +2387,9 @@ function NelsonHome() {
         path="/"
         jsonLd={[ORGANIZATION_JSONLD, WEBSITE_JSONLD, ...LOCALBUSINESS_JSONLD]}
       />
+      {/* Whole units for sale lead the page, above the hero (Ben, 2026-09-25:
+          "front and center, in your face"). Renders nothing when none are live. */}
+      <Suspense fallback={null}><UnitShowcase variant="home" /></Suspense>
       <NelsonHeroBanner />
 
       {/* Value pillars */}
@@ -6731,6 +6747,7 @@ function AccountPage() {
 
   type AdminTool = { icon: string; title: string; desc: string; to?: string; href?: string; onClick?: () => void; newTab?: boolean }
   const adminTools: AdminTool[] = [
+    { icon: '🚚', title: 'Trucks for Sale', desc: 'Post wreckers, carriers, bucket trucks, trailers and consigned equipment — Inventory, Leads, Reports', to: '/admin/units' },
     { icon: '📨', title: 'Inquiries', desc: 'Quote requests and contact-form messages from the website (also emailed)', to: '/admin/inquiries' },
     { icon: '🖼️', title: 'Banner Manager', desc: 'Homepage rotating banner — audience-scoped & schedulable slides', to: '/admin/banners' },
     { icon: '📝', title: 'Content pages', desc: 'Edit the FAQ and trust pages (About, Returns, Shipping, Privacy)', to: '/admin/content' },
@@ -17256,6 +17273,14 @@ export default function App() {
           <Route path="/trailers" element={<DivisionPage slug="trailers" />} />
           <Route path="/steel" element={<DivisionPage slug="steel" />} />
           <Route path="/admin/inquiries" element={<AdminInquiriesPage />} />
+          <Route path="/trucks-for-sale" element={<TrucksForSalePage />} />
+          <Route path="/trucks-for-sale/build" element={<BuildAndPricePage />} />
+          <Route path="/trucks-for-sale/:slug" element={<UnitDetailPage />} />
+          <Route path="/admin/units" element={<AdminUnitsInventoryPage />} />
+          <Route path="/admin/units/leads" element={<AdminUnitLeadsPage />} />
+          <Route path="/admin/units/reports" element={<AdminUnitReportsPage />} />
+          <Route path="/admin/units/price-guide" element={<AdminUnitPriceGuidePage />} />
+          <Route path="/admin/units/:id" element={<AdminUnitEditorPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
         </Suspense>

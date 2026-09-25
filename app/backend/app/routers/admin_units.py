@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging
 import re
 import shutil
+import tempfile
 import uuid
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
@@ -58,8 +59,9 @@ router = APIRouter(tags=["admin-units"])
 BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 STATIC_DIR = BACKEND_DIR / "static"
 UNITS_DIR = STATIC_DIR / "units"
-# Chunks are assembled outside /static so a half-uploaded file is never served.
-UPLOAD_TMP = BACKEND_DIR / "var" / "unit_uploads"
+# Chunks are assembled in the system temp dir -- outside /static, so a half-
+# uploaded file is never served, and outside the repo.
+UPLOAD_TMP = Path(tempfile.gettempdir()) / "nelson_unit_uploads"
 CHUNK_MAX = 9 * 1024 * 1024
 
 

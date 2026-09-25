@@ -42,6 +42,8 @@ STATIC_ROUTES: list[tuple[str, str, str]] = [
     ("/snow-plows", "0.8", "weekly"),
     ("/snow-plows/compare", "0.5", "monthly"),
     ("/snow-plows/configurator", "0.6", "monthly"),
+    ("/trucks-for-sale", "0.9", "daily"),
+    ("/trucks-for-sale/build", "0.6", "monthly"),
     ("/aerial-lifts", "0.7", "weekly"),
     ("/tow-trucks", "0.7", "weekly"),
     ("/trailers", "0.7", "weekly"),
@@ -202,11 +204,19 @@ async def sitemap_index(db: AsyncSession = Depends(get_db)) -> Response:
 
 
 @router.get("/sitemap-static.xml")
-async def sitemap_static() -> Response:
+async def sitemap_static(db: AsyncSession = Depends(get_db)) -> Response:
     entries = [
         _url(_abs(path), changefreq=cf, priority=pri)
         for path, pri, cf in STATIC_ROUTES
     ]
+    # Each live truck / trailer / piece of equipment for sale -- few, valuable,
+    # and they change weekly, so they ride in the static sitemap.
+    from app.models.unit_listing import UnitListing
+    units = (await db.execute(select(UnitListing.slug, UnitListing.updated_at)
+                              .where(UnitListing.status.in_(("active", "pending"))))).all()
+    entries += [_url(_abs(f"/trucks-for-sale/{slug}"),
+                     lastmod=upd.date().isoformat() if upd else None,
+                     changefreq="weekly", priority="0.8") for slug, upd in units]
     return _xml_response(_urlset(entries))
 
 
