@@ -17,8 +17,22 @@ from __future__ import annotations
 import asyncio
 import sys
 
-from sync_inventory import (DUMPS_DIR, INV_TABLES, MASTER_TABLES, fetch_csv,
+from sync_inventory import (APP_DIR, DUMPS_DIR, INV_TABLES, MASTER_TABLES, fetch_csv,
                             fetch_csv_paged, log, warn_if_masters_stale)
+
+
+def _env_value(path, key: str) -> str:
+    """Settings read .env from the working directory. This job runs in
+    app/backend, but the ERP's DSN lives in app/.env (where the nightly
+    website sync runs), so read it from there rather than copy a database
+    credential into a second file."""
+    try:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.strip().startswith(key + "="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ""
 
 
 async def main() -> int:
@@ -79,8 +93,10 @@ async def refresh_unit_onhand() -> None:
         from app.config import get_settings
         from app.database import async_session
         from app.services.unit_listings import refresh_unit_orders
-        dsn = getattr(get_settings(), "erp_database_url", "") or ""
-        if dsn:
+        dsn = getattr(get_settings(), "erp_database_url", "") or _env_value(APP_DIR / ".env", "ERP_DATABASE_URL")
+        if not dsn:
+            log.warning("erp_unit_order: no ERP_DATABASE_URL -- ERP quotes/sales not refreshed")
+        else:
             async with async_session() as db:
                 n = await refresh_unit_orders(db, dsn)
             log.info("erp_unit_order: %d open orders/quotes on units mirrored", n)
