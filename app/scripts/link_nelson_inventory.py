@@ -155,7 +155,16 @@ def load_master(path: Path) -> dict[str, dict]:
                 continue
             pn = (r.get("parts_num") or "").strip()
             pc = (r.get("prod_code") or "").strip().upper()
+            # 171 part numbers appear twice in the master, one of them a
+            # retired row ("USE PART #HRPPRYBAR 4", status Z) with another
+            # part number and older prices. Keep the active row, then the
+            # higher list price -- the ERP importer's rule (2026-09-26).
+            status = (r.get("status") or "").strip().upper()
+            rank = (status == "A", parse_decimal(r.get("P2")) or Decimal(0))
+            if ou in out and out[ou]["_rank"] >= rank:
+                continue
             out[ou] = {
+                "_rank": rank,
                 "parts_num": pn,
                 "parts_num_upper": pn.upper(),
                 "prod_code": pc,
