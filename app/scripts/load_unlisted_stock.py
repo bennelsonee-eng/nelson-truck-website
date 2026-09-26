@@ -55,7 +55,7 @@ BRANDS = {
     "PROTEC": {"name": "Protech",          "aaia": "PROTEC", "slug": "protech",         "web": "https://www.protechpro.com"},
     "BAWER":  {"name": "Bawer",            "aaia": "BAWER",  "slug": "bawer",           "web": "https://www.bawer.com"},
     "HRP":    {"name": "Towing Supplies",  "aaia": "HRP",    "slug": "towing-supplies", "web": None},
-    "SNG":    {"name": "SNG",              "aaia": "SNG",    "slug": "sng",             "web": None},
+    "SNG":    {"name": "Switch-N-Go",      "aaia": "SNG",    "slug": "switch-n-go",     "web": "https://www.switchngo.com"},
 }
 # Lines whose parts live under another line's brand row (see the linker's
 # PROD_CODE_ALIASES): Meyer spreaders (MYS) are sold as Meyer Products (MYP).
