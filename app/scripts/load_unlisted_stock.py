@@ -32,7 +32,7 @@ sampled and undone as a unit:
     --rollback BATCH  deletes the batch's new products, restores tidied names
                       and brand codes, removes brands/categories it created.
 
-Run on the server from app/backend (DATABASE_URL from app/.env):
+Run on the server from app/backend (settings are read from app/.env):
     .venv/bin/python ../scripts/load_unlisted_stock.py /tmp/approved.json --batch unlisted-2026-09-25 [--apply]
     .venv/bin/python ../scripts/load_unlisted_stock.py --check unlisted-2026-09-25
     .venv/bin/python ../scripts/load_unlisted_stock.py --sample 10 unlisted-2026-09-25
@@ -92,6 +92,22 @@ SITE_URL = "https://nelsontruckequipment.com"
 STATIC_DIR = _BACKEND_DIR / "static"
 LOG_TABLE = "_load_batch_log"
 PUBLIC_WAREHOUSES = (1, 2)   # Portland, Kent: the stock this site sells from
+
+
+def load_app_env() -> None:
+    """Read app/.env the way the systemd units do (EnvironmentFile), so a run
+    from a shell has the same DATABASE_URL and search key. On 2026-09-26 a
+    publish run with only DATABASE_URL exported un-hid 885 products but got
+    401 from Typesense; the next stock sync re-indexed them."""
+    path = APP_DIR / ".env"
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, val = line.split("=", 1)
+        os.environ.setdefault(key.strip(), val.strip().strip('"').strip("'"))
 
 
 async def ensure_log(conn) -> None:
@@ -401,6 +417,7 @@ async def main() -> None:
     ap.add_argument("--allow", default="", help="comma-separated checks --publish may pass over")
     ap.add_argument("--apply", action="store_true", help="commit (default: dry run, rolled back)")
     a = ap.parse_args()
+    load_app_env()
     dsn = os.environ.get("DATABASE_URL", "").replace("postgresql+asyncpg://", "postgresql://", 1)
     conn = await asyncpg.connect(dsn)
     try:
