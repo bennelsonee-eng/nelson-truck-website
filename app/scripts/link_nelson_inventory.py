@@ -489,44 +489,57 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
         inventory: dict[tuple[int, int], dict] = {**nte_inv, **tte_inv}
 
         # --- Prepare price upserts ---------------------------------------
-        # For each matched product, find best parts_master row for prices.
-        # TTE prices win when product matched via TTE; otherwise use NTE.
+        # Nelson's prices come from NELSON's parts master (nte), never Titan's:
+        # the two companies price the same part differently (Ben, 2026-09-25;
+        # IMS200 becomes the source once that feed is back). Only rows whose
+        # P1-P5 actually changed are written. A 0.00 tier is stored as NULL:
+        # a logged-in retail customer is charged the stored tier verbatim, so
+        # 0.00 sold at $0.00 (24 live products found 2026-09-25). A list price
+        # below cost is taken for a data error and skipped.
         price_rows: dict[int, dict] = {}
         if write_prices:
-            # Build reverse map: parts_num → master_entry (for the matched products)
-            # by walking matched_inventory's product_ids and looking up the master.
-            # Faster: for each matched (pid, ourparts) pair we recorded, fetch P1-P5.
-            def _row_from_master(m: dict | None) -> dict | None:
-                if not m or not any(m.get(k) is not None for k in ("P1", "P2", "P3", "P4", "P5")):
-                    return None
-                # Column-name mapping (mirrors import_initial_data.py):
-                #   P1 → suggested_retail_price  (MSRP)
-                #   P2 → retail_price            (List)
-                #   P3 → jobber_price
-                #   P4 → dealer_price
-                #   P5 → cost
-                return {
-                    "suggested_retail_price": m["P1"],
-                    "retail_price": m["P2"],
-                    "jobber_price": m["P3"],
-                    "dealer_price": m["P4"],
-                    "cost": m["P5"],
-                }
+            def _tier(v):
+                return v if v is not None and v > 0 else None
 
-            # TTE-side prices win.
-            for pid, ou in tte_links.items():
-                pr = _row_from_master(tte_master.get(ou.upper()))
-                if pr:
-                    price_rows[pid] = pr
-            # NTE fills in products that TTE didn't have.
-            for pid, ou in nte_links.items():
-                if pid in price_rows:
-                    continue
+            def _row_from_master(m: dict | None) -> dict | None:
+                if not m:
+                    return None
+                row = {
+                    "suggested_retail_price": _tier(m["P1"]),   # MSRP
+                    "retail_price": _tier(m["P2"]),             # List
+                    "jobber_price": _tier(m["P3"]),
+                    "dealer_price": _tier(m["P4"]),
+                    "cost": _tier(m["P5"]),
+                }
+                return row if any(v is not None for v in row.values()) else None
+
+            candidates: dict[int, dict] = {}
+            below_cost = 0
+            for pid, ou in {**tte_links, **nte_links}.items():
                 pr = _row_from_master(nte_master.get(ou.upper()))
-                if pr:
-                    price_rows[pid] = pr
-            log.info("Prepared P1-P5 prices for %d products (TTE primary + NTE fallback)",
-                     len(price_rows))
+                if not pr:
+                    continue
+                if pr["retail_price"] and pr["cost"] and pr["retail_price"] < pr["cost"]:
+                    below_cost += 1
+                    continue
+                candidates[pid] = pr
+            current = {r["product_id"]: r for r in await conn.fetch(
+                "SELECT product_id, suggested_retail_price, retail_price, jobber_price, "
+                "dealer_price, cost FROM product_price WHERE product_id = ANY($1::int[])",
+                list(candidates))}
+            cols = ("suggested_retail_price", "retail_price", "jobber_price", "dealer_price", "cost")
+            up = down = 0
+            for pid, pr in candidates.items():
+                cur = current.get(pid)
+                if cur and all(cur[c] == pr[c] for c in cols):
+                    continue
+                price_rows[pid] = pr
+                old, new_ = (cur["retail_price"] if cur else None), pr["retail_price"]
+                if old and new_:
+                    up += new_ > old
+                    down += new_ < old
+            log.info("Prices (Nelson master): %d products checked, %d changed (list up %d, down %d), "
+                     "%d skipped with list below cost", len(candidates), len(price_rows), up, down, below_cost)
 
         # --- Stats summary -----------------------------------------------
         total_rows = stats["tte_rows"] + stats["nte_rows"]
@@ -746,7 +759,11 @@ async def main(dry_run: bool, seed_wh: bool, write_prices: bool, zero_out: bool 
                     flipped = await refresh_instock_only(session, changed_pids)
                     if flipped:
                         await session.commit()
-                    n_idx = await index_products(session, changed_pids)
+                    if price_rows:
+                        # The catalog sorts and filters on this cached price.
+                        from app.services.pricing_service import recompute_resolved_retail
+                        await recompute_resolved_retail(session, list(price_rows))
+                    n_idx = await index_products(session, sorted(set(changed_pids) | set(price_rows)))
                 log.info("Post-load: kit recompute=%s, in_stock_only flipped=%d, reindexed %d changed products",
                          ks, len(flipped), n_idx)
             except Exception:

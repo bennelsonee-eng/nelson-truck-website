@@ -13,6 +13,6 @@ EnvironmentFile=/home/titan/nelson-truck-website/app/.env
 # 2026-09-21 it read Titan's copy through a symlink, refreshed by a Titan job on
 # nelson-prod; Titan now runs only on titan-prod.
 ExecStartPre=/home/titan/nelson-truck-website/app/backend/.venv/bin/python /home/titan/nelson-truck-website/app/scripts/fetch_inventory_csvs.py
-ExecStart=/home/titan/nelson-truck-website/app/backend/.venv/bin/python /home/titan/nelson-truck-website/app/scripts/link_nelson_inventory.py --seed-warehouses --no-prices
+ExecStart=/home/titan/nelson-truck-website/app/backend/.venv/bin/python /home/titan/nelson-truck-website/app/scripts/link_nelson_inventory.py --seed-warehouses
 StandardOutput=append:/home/titan/nelson-inventory-sync.log
 StandardError=append:/home/titan/nelson-inventory-sync.log
